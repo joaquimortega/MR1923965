@@ -114,23 +114,161 @@ theorem pw_bernstein (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) :
 
 /-! ## Increments of `f ∈ PW` -/
 
-/-- `|f(γ+δ) - f(γ)|² ≤ |δ| ∫_{γ-|δ|}^{γ+|δ|} |f'|²` (FTC + Cauchy–Schwarz). -/
-theorem enorm_sq_sub_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (γ δ : ℝ) :
+/-- Cauchy–Schwarz on a set: `(∫_s u)² ≤ |s| ∫_s u²`. -/
+theorem ennreal_rpow_half_sq (A : ℝ≥0∞) : (A ^ (1 / 2 : ℝ)) ^ 2 = A := by
+  rw [← ENNReal.rpow_natCast, ← ENNReal.rpow_mul]
+  norm_num
+
+theorem lintegral_sq_le (s : Set ℝ) {u : ℝ → ℝ≥0∞} (hu : AEMeasurable u (volume.restrict s)) :
+    (∫⁻ x in s, u x) ^ 2 ≤ volume s * ∫⁻ x in s, u x ^ 2 := by
+  have hH := ENNReal.lintegral_mul_le_Lp_mul_Lq (volume.restrict s)
+    (Real.HolderConjugate.two_two) hu (aemeasurable_const (b := (1 : ℝ≥0∞)))
+  simp only [Pi.mul_apply, mul_one, lintegral_const, Measure.restrict_apply_univ,
+    one_pow, one_mul, ENNReal.rpow_two] at hH
+  have h2 := pow_le_pow_left' hH 2
+  rw [mul_pow, ennreal_rpow_half_sq, ennreal_rpow_half_sq, mul_comm] at h2
+  exact h2
+
+
+/-- `|f(γ+δ) - f(γ)|² ≤ |δ| ∫_{γ-|δ|}^{γ+|δ|} |f'|²` (FTC + Cauchy–Schwarz).  (`hPW` dropped.) -/
+theorem enorm_sq_sub_le {f : ℂ → ℂ} (hf : MemPW f) (γ δ : ℝ) :
     ‖f ((γ + δ : ℝ) : ℂ) - f (γ : ℂ)‖ₑ ^ 2 ≤
       ENNReal.ofReal |δ| * ∫⁻ x in Icc (γ - |δ|) (γ + |δ|), ‖deriv f (x : ℂ)‖ₑ ^ 2 := by
-  sorry
+  set φ : ℝ → ℂ := fun x ↦ deriv f (x : ℂ) with hφ
+  have hcont : Continuous φ :=
+    ((hf.1.contDiff (n := 1)).continuous_deriv le_rfl).comp Complex.continuous_ofReal
+  have hderiv : ∀ x : ℝ, HasDerivAt (fun y : ℝ ↦ f y) (φ x) x :=
+    fun x ↦ ((hf.1 x).hasDerivAt).comp_ofReal
+  have hftc : f ((γ + δ : ℝ) : ℂ) - f (γ : ℂ) = ∫ x in γ..γ + δ, φ x :=
+    (intervalIntegral.integral_eq_sub_of_hasDerivAt (fun x _ ↦ hderiv x)
+      (hcont.intervalIntegrable _ _)).symm
+  -- an interval `J` of length `|δ|` inside `[γ-|δ|, γ+|δ|]` bounding the increment
+  obtain ⟨J, hJsub, hJvol, hJ⟩ : ∃ J : Set ℝ, J ⊆ Icc (γ - |δ|) (γ + |δ|) ∧
+      volume J = ENNReal.ofReal |δ| ∧
+      ‖f ((γ + δ : ℝ) : ℂ) - f (γ : ℂ)‖ₑ ≤ ∫⁻ x in J, ‖φ x‖ₑ := by
+    rcases le_total 0 δ with h0 | h0
+    · refine ⟨Ioc γ (γ + δ), fun x hx ↦ ⟨?_, ?_⟩, ?_, ?_⟩
+      · rw [abs_of_nonneg h0]; linarith [hx.1]
+      · rw [abs_of_nonneg h0]; exact hx.2
+      · rw [Real.volume_Ioc, abs_of_nonneg h0]; congr 1; ring
+      · rw [hftc, intervalIntegral.integral_of_le (by linarith)]
+        exact enorm_integral_le_lintegral_enorm _
+    · refine ⟨Ioc (γ + δ) γ, fun x hx ↦ ⟨?_, ?_⟩, ?_, ?_⟩
+      · rw [abs_of_nonpos h0]; linarith [hx.1]
+      · rw [abs_of_nonpos h0]; linarith [hx.2]
+      · rw [Real.volume_Ioc, abs_of_nonpos h0]; congr 1; ring
+      · rw [hftc, intervalIntegral.integral_symm, intervalIntegral.integral_of_le (by linarith),
+          enorm_neg]
+        exact enorm_integral_le_lintegral_enorm _
+  have hmeas : AEMeasurable (fun x ↦ ‖φ x‖ₑ) (volume.restrict J) :=
+    hcont.measurable.enorm.aemeasurable
+  calc ‖f ((γ + δ : ℝ) : ℂ) - f (γ : ℂ)‖ₑ ^ 2 ≤ (∫⁻ x in J, ‖φ x‖ₑ) ^ 2 := by gcongr
+    _ ≤ volume J * ∫⁻ x in J, ‖φ x‖ₑ ^ 2 := lintegral_sq_le J hmeas
+    _ ≤ _ := by
+      rw [hJvol]
+      gcongr
 
-/-- A `d`-separated set has at most `2L/d + 1` points in any interval of length `2L`. -/
+theorem IsSepBy.finite_inter_Icc {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ) (x L : ℝ) :
+    (Γ ∩ Icc (x - L) (x + L)).Finite := by
+  refine ((IsSeparated.finite_inter_Icc ⟨d, hd, hΓ⟩ (|x| + |L|))).subset ?_
+  intro y hy
+  refine ⟨hy.1, ?_, ?_⟩
+  · linarith [hy.2.1, neg_abs_le x, neg_abs_le L, le_abs_self L]
+  · linarith [hy.2.2, le_abs_self x, le_abs_self L]
+
 theorem IsSepBy.ncard_Icc_le {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ) (x L : ℝ)
     (hL : 0 ≤ L) : ((Γ ∩ Icc (x - L) (x + L)).ncard : ℝ) ≤ 2 * L / d + 1 := by
-  sorry
+  have hfin := hΓ.finite_inter_Icc hd x L
+  set T := hfin.toFinset with hT
+  have hcard : (Γ ∩ Icc (x - L) (x + L)).ncard = T.card := Set.ncard_eq_toFinset_card _ hfin
+  rw [hcard]
+  have hdisj : (T : Set ℝ).PairwiseDisjoint (fun t ↦ Ico (t - d / 2) (t + d / 2)) := by
+    intro s hs t ht hst
+    simp only [hT, Finset.mem_coe, Set.Finite.mem_toFinset] at hs ht
+    have := hΓ s hs.1 t ht.1 hst
+    rw [Function.onFun, Set.disjoint_left]
+    intro y hy1 hy2
+    rcases le_abs'.1 this with h1 | h1 <;>
+      linarith [hy1.1, hy1.2, hy2.1, hy2.2]
+  have hmeas := measure_biUnion_finset (μ := volume) hdisj (fun t _ ↦ measurableSet_Ico)
+  have hsub : (⋃ t ∈ T, Ico (t - d / 2) (t + d / 2)) ⊆ Icc (x - L - d / 2) (x + L + d / 2) := by
+    intro y hy
+    simp only [mem_iUnion] at hy
+    obtain ⟨t, ht, hy⟩ := hy
+    simp only [hT, Set.Finite.mem_toFinset] at ht
+    exact ⟨by linarith [ht.2.1, hy.1], by linarith [ht.2.2, hy.2]⟩
+  have h2 := measure_mono (μ := volume) hsub
+  rw [hmeas] at h2
+  simp only [Real.volume_Ico, Real.volume_Icc] at h2
+  have e1 : ∀ t : ℝ, t + d / 2 - (t - d / 2) = d := fun t ↦ by ring
+  simp only [e1, Finset.sum_const, nsmul_eq_mul] at h2
+  have e2 : x + L + d / 2 - (x - L - d / 2) = 2 * L + d := by ring
+  rw [e2, ← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (by positivity),
+    ENNReal.ofReal_le_ofReal_iff (by positivity)] at h2
+  have h3 : (T.card : ℝ) ≤ (2 * L + d) / d := (le_div_iff₀ hd).2 h2
+  have h4 : (2 * L + d) / d = 2 * L / d + 1 := by field_simp
+  linarith
 
-/-- Finite overlap: `∑_{γ ∈ Γ} ∫_{γ-L}^{γ+L} φ ≤ (2L/d + 1) ∫ φ` for `φ ≥ 0` measurable. -/
+
+theorem IsSepBy.countable {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ) : Γ.Countable := by
+  have : Γ = ⋃ n : ℕ, Γ ∩ Icc (0 - (n : ℝ)) (0 + n) := by
+    ext y
+    simp only [mem_iUnion, mem_inter_iff, mem_Icc, zero_sub, zero_add]
+    refine ⟨fun hy ↦ ?_, fun ⟨_, h, _⟩ ↦ h⟩
+    obtain ⟨n, hn⟩ := exists_nat_ge |y|
+    exact ⟨n, hy, by linarith [neg_abs_le y], by linarith [le_abs_self y]⟩
+  rw [this]
+  exact countable_iUnion fun n ↦ (hΓ.finite_inter_Icc hd 0 n).countable
+
+theorem tsum_indicator_Icc_le {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ) {L : ℝ}
+    (hL : 0 ≤ L) (c : ℝ≥0∞) (x : ℝ) :
+    ∑' γ : Γ, (Icc ((γ : ℝ) - L) ((γ : ℝ) + L)).indicator (fun _ ↦ c) x ≤
+      ENNReal.ofReal (2 * L / d + 1) * c := by
+  have hfin := hΓ.finite_inter_Icc hd x L
+  have h1 : ∀ γ : Γ, (Icc ((γ : ℝ) - L) ((γ : ℝ) + L)).indicator (fun _ ↦ c) x =
+      (Γ ∩ Icc (x - L) (x + L)).indicator (fun _ ↦ c) (γ : ℝ) := by
+    intro γ
+    have hγ : (γ : ℝ) ∈ Γ := γ.2
+    by_cases h : x ∈ Icc ((γ : ℝ) - L) ((γ : ℝ) + L)
+    · have : (γ : ℝ) ∈ Γ ∩ Icc (x - L) (x + L) :=
+        ⟨hγ, by linarith [h.2], by linarith [h.1]⟩
+      rw [indicator_of_mem h, indicator_of_mem this]
+    · have : (γ : ℝ) ∉ Γ ∩ Icc (x - L) (x + L) := fun h' ↦
+        h ⟨by linarith [h'.2.2], by linarith [h'.2.1]⟩
+      rw [indicator_of_notMem h, indicator_of_notMem this]
+  simp_rw [h1]
+  rw [tsum_subtype Γ (fun y ↦ (Γ ∩ Icc (x - L) (x + L)).indicator (fun _ ↦ c) y),
+    indicator_indicator, inter_eq_right.2 inter_subset_left]
+  rw [tsum_eq_sum (s := hfin.toFinset) (fun y hy ↦ by
+    rw [indicator_of_notMem]; simpa using hy)]
+  have : ∀ y ∈ hfin.toFinset, (Γ ∩ Icc (x - L) (x + L)).indicator (fun _ ↦ c) y = c := fun y hy ↦
+    indicator_of_mem (by simpa using hy) _
+  rw [Finset.sum_congr rfl this, Finset.sum_const, nsmul_eq_mul, ← Set.ncard_eq_toFinset_card _ hfin]
+  have h2 := hΓ.ncard_Icc_le hd x L hL
+  calc ((Γ ∩ Icc (x - L) (x + L)).ncard : ℝ≥0∞) * c
+      = ENNReal.ofReal ((Γ ∩ Icc (x - L) (x + L)).ncard : ℝ) * c := by
+        rw [ENNReal.ofReal_natCast]
+    _ ≤ _ := by gcongr
+
+
 theorem tsum_lintegral_Icc_le {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ) {L : ℝ}
     (hL : 0 ≤ L) {φ : ℝ → ℝ≥0∞} (hφ : Measurable φ) :
     ∑' γ : Γ, ∫⁻ x in Icc ((γ : ℝ) - L) ((γ : ℝ) + L), φ x ≤
       ENNReal.ofReal (2 * L / d + 1) * ∫⁻ x, φ x := by
-  sorry
+  have : Countable Γ := (hΓ.countable hd).to_subtype
+  have h1 : ∀ γ : Γ, ∫⁻ x in Icc ((γ : ℝ) - L) ((γ : ℝ) + L), φ x =
+      ∫⁻ x, (Icc ((γ : ℝ) - L) ((γ : ℝ) + L)).indicator φ x := fun γ ↦
+    (lintegral_indicator measurableSet_Icc _).symm
+  simp_rw [h1]
+  rw [← lintegral_tsum (fun γ ↦ (hφ.indicator measurableSet_Icc).aemeasurable),
+    ← lintegral_const_mul _ hφ]
+  refine lintegral_mono fun x ↦ ?_
+  have : ∀ γ : Γ, (Icc ((γ : ℝ) - L) ((γ : ℝ) + L)).indicator φ x =
+      (Icc ((γ : ℝ) - L) ((γ : ℝ) + L)).indicator (fun _ ↦ φ x) x := fun γ ↦ by
+    by_cases h : x ∈ Icc ((γ : ℝ) - L) ((γ : ℝ) + L) <;> simp [h]
+  simp_rw [this]
+  exact tsum_indicator_Icc_le hd hΓ hL _ x
+
 
 /-- The key estimate: `∑_γ |f(γ+δ_γ) - f(γ)|² ≤ π² L (2L/d + 1) ‖f‖²` when `|δ_γ| ≤ L`. -/
 theorem tsum_sub_le (hPW : PaleyWienerThm) {d : ℝ} (hd : 0 < d) {Γ : Set ℝ} (hΓ : IsSepBy d Γ)
