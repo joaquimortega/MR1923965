@@ -87,19 +87,61 @@ def divZeros : List ℂ → (ℂ → ℂ) → ℂ → ℂ
 /-- `divZeros l F` is entire. -/
 theorem differentiable_divZeros (l : List ℂ) {F : ℂ → ℂ} (hF : Differentiable ℂ F) :
     Differentiable ℂ (divZeros l F) := by
-  sorry
+  induction l generalizing F with
+  | nil => exact hF
+  | cons a l ih =>
+    refine ih ?_
+    intro z
+    have h := (differentiableOn_dslope (s := (Set.univ : Set ℂ)) (c := a) (f := F)
+      Filter.univ_mem).2 hF.differentiableOn
+    exact (h z (Set.mem_univ z)).differentiableAt Filter.univ_mem
 
 /-- `(divZeros l F) z * ∏ (z - t) = F z` if `l` has no repetitions and `F` vanishes on `l`. -/
 theorem divZeros_mul_prodLin {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF : ∀ t ∈ l, F t = 0)
     (z : ℂ) : divZeros l F z * prodLin l z = F z := by
-  sorry
+  induction l generalizing F with
+  | nil => simp [divZeros, prodLin]
+  | cons a l ih =>
+    rw [List.nodup_cons] at hl
+    have ha : F a = 0 := hF a (List.mem_cons_self ..)
+    have h1 : ∀ t ∈ l, dslope F a t = 0 := by
+      intro t ht
+      have hta : t ≠ a := fun h ↦ hl.1 (h ▸ ht)
+      rw [dslope_of_ne F hta, slope_def_field, hF t (List.mem_cons_of_mem _ ht), ha]
+      simp
+    have e := ih hl.2 h1
+    have h2 := sub_smul_dslope F a z
+    rw [ha, sub_zero, smul_eq_mul] at h2
+    simp only [divZeros, prodLin, List.map_cons, List.prod_cons] at e ⊢
+    rw [← h2, ← e]
+    ring
 
 /-- `divZeros` commutes with complex conjugation of real-symmetric data
 (`F^* = F`, all `t ∈ l` real). -/
 theorem divZeros_conj {l : List ℂ} (hl : ∀ t ∈ l, t.im = 0) {F : ℂ → ℂ}
     (hF : ∀ z, F (conj z) = conj (F z)) (z : ℂ) :
     divZeros l F (conj z) = conj (divZeros l F z) := by
-  sorry
+  induction l generalizing F z with
+  | nil => exact hF z
+  | cons a l ih =>
+    have ha : a.im = 0 := hl a (List.mem_cons_self ..)
+    have hconja : conj a = a := Complex.conj_eq_iff_im.2 ha
+    refine ih (fun t ht ↦ hl t (List.mem_cons_of_mem _ ht)) (fun w ↦ ?_) z
+    by_cases hw : w = a
+    · subst hw
+      rw [hconja, dslope_same]
+      have h1 : fstar F = F := by funext u; simp [fstar, hF u]
+      have := deriv_fstar F w
+      rw [h1, hconja] at this
+      exact this
+    · have hw' : conj w ≠ a := fun h ↦ hw (by rw [← hconja, ← h]; simp)
+      rw [dslope_of_ne F hw', dslope_of_ne F hw, slope_def_field, slope_def_field,
+        hF w]
+      have haF : conj (F a) = F a := by
+        have := hF a
+        rw [hconja] at this
+        exact this.symm
+      simp only [map_div₀, map_sub, hconja, haF]
 
 /-! ## The companion `B` -/
 
@@ -142,25 +184,234 @@ section CompanionLemmas
 
 variable {m : ℝ → ℝ} {a b : ℝ}
 
+/-! ### Basic facts about `A` -/
+
+theorem differentiable_genA (hw : OCS.IsMultWeight m a b) : Differentiable ℂ (genA m) :=
+  OCS.differentiable_multF hw 0
+
+theorem genA_conj (hw : OCS.IsMultWeight m a b) (z : ℂ) : genA m (conj z) = conj (genA m z) :=
+  OCS.multF_conj hw 0 z
+
+theorem genA_eq_zero_iff (hw : OCS.IsMultWeight m a b) (z : ℂ) :
+    genA m z = 0 ↔ ∃ j : ℤ, z = (OCS.multBary m j : ℂ) := by
+  rw [genA, OCS.multF_eq_zero_iff hw]
+  constructor
+  · rintro ⟨γ, ⟨j, rfl⟩, h⟩; exact ⟨j, h⟩
+  · rintro ⟨j, h⟩; exact ⟨_, ⟨j, rfl⟩, h⟩
+
+/-- The zeros of `A` are simple. -/
+theorem genA_simple (hw : OCS.IsMultWeight m a b) {t : ℂ} (ht : genA m t = 0) :
+    deriv (genA m) t ≠ 0 := by
+  have hZ : t ∈ OCS.multGammaC m := by
+    obtain ⟨j, rfl⟩ := (genA_eq_zero_iff hw t).1 ht
+    exact ⟨_, ⟨j, rfl⟩, rfl⟩
+  have hd := OCS.isGenusOneData_multGammaC hw
+  have hP : OCS.canonicalProd (OCS.multGammaC m) (fun w ↦ w⁻¹) t = 0 :=
+    (OCS.canonicalProd_eq_zero_iff hd).2 hZ
+  have hP' := OCS.deriv_canonicalProd_ne_zero hd hZ
+  have hdP : DifferentiableAt ℂ (OCS.canonicalProd (OCS.multGammaC m) (fun w ↦ w⁻¹)) t :=
+    (OCS.differentiable_canonicalProd hd) t
+  have hE : DifferentiableAt ℂ
+      (fun z : ℂ ↦ Complex.exp (-(OCS.multKappa m : ℂ) * z + OCS.multBeta m 0)) t := by fun_prop
+  have : genA m = fun z ↦ Complex.exp (-(OCS.multKappa m : ℂ) * z + OCS.multBeta m 0) *
+      OCS.canonicalProd (OCS.multGammaC m) (fun w ↦ w⁻¹) z := rfl
+  rw [this, deriv_fun_mul hE hdP, hP, mul_zero, zero_add]
+  exact mul_ne_zero (Complex.exp_ne_zero _) hP'
+
+theorem multBary_injective (hw : OCS.IsMultWeight m a b) : Function.Injective (OCS.multBary m) :=
+  (OCS.strictMono_multBary hw).injective
+
+/-! ### `Q` and the list `compRemoved` -/
+
+/-- `∏_{|j|<N} (z - γ_j - 1/2)`. -/
+def compQ (m : ℝ → ℝ) (N : ℕ) (z : ℂ) : ℂ :=
+  ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
+
+theorem prodLin_compRemoved (N : ℕ) (z : ℂ) : prodLin (compRemoved m N) z = compQ m N z := by
+  unfold prodLin compRemoved compQ
+  rw [List.map_map]
+  exact Finset.prod_map_toList (Finset.Ioo (-(N : ℤ)) N) (fun j ↦ z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
+
+theorem nodup_compRemoved (hw : OCS.IsMultWeight m a b) (N : ℕ) : (compRemoved m N).Nodup := by
+  unfold compRemoved
+  refine (Finset.nodup_toList _).map ?_
+  intro i j h
+  apply multBary_injective hw
+  have := Complex.ofReal_injective h
+  linarith
+
+theorem compRemoved_im (N : ℕ) : ∀ t ∈ compRemoved m N, t.im = 0 := by
+  intro t ht
+  unfold compRemoved at ht
+  obtain ⟨j, _, rfl⟩ := List.mem_map.1 ht
+  simp
+
+theorem genA_shift_zero (hw : OCS.IsMultWeight m a b) (N : ℕ) :
+    ∀ t ∈ compRemoved m N, genA m (t - 1 / 2) = 0 := by
+  intro t ht
+  unfold compRemoved at ht
+  obtain ⟨j, _, rfl⟩ := List.mem_map.1 ht
+  rw [genA_eq_zero_iff hw]
+  exact ⟨j, by push_cast; ring⟩
+
+/-- `D · Q = A(· - 1/2)`. -/
+theorem compD_mul_Q (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
+    divZeros (compRemoved m N) (fun w ↦ genA m (w - 1 / 2)) z * compQ m N z =
+      genA m (z - 1 / 2) := by
+  rw [← prodLin_compRemoved]
+  exact divZeros_mul_prodLin (nodup_compRemoved hw N) (genA_shift_zero hw N) z
+
+theorem compB_conj_aux (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
+    compB m N (conj z) = conj (compB m N z) := by
+  unfold compB
+  rw [map_mul, divZeros_conj (compRemoved_im N) (fun w ↦ ?_) z, map_prod]
+  · congr 1
+    refine Finset.prod_congr rfl fun j _ ↦ ?_
+    simp
+  · rw [← genA_conj hw]
+    have : conj w - 1 / 2 = conj (w - 1 / 2) := by
+      rw [map_sub, map_div₀, map_one, map_ofNat]
+    rw [this]
+
+/-! ### Zeros of `divZeros` -/
+
+/-- One step of `divZeros`: for `F` entire with simple zeros and `F a = 0`,
+`dslope F a` has the same zeros except `a`, and these are again simple. -/
+theorem dslope_step {F : ℂ → ℂ} (hF : Differentiable ℂ F) (hs : ∀ t, F t = 0 → deriv F t ≠ 0)
+    {a : ℂ} (ha : F a = 0) :
+    (∀ z, dslope F a z = 0 ↔ F z = 0 ∧ z ≠ a) ∧
+      ∀ t, dslope F a t = 0 → deriv (dslope F a) t ≠ 0 := by
+  have hG : Differentiable ℂ (dslope F a) := by
+    intro z
+    have h := (differentiableOn_dslope (s := (Set.univ : Set ℂ)) (c := a) (f := F)
+      Filter.univ_mem).2 hF.differentiableOn
+    exact (h z (Set.mem_univ z)).differentiableAt Filter.univ_mem
+  have hmul : ∀ z, (z - a) * dslope F a z = F z := fun z ↦ by
+    have := sub_smul_dslope F a z
+    rwa [ha, sub_zero, smul_eq_mul] at this
+  have key : ∀ z, dslope F a z = 0 ↔ F z = 0 ∧ z ≠ a := by
+    intro z
+    by_cases hz : z = a
+    · subst hz
+      rw [dslope_same]
+      simp only [ne_eq, not_true_eq_false, and_false, iff_false]
+      exact hs z ha
+    · simp only [hz, ne_eq, not_false_eq_true, and_true]
+      rw [← hmul z]
+      simp [sub_eq_zero, hz]
+  refine ⟨key, fun t ht ↦ ?_⟩
+  obtain ⟨hFt, hta⟩ := (key t).1 ht
+  have hder : HasDerivAt F (dslope F a t + (t - a) * deriv (dslope F a) t) t := by
+    have h1 : HasDerivAt (fun z ↦ (z - a) * dslope F a z)
+        (1 * dslope F a t + (t - a) * deriv (dslope F a) t) t :=
+      ((hasDerivAt_id t).sub_const a).mul (hG t).hasDerivAt
+    have e : (fun z ↦ (z - a) * dslope F a z) = F := funext hmul
+    rw [e, one_mul] at h1
+    exact h1
+  have := hs t hFt
+  rw [hder.deriv, ht, zero_add] at this
+  intro h0
+  rw [h0, mul_zero] at this
+  exact this rfl
+
+theorem divZeros_eq_zero_iff {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF : Differentiable ℂ F)
+    (hs : ∀ t, F t = 0 → deriv F t ≠ 0) (hF0 : ∀ t ∈ l, F t = 0) (z : ℂ) :
+    divZeros l F z = 0 ↔ F z = 0 ∧ z ∉ l := by
+  induction l generalizing F with
+  | nil => simp [divZeros]
+  | cons a l ih =>
+    rw [List.nodup_cons] at hl
+    have ha : F a = 0 := hF0 a (List.mem_cons_self ..)
+    obtain ⟨hkey, hsG⟩ := dslope_step hF hs ha
+    have hG : Differentiable ℂ (dslope F a) := by
+      intro z
+      have h := (differentiableOn_dslope (s := (Set.univ : Set ℂ)) (c := a) (f := F)
+        Filter.univ_mem).2 hF.differentiableOn
+      exact (h z (Set.mem_univ z)).differentiableAt Filter.univ_mem
+    have hG0 : ∀ t ∈ l, dslope F a t = 0 := fun t ht ↦
+      (hkey t).2 ⟨hF0 t (List.mem_cons_of_mem _ ht), fun h ↦ hl.1 (h ▸ ht)⟩
+    simp only [divZeros]
+    rw [ih hl.2 hG hsG hG0, hkey z]
+    simp only [List.mem_cons, not_or]
+    tauto
+
 /-- Interlacing: `γ_j < β_j < γ_{j+1}` for all `j` (given the choice of `N`). -/
 theorem compBeta_interlace (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (j : ℤ) :
     OCS.multBary m j < compBeta m N j ∧ compBeta m N j < OCS.multBary m (j + 1) := by
-  sorry
+  by_cases hj : |j| < N
+  · have h := OCS.strictMono_multBary hw (lt_add_one j)
+    simp only [compBeta, hj, ite_true]
+    constructor <;> linarith
+  · have h := hN j (not_lt.1 hj)
+    simp only [compBeta, hj, ite_false]
+    constructor <;> linarith
 
 theorem differentiable_compB (hw : OCS.IsMultWeight m a b) (N : ℕ) :
     Differentiable ℂ (compB m N) := by
-  sorry
+  unfold compB
+  refine (differentiable_divZeros _ ?_).mul (by fun_prop)
+  intro z
+  exact ((differentiable_genA hw) (z - 1 / 2)).comp z (differentiableAt_id.sub_const _)
 
 theorem compB_conj (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N (conj z) = conj (compB m N z) := by
-  sorry
+  exact compB_conj_aux hw N z
 
 /-- The zero set of `B` is `{β_j}`, all simple. -/
 theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
     compB m N z = 0 ↔ ∃ j : ℤ, z = (compBeta m N j : ℂ) := by
-  sorry
+  have _ := hN
+  have hFd : Differentiable ℂ (fun w ↦ genA m (w - 1 / 2)) := fun z ↦
+    ((differentiable_genA hw) (z - 1 / 2)).comp z (differentiableAt_id.sub_const _)
+  have hFs : ∀ t, genA m (t - 1 / 2) = 0 → deriv (fun w ↦ genA m (w - 1 / 2)) t ≠ 0 := by
+    intro t ht
+    have : deriv (fun w ↦ genA m (w - 1 / 2)) t = deriv (genA m) (t - 1 / 2) :=
+      deriv_comp_sub_const (f := genA m) (a := 1 / 2) (x := t)
+    rw [this]
+    exact genA_simple hw ht
+  have hD := divZeros_eq_zero_iff (nodup_compRemoved hw N) hFd hFs (genA_shift_zero hw N) z
+  have hmemrem : z ∈ compRemoved m N ↔
+      ∃ j ∈ Finset.Ioo (-(N : ℤ)) N, z = ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ) := by
+    unfold compRemoved
+    simp only [List.mem_map, Finset.mem_toList]
+    constructor
+    · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
+    · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
+  have hFz : genA m (z - 1 / 2) = 0 ↔ ∃ k : ℤ, z = ((OCS.multBary m k + 1 / 2 : ℝ) : ℂ) := by
+    rw [genA_eq_zero_iff hw]
+    constructor
+    · rintro ⟨k, hk⟩; exact ⟨k, by push_cast; rw [← hk]; ring⟩
+    · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; push_cast; ring⟩
+  have hP : (∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))) = 0 ↔
+      ∃ j ∈ Finset.Ioo (-(N : ℤ)) N, z = (compBeta m N j : ℂ) := by
+    rw [Finset.prod_eq_zero_iff]
+    simp [sub_eq_zero]
+  unfold compB
+  rw [mul_eq_zero, hD, hP, hFz, hmemrem]
+  constructor
+  · rintro (⟨⟨k, hk⟩, hnot⟩ | ⟨j, hj, hz⟩)
+    · refine ⟨k, ?_⟩
+      have hk' : ¬ (|k| < N) := by
+        intro hlt
+        exact hnot ⟨k, Finset.mem_Ioo.2 (abs_lt.1 hlt), hk⟩
+      simp only [compBeta, hk', ite_false]
+      rw [hk]
+    · exact ⟨j, hz⟩
+  · rintro ⟨k, hk⟩
+    by_cases hlt : |k| < N
+    · right
+      exact ⟨k, Finset.mem_Ioo.2 (abs_lt.1 hlt), hk⟩
+    · left
+      simp only [compBeta, hlt, ite_false] at hk
+      refine ⟨⟨k, hk⟩, ?_⟩
+      rintro ⟨j, hj, hjz⟩
+      rw [hk] at hjz
+      have := Complex.ofReal_injective hjz
+      have hkj : k = j := multBary_injective hw (by linarith)
+      subst hkj
+      exact hlt (abs_lt.2 (Finset.mem_Ioo.1 hj))
 
 /-- `B(z) = A(z - 1/2) P(z) / Q(z)` off the zeros of `Q`; in particular `B(z) / A(z - 1/2) → 1`
 as `|z| → ∞` away from `ℝ`-neighbourhoods of `Γ + 1/2`. -/
@@ -168,7 +419,12 @@ theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
     compB m N z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) =
       genA m (z - 1 / 2) * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) := by
-  sorry
+  have _ := hN
+  have h := compD_mul_Q hw N z
+  unfold compQ at h
+  unfold compB
+  rw [← h]
+  ring
 
 /-- `|A| ≃ e^U` for `|Im z| ≥ 1` (estimate (3)) and `|A| e^{-U} ≃ dist(z, Γ)` for `|Im z| ≤ 1`
 (estimate (2)), repackaged: for all `z`,
