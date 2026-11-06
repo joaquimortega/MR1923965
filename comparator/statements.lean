@@ -91,11 +91,13 @@ theorem corollary2 (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
   sorry
 
 /-- **Theorem 2 (i)** (p. 801): if `ψ = 0` on `(-∞, 0]`, `ψ'(x) ≥ c/x` for large `x`, and `ψ`
-induces a logarithmically regular partition, then `Λ(ψ)` is sampling for `PW`. -/
+induces a logarithmically regular partition, then `Λ(ψ)` is sampling for `PW`.  The proof needs
+`ψ` to be "sufficiently regular" (p. 790; "the smoothness of `ψ` ensures", p. 802), which the
+statement does not say: we assume `ψ'` eventually nonincreasing (NOTEBOOK N-22). -/
 theorem theorem2_i (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hlow : ∃ c : ℝ, 0 < c ∧ ∃ X : ℝ, ∀ x : ℝ, X ≤ x → c / x ≤ deriv ψ x)
-    (hreg : IsLogRegularPartition ψ) :
+    (hreg : IsLogRegularPartition ψ) (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
     IsSampling (LambdaPsi ψ) := by
   sorry
 
