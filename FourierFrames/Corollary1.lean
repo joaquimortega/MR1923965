@@ -62,7 +62,60 @@ theorem corollary1_strong (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
     (hF : TheoremF) {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
     ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsSeparated (Set.range γ) ∧
       IsCompleteInterpolating (Set.range γ) ∧ ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) := by
-  sorry
+  obtain ⟨E, F, hEHB, hFHB, hEPW, hzero⟩ := theorem1_necessity hPW hC hF hΛ hs
+  have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
+  have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
+  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hEHB hFHB hzero
+  obtain ⟨φE, hφE, hφE'⟩ := exists_isPhaseFunction hEHB.1 hE0
+  obtain ⟨φG, hφG, hφG'⟩ := exists_isPhaseFunction hGHB.1 hG0
+  have hφEm : StrictMono φE :=
+    strictMono_of_hasDerivAt_pos hφE' (fun x ↦ hstrict.phaseDeriv_pos (hE0 x))
+  have hGnn : ∀ x, 0 ≤ phaseDeriv G x := fun x ↦ hGHB.phaseDeriv_nonneg (hG0 x)
+  have hφGm : Monotone φG := monotone_of_hasDerivAt_nonneg hφG' hGnn
+  obtain ⟨α, hα⟩ := exists_not_exceptional hstrict
+  obtain ⟨hT, hB⟩ := HEEqPW.phase_tendsto hPW hE hEHB hEPW hφE hφE'
+  have hφEs : Function.Surjective φE := hφE.1.surjective hT hB
+  obtain ⟨γ, hγm, hγr⟩ := exists_levelSet_enum hφEm hφEs α
+  have hαe : ¬ Exceptional E α := hα
+  have hsepΓ := HEEqPW.levelSet_separated hPW hE hEHB hEPW hφE hαe
+  have hcisΓ := HEEqPW.levelSet_cis hPW hE hEHB hEPW hφE hαe
+  refine ⟨γ, hγm, by rw [hγr]; exact hsepΓ, by rw [hγr]; exact hcisΓ, fun k ↦ ?_⟩
+  -- interlacing
+  have hmem : ∀ k, φE (γ k) ∈ {y | ∃ n : ℤ, y = α + n * Real.pi} := by
+    intro k
+    have : γ k ∈ phaseLevel φE α := hγr ▸ ⟨k, rfl⟩
+    obtain ⟨n, hn⟩ := this
+    exact ⟨n, hn⟩
+  obtain ⟨n, hn⟩ := hmem k
+  obtain ⟨n', hn'⟩ := hmem (k + 1)
+  have hlt : φE (γ k) < φE (γ (k + 1)) := hφEm (hγm (by omega))
+  have hnn : n < n' := by
+    rw [hn, hn'] at hlt
+    have : (n : ℝ) < n' := by nlinarith [Real.pi_pos]
+    exact_mod_cast this
+  have hdiff : φE (γ k) + Real.pi ≤ φE (γ (k + 1)) := by
+    rw [hn, hn']
+    have : (n : ℝ) + 1 ≤ n' := by exact_mod_cast hnn
+    nlinarith [Real.pi_pos]
+  set ψ : ℝ → ℝ := fun x ↦ φE x + φG x with hψ
+  have hψc : Continuous ψ := hφE.1.add hφG.1
+  have hψ1 : ψ (γ k) + Real.pi ≤ ψ (γ (k + 1)) := by
+    have := hφGm (hγm.monotone (show k ≤ k + 1 by omega))
+    simp only [hψ]; linarith
+  obtain ⟨j, hj1, hj2⟩ := exists_mem_Ico_add_int_mul_pi (Real.pi / 2) _ _ hψ1
+  have hivt := intermediate_value_Icc (hγm.monotone (show k ≤ k + 1 by omega)) hψc.continuousOn
+  obtain ⟨x, hx, hxψ⟩ := hivt ⟨hj1, hj2.le⟩
+  have hxlt : x < γ (k + 1) := by
+    rcases lt_or_eq_of_le hx.2 with h | h
+    · exact h
+    · rw [h] at hxψ; linarith
+  refine ⟨x, ?_, hx.1, hxlt⟩
+  have hxm : (x : ℂ) ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φG t) (Real.pi / 2) :=
+    ⟨x, ⟨j, hxψ⟩, rfl⟩
+  have h2 := (zero_set_eq_phaseLevel hstrict hGHB hE0 hG0 hφE hφG (x : ℂ)).mpr hxm
+  obtain ⟨y, hy, hxy⟩ := hGΛ _ h2
+  have : x = y := by exact_mod_cast hxy
+  rwa [this]
 
 /-- **Corollary 1** (p. 798): a separated sampling sequence is "everywhere denser" than some
 complete interpolating sequence `Γ = {γ_k}`: every `[γ_k, γ_{k+1})` contains a point of `Λ`. -/
