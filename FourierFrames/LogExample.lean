@@ -738,7 +738,14 @@ def logW (t : ℝ) : ℝ := OCS.multPrim logDensity t - t
 
 /-- `W` is Lipschitz with `W' = m - 1` a.e. -/
 theorem logW_lipschitz : LipschitzWith 19 logW := by
-  sorry
+  refine LipschitzWith.of_dist_le_mul fun x y ↦ ?_
+  wlog hxy : x ≤ y generalizing x y with H
+  · rw [dist_comm, dist_comm x y]; exact H y x (le_of_not_ge hxy)
+  obtain ⟨h1, h2⟩ := OCS.multPrim_sub_bounds isMultWeight_logDensity hxy
+  rw [Real.dist_eq, Real.dist_eq, abs_sub_comm, abs_of_nonpos (by linarith : x - y ≤ 0), abs_le]
+  unfold logW
+  push_cast
+  constructor <;> nlinarith
 
 /-- `W(t) = -log⁺|t| + ρ(t)` with `|ρ(t)| ≤ C_ρ min(|t|, (1+|t|)^{-1/2})`. -/
 theorem abs_logW_add_posLog_le : ∃ Cρ : ℝ, ∀ t : ℝ,
@@ -751,7 +758,29 @@ def logKappa : ℝ :=
 
 theorem integrable_logKappa :
     Integrable (fun t : ℝ ↦ (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * ((logDensity t - 1) / t)) := by
-  sorry
+  have hmeas : Measurable (fun t : ℝ ↦ (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * ((logDensity t - 1) / t)) :=
+    (measurable_const.sub (measurable_one.indicator measurableSet_Icc)).mul
+      ((measurable_logDensity.sub measurable_const).div measurable_id)
+  refine Integrable.mono' (integrable_inv_one_add_sq.const_mul 2200) hmeas.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun t ↦ ?_)
+  by_cases h : t ∈ Icc (-1 : ℝ) 1
+  · simp [Set.indicator_of_mem h]; positivity
+  · rw [Set.indicator_of_notMem h]
+    have ht : 1 < |t| := by
+      simp only [mem_Icc, not_and_or, not_le] at h
+      rcases h with h | h
+      · rw [abs_of_neg (by linarith)]; linarith
+      · rw [abs_of_pos (by linarith)]; exact h
+    have h1 := abs_logDensity_sub_one_le t
+    have htp : 0 < |t| := by linarith
+    rw [sub_zero, one_mul, Real.norm_eq_abs, abs_div]
+    calc |logDensity t - 1| / |t| ≤ (1100 / (1 + |t|)) / |t| := by gcongr
+      _ ≤ 2200 * (1 + t ^ 2)⁻¹ := by
+        have e : 2200 * (1 + t ^ 2)⁻¹ = 2200 / (1 + t ^ 2) := by ring
+        rw [div_div, e, div_le_div_iff₀ (by positivity) (by positivity)]
+        have : t ^ 2 = |t| ^ 2 := (sq_abs t).symm
+        rw [this]
+        nlinarith [sq_nonneg (|t| - 1)]
 
 /-- The model computation: for `m ≡ 1`, `U(z) = π |Im z|`. -/
 theorem multU_model {z : ℂ} (hz : 0 < z.im) :
@@ -773,7 +802,22 @@ def logKernel (z : ℂ) (t : ℝ) : ℝ := (t - z.re) / ((t - z.re) ^ 2 + z.im ^
 
 theorem abs_logKernel_le {z : ℂ} (hz : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
     |logKernel z t| ≤ ‖z‖ / (|t| * ‖(t : ℂ) - z‖) := by
-  sorry
+  have htz : (t : ℂ) - z ≠ 0 := by
+    intro h
+    have := congrArg Complex.im h
+    simp at this; linarith
+  have ht' : (t : ℂ) ≠ 0 := by exact_mod_cast ht
+  have e1 : (1 / ((t : ℂ) - z)).re = (t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2) := by
+    rw [one_div, Complex.inv_re, Complex.normSq_apply]; simp; ring_nf
+  have e2 : (1 / (t : ℂ)).re = 1 / t := by
+    simp
+  have e3 : logKernel z t = (z / ((t : ℂ) * ((t : ℂ) - z))).re := by
+    have : z / ((t : ℂ) * ((t : ℂ) - z)) = 1 / ((t : ℂ) - z) - 1 / (t : ℂ) := by
+      field_simp; ring
+    rw [this, Complex.sub_re, e1, e2]; rfl
+  rw [e3]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  rw [norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs]
 
 /-- Integration by parts: `V(z) = -∫ W(t) K_z(t) dt`. -/
 theorem integral_log_mul_sub_one_eq {z : ℂ} (hz : 0 < z.im) :
