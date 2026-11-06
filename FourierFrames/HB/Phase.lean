@@ -1,4 +1,5 @@
 import FourierFrames.HB.Basic
+import FourierFrames.HB.Hopf
 
 /-!
 # M02 — Phase functions of `E ∈ \overline{HB}`
@@ -211,16 +212,135 @@ theorem IsPhaseFunction.re_eq {E : ℂ → ℂ} {φ : ℝ → ℝ} (hφ : IsPhas
 
 /-! ## Sign of the phase derivative -/
 
+/-- The derivative of `Θ = E^*/E` at a real point: `Θ'(x) = 2 i φ'(x) · (conj a / a)`, `a = E x`. -/
+theorem hasDerivAt_fstar_div {E : ℂ → ℂ} (hE : Differentiable ℂ E) {x : ℝ} (hx : E x ≠ 0) :
+    HasDerivAt (fun z ↦ fstar E z / E z)
+      (2 * I * (phaseDeriv E x : ℂ) * (conj (E x) / E x)) (x : ℂ) := by
+  have h1 : HasDerivAt (fstar E) (conj (deriv E (x : ℂ))) (x : ℂ) := by
+    have := (Differentiable.fstar hE (x : ℂ)).hasDerivAt
+    rwa [deriv_fstar_ofReal] at this
+  have h2 := (h1.div (hE (x : ℂ)).hasDerivAt hx)
+  refine h2.congr_deriv ?_
+  set b := deriv E (x : ℂ) with hb
+  set a := E (x : ℂ) with ha
+  have hq : b = (b / a) * a := by field_simp
+  set q := b / a with hqdef
+  have hρ : (phaseDeriv E x : ℂ) = -(q.im : ℂ) := by simp [phaseDeriv, hqdef, hb, ha]
+  have hcq : conj q - q = -(2 * (q.im : ℂ)) * I := by
+    apply Complex.ext
+    · simp
+    · simp; ring
+  rw [hρ, fstar_ofReal]
+  rw [hq, map_mul]
+  have hconj : conj q = q + (-(2 * (q.im : ℂ)) * I) := by rw [← hcq]; ring
+  rw [hconj]
+  field_simp
+  ring
+
+/-- Unimodular value of `Θ` on the real axis. -/
+theorem norm_conj_div {a : ℂ} (ha : a ≠ 0) : ‖conj a / a‖ = 1 := by
+  rw [norm_div, Complex.norm_conj, div_self (norm_ne_zero_iff.mpr ha)]
+
+/-- **Key dichotomy** at a real point `x`: either `E^* = c E` near `x` (and then `φ'(x) = 0`) or
+`φ'(x) > 0`. -/
+theorem IsHB.phaseDeriv_pos_or_eventuallyEq {E : ℂ → ℂ} (hE : IsHB E) {x : ℝ} (hx : E x ≠ 0) :
+    (∀ᶠ z in 𝓝 (x : ℂ), fstar E z = (conj (E x) / E x) * E z) ∨ 0 < phaseDeriv E x := by
+  by_cases hev : ∀ᶠ z in 𝓝 (x : ℂ), fstar E z = (conj (E x) / E x) * E z
+  · exact Or.inl hev
+  right
+  set c : ℂ := conj (E x) / E x with hc
+  have hcn : ‖c‖ = 1 := norm_conj_div hx
+  have hc0 : c ≠ 0 := by intro h; rw [h] at hcn; simp at hcn
+  have hEa : AnalyticAt ℂ E x := hE.1.analyticAt _
+  have hfa : AnalyticAt ℂ (fstar E) x := (Differentiable.fstar hE.1).analyticAt _
+  have hΘa : AnalyticAt ℂ (fun z ↦ fstar E z / E z) x := hfa.div hEa hx
+  have hfa' : AnalyticAt ℂ (fun z ↦ fstar E z / E z - c) x := hΘa.sub analyticAt_const
+  have hnev : ¬ ∀ᶠ z in 𝓝 (x : ℂ), fstar E z / E z - c = 0 := by
+    intro h
+    apply hev
+    have hEne : ∀ᶠ z in 𝓝 (x : ℂ), E z ≠ 0 := hEa.continuousAt.eventually_ne hx
+    filter_upwards [h, hEne] with z hz hEz
+    rw [sub_eq_zero, div_eq_iff hEz] at hz
+    exact hz
+  obtain ⟨n, g, hga, hg0, hfg⟩ := (AnalyticAt.exists_eventuallyEq_pow_smul_nonzero_iff hfa').mpr hnev
+  have hfx : fstar E x / E x - c = 0 := by
+    rw [fstar_ofReal]; simp [hc]
+  have hn : 1 ≤ n := by
+    by_contra h
+    have : n = 0 := by omega
+    subst this
+    have := hfg.self_of_nhds
+    simp only [pow_zero, one_smul] at this
+    rw [hfx] at this
+    exact hg0 this.symm
+  have hle : ∀ z : ℂ, 0 < z.im → ‖fstar E z / E z‖ ≤ 1 := by
+    intro z hz
+    rw [norm_div, div_le_one (norm_pos_iff.mpr (hE.2.1 z hz))]
+    exact hE.norm_fstar_le hz
+  obtain ⟨hn1, -, him⟩ := hopf_boundary hcn hn hga.continuousAt hg0
+    (hfg.mono fun z hz ↦ by
+      rw [smul_eq_mul] at hz
+      linear_combination hz) hle
+  subst hn1
+  have hd1 : HasDerivAt (fun z ↦ fstar E z / E z - c) (g x) (x : ℂ) := by
+    have : HasDerivAt (fun z : ℂ ↦ (z - x) ^ 1 * g z) (g x) (x : ℂ) := by
+      have h1 : HasDerivAt (fun z : ℂ ↦ (z - x) ^ 1) 1 (x : ℂ) := by
+        simpa using (hasDerivAt_id (x : ℂ)).sub_const (x : ℂ)
+      have := h1.fun_mul hga.differentiableAt.hasDerivAt
+      simpa using this
+    refine this.congr_of_eventuallyEq ?_
+    filter_upwards [hfg] with z hz
+    rw [smul_eq_mul] at hz; exact hz
+  have hd2 := (hasDerivAt_fstar_div hE.1 hx).sub_const c
+  have := hd1.unique hd2
+  have h3 : g x / c = 2 * I * (phaseDeriv E x : ℂ) := by
+    have hcx : conj (E x) ≠ 0 := by simpa using hx
+    rw [this]; simp only [hc]; field_simp
+  rw [h3] at him
+  simpa using him
+
+/-- If `E^* = c E` near a real point, then the global identity holds (identity theorem). -/
+theorem fstar_eq_of_eventuallyEq {E : ℂ → ℂ} (hE : Differentiable ℂ E) {c : ℂ} {x : ℝ}
+    (h : ∀ᶠ z in 𝓝 (x : ℂ), fstar E z = c * E z) : ∀ z, fstar E z = c * E z := by
+  have hana : AnalyticOnNhd ℂ (fun z ↦ fstar E z - c * E z) univ :=
+    fun z _ ↦ ((Differentiable.fstar hE).sub (hE.const_mul c)).analyticAt z
+  intro z
+  have := hana.eqOn_zero_of_preconnected_of_eventuallyEq_zero isPreconnected_univ
+    (mem_univ (x : ℂ)) (h.mono fun w hw ↦ by simp only [Pi.zero_apply]; rw [hw, sub_self])
+    (mem_univ z)
+  simpa [sub_eq_zero] using this
+
 /-- **`φ_F' ≥ 0`** for `F ∈ \overline{HB}` (the non-strict class) at real points where `F ≠ 0`. -/
 theorem IsHB.phaseDeriv_nonneg {F : ℂ → ℂ} (hF : IsHB F) {x : ℝ} (hx : F x ≠ 0) :
     0 ≤ phaseDeriv F x := by
-  sorry
+  rcases hF.phaseDeriv_pos_or_eventuallyEq hx with h | h
+  · have hd1 := hasDerivAt_fstar_div hF.1 hx
+    have hd2 : HasDerivAt (fun z ↦ fstar F z / F z) 0 (x : ℂ) := by
+      refine (hasDerivAt_const (x : ℂ) (conj (F x) / F x)).congr_of_eventuallyEq ?_
+      have hFne : ∀ᶠ z in 𝓝 (x : ℂ), F z ≠ 0 := (hF.1.continuous.continuousAt).eventually_ne hx
+      filter_upwards [h, hFne] with z hz hFz
+      rw [hz]; field_simp
+    have := hd1.unique hd2
+    have hc : conj (F x) / F x ≠ 0 := div_ne_zero (by simpa using hx) hx
+    have h2 : (phaseDeriv F x : ℂ) = 0 := by
+      simpa [hc] using this
+    have : phaseDeriv F x = 0 := by exact_mod_cast h2
+    exact this.ge
+  · exact h.le
 
 /-- **`φ_E' > 0`** if `E ∈ \overline{HB}` is strict at a single point of `Im z > 0`
 (i.e. `E^*/E` is not constant). -/
 theorem IsHB.phaseDeriv_pos_of_exists_lt {E : ℂ → ℂ} (hE : IsHB E) {x : ℝ} (hx : E x ≠ 0)
     (h : ∃ z : ℂ, 0 < z.im ∧ ‖E (conj z)‖ < ‖E z‖) : 0 < phaseDeriv E x := by
-  sorry
+  rcases hE.phaseDeriv_pos_or_eventuallyEq hx with h' | h'
+  · exfalso
+    obtain ⟨z, hz, hlt⟩ := h
+    have hall := fstar_eq_of_eventuallyEq hE.1 h'
+    have := hall z
+    have h2 : ‖fstar E z‖ = ‖E (conj z)‖ := norm_fstar E z
+    rw [← h2, this, norm_mul, norm_conj_div hx, one_mul] at hlt
+    exact lt_irrefl _ hlt
+  · exact h'
 
 theorem IsStrictHB.phaseDeriv_pos {E : ℂ → ℂ} (hE : IsStrictHB E) {x : ℝ} (hx : E x ≠ 0) :
     0 < phaseDeriv E x := by
