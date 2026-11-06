@@ -1055,7 +1055,17 @@ theorem multU_model {z : ℂ} (hz : 0 < z.im) :
 
 theorem integrable_log_mul_sub_one {z : ℂ} (hz : 0 < z.im) :
     Integrable (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * (logDensity t - 1)) := by
-  sorry
+  have _ := hz  -- (the hypothesis is not needed; the statement holds for all `z`)
+  have h1 := OCS.integrable_multUIntegrand isMultWeight_logDensity z
+  have h2 : Integrable (OCS.multUIntegrand (fun _ ↦ 1) z) :=
+    OCS.integrable_multUIntegrand (a := 1) (b := 1)
+      ⟨measurable_const, one_pos, fun _ ↦ le_rfl, fun _ ↦ le_rfl⟩ z
+  have h3 := integrable_logKappa.const_mul z.re
+  refine ((h1.sub h2).sub h3).congr (Filter.Eventually.of_forall fun t ↦ ?_)
+  simp only [Pi.sub_apply]
+  unfold OCS.multUIntegrand
+  rw [Complex.div_ofReal_re]
+  ring
 
 /-- `U(z) = π Im z + κ Re z + V(z)` for `Im z > 0`, `V(z) = ∫ log|1 - z/t| (m(t) - 1) dt`. -/
 theorem multU_logDensity_eq {z : ℂ} (hz : 0 < z.im) :
