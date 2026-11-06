@@ -66,7 +66,7 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M04 | `Theorem1/Sufficiency.lean` | 19 | 11 | `HB/DeBranges`, `PW/PlancherelPolya` | — |
 | M05 | `Landau.lean` | 6 | 6 | `Corollary1` | — |
 | M06 | `LogExample.lean` | 67 | 54 | `Construction`, `HB/Comparable`, `Theorem1/Sufficiency` | — |
-| M07 | `Construction.lean` | 41 | 30 | `HB/Phase` | `OrtegaCerdaSeip.Lemma3.Main` |
+| M07 | `Construction.lean` | 44 | 32 | `HB/Phase` | `OrtegaCerdaSeip.Lemma3.Main` |
 | M07 | `Corollary2.lean` | 25 | 23 | `Construction`, `Perturbation`, `Theorem1/Sufficiency`, `HB/Comparable` | — |
 | M07 | `Perturbation.lean` | 7 | 7 | `PW/PlancherelPolya`, `PW/Complete` | — |
 | M08 | `Theorem2i.lean` | 59 | 44 | `Corollary2` | `OrtegaCerdaSeip.Products.Canonical` |
@@ -85,12 +85,12 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M04 | Theorem 1 sufficiency, Corollary 1 | 3 | 31 | 19 | M03 |
 | M05 | Landau's inequality | 1 | 6 | 6 | M04 |
 | M06 | Logarithmic example | 1 | 67 | 54 | M07 |
-| M07 | Construction, perturbation, Corollary 2 | 3 | 73 | 60 | M04 |
+| M07 | Construction, perturbation, Corollary 2 | 3 | 76 | 62 | M04 |
 | M08 | Theorem 2 (i) | 1 | 59 | 44 | M07 |
 | M09 | Theorem 2 (ii) (+ uniform Lemma 3 estimate) | 2 | 28 | 20 | M00 |
 | M10 | Fourier frames | 1 | 4 | 3 | M01 |
 
-Total: 23 files, 488 declarations, 340 `sorry`.
+Total: 23 files, 491 declarations, 342 `sorry`.
 
 ### Module dependency graph (transitive reduction)
 
@@ -159,7 +159,7 @@ were identical in all copies (e.g. `IsHB.mul`, `exists_isPhaseFunction`, `pw_nor
 | `Theorem1/Sufficiency.lean`, `Corollary1.lean` | `IsStrictHB.mul_isHB` | `(hE : IsStrictHB E) (hF : IsHB F) : IsStrictHB (fun z ↦ E z * F z)` | not in M02 | **added** to `HB/Basic.lean` (see below) |
 | `Theorem1/Necessity.lean` | `MemPW.eq_zero_of_pwNormSq_eq_zero` ("candidate M01 addition") | `(hf : MemPW f) (h : pwNormSq f = 0) : f = 0` | not in M01 | **added** to `PW/Basic.lean` (see below) |
 | `Theorem1/Necessity.lean`, `Perturbation.lean` | `IsSeparated.finite_inter_Icc` | declared in both (`r` / `R`), `Λ ∩ Icc (-R) R` finite | — | **moved** to `PW/Basic.lean`, statement unchanged |
-| `LogExample.lean` | `exists_hb_of_density` (the README §4 version, with phase clause, `E` normalised by `|E| ≃ e^{U}`) | `∃ E, IsHB E ∧ ... ∧ ∃ φ, IsPhaseFunction E φ ∧ ∃ c₀, φ - π M → c₀` for every `m → 1` | `Construction.lean`: `exists_hb_of_density` has no phase clause and needs `hshift`; `exists_hb_of_density_phase` has the phase clause under `hU` | the README version is not provable (blueprint M07 §0.2). M06 uses `exists_hb_of_density_phase` with `hU` generalised to a linear drift `κ` (task item 3, below); its conclusion gives `|E| ≃ e^{π Im z}` directly, so M06's `isHB_exp_neg_mul` was deleted (unused) |
+| `LogExample.lean` | `exists_hb_of_density` (the README §4 version, with phase clause, `E` normalised by `|E| ≃ e^{U}`) | `∃ E, IsHB E ∧ ... ∧ ∃ φ, IsPhaseFunction E φ ∧ ∃ c₀, φ - π M → c₀` for every `m → 1` | `Construction.lean`: `exists_hb_of_density` has no phase clause and needs `hshift`; `exists_hb_of_density_phase` has the phase clause under `hU` | the README version is not provable (blueprint M07 §0.2). M06 uses XX |
 | `LogExample.lean` | `IsPhaseFunction.hasDerivAt` | `{E} {φ} (hE) (h0) (hφ) (x)` | `HB/Phase`: `{E} (hE) (h0) {φ} (hφ) (x)` | same explicit arguments in the same order (only the position of the implicit `{φ}` differs); consumer adapts |
 | `Theorem2ii.lean` | `lemma3_estimate_uniform` | uniform-in-`m` version of `OCS.multF_estimate_two` | no owner | **new file** `FourierFrames/Lemma3Uniform.lean` (see below) |
 
@@ -182,21 +182,35 @@ Rows with no difference besides naming (`FF.fstar` vs `fstar`, `⊤` vs `∞`, `
 
 ## Suspected false statements
 
-None found among the reconciled declarations. Points to watch (not errors):
+Found and fixed during assembly (referee R4 and the advisor review):
+- **README §4 `exists_hb_of_density` with phase clause** (also M06's temporary copy in `LogExample.lean`):
+  false for M06's density (`κ ≈ -1.35 ≠ 0`) and for general `m → 1`; replaced by
+  `exists_hb_of_density` (no phase clause, `hshift`) and `exists_hb_of_density_phase` (drifted `hU`).
+  No false statement of this kind remains in the project.
+- **First generalisation attempt** (`E = e^{-κ z}·compE`): its phase asymptotics are false for `κ ≠ 0`
+  (amplitude ratio `e^{-κ/2}` of `A` and `B`). The correct function is
+  `E_κ = e^{-κ z}(A - i e^{κ/2} B)` (`compEκ`); `phase_rigidity` and `phase_levels` are stated for it.
+
+No other suspected false statement among the reconciled declarations. Points to watch:
 - the owner statements of `MemHE.mul_isHB`, `heNormSq_mul`, `HEEqPW.isStrictHB`,
   `HEEqPW.ne_zero_ofReal` and `memHE_sAlpha_unique` are *stronger* than what the consumers
-  declared; I re-derived the first and last on paper (above) but the proofs of M02 should keep
-  these hypotheses honest;
-- `blueprint/M04_Sufficiency.md` refers to `exists_HB_of_sampling`, which does not exist (use
-  `exists_E`).
+  declared; I re-derived the first and last on paper (above);
+- `blueprint/M04_Sufficiency.md` refers to `exists_HB_of_sampling`, which does not exist (use `exists_E`);
+- `Suff.SepBy` (`Sufficiency.lean`) duplicates `IsSepBy` (`PW/Basic.lean`) under another name (left
+  as is, it appears in M04 statements under review);
+- `lake build OrtegaCerdaSeip` fails (no root file `OrtegaCerdaSeip.lean`; pre-existing lakefile
+  issue, the default target `lake build` is fine).
 
 ## M07/M06 construction interface (task item 3)
 
-`exists_hb_of_density_phase` (`Construction.lean`) now assumes
-`hU : ∃ κ C : ℝ, ∀ z, 0 ≤ z.im → |OCS.multU m 0 z - π z.im - κ z.re| ≤ C` and concludes the same as
-before for `E = e^{-κ z} E₀` (`E₀ = A - iB`): `IsHB E`, no real zeros, `|E| ≃ e^{π Im z}` on
-`Im z ≥ 0`, zero set of `E + E^*` equal to `Γ`, and a strictly increasing phase `φ` with
-`φ - π M → c₀`. The internal lemmas `norm_genA_comparable_of_hU`, `genA_translate_limit`,
-`phase_rigidity`, `phase_levels` take `{κ : ℝ}` and the drifted `hU`; `genA_translate_limit` now
-states `e^{-κ s_k} A(· + s_k) → c e^{κ z} sin π(z - θ)`. `exists_hb_of_density` (no phase clause)
-is unchanged: `hshift` follows from the drifted `hU` with constant `2C + |κ|/2`.
+`exists_hb_of_density_phase` (`Construction.lean`) assumes
+`hU : ∃ κ C, ∀ z, 0 ≤ z.im → |OCS.multU m 0 z - π z.im - κ z.re| ≤ C`, and returns
+`E = compEκ m κ N = e^{-κ z}(A - i e^{κ/2} B)`: `IsHB E`, no real zeros, `|E| ≃ e^{π Im z}`,
+`E + E^* = 2 e^{-κ z} A` with zero set `Γ`, a strictly increasing phase `φ` with
+`HasDerivAt φ (phaseDeriv E x) x` and `φ - π M → c₀`. New helper lemmas `isHB_compEκ`,
+`compEκ_add_fstar`. The internal lemmas `norm_genA_comparable_of_hU`, `genA_translate_limit`
+(`e^{-κ s_k} A(· + s_k) → c e^{κ z} sin π(z - θ)`), `phase_rigidity`, `phase_levels` take `{κ}`
+and the drifted `hU` (the last two for `compEκ m κ N`). `exists_hb_of_density` (no phase clause)
+is unchanged; `hshift` follows from the drifted `hU` with constant `2C + |κ|/2`, so M06 could also
+use that theorem alone (M06 does not use the phase clause); it uses the phase version with
+`κ = logKappa`.

@@ -130,6 +130,13 @@ def compB (N : ℕ) (z : ℂ) : ℂ :=
 def compE (N : ℕ) (z : ℂ) : ℂ :=
   genA m z - Complex.I * compB m N z
 
+/-- The drift-normalised `E_κ = e^{-κ z}(A - i e^{κ/2} B) = A_κ - i B_κ` with `A_κ = e^{-κ z} A`,
+`B_κ = A_κ(· - 1/2) P/Q`.  (`e^{-κ z} E` alone is *not* right for the phase when `κ ≠ 0`: `A` and
+`B = A(· - 1/2) P/Q` have amplitude ratio `e^{-κ/2}`, so the phase of `e^{-κ z}(A - iB)` does not
+satisfy `φ - π M → c₀`.) -/
+def compEκ (κ : ℝ) (N : ℕ) (z : ℂ) : ℂ :=
+  Complex.exp (-((κ : ℂ) * z)) * (genA m z - Complex.I * Real.exp (κ / 2) * compB m N z)
+
 end Companion
 
 section CompanionLemmas
@@ -254,6 +261,19 @@ theorem isHB_compE (hw : OCS.IsMultWeight m a b) {N : ℕ}
     IsHB (compE m N) := by
   sorry
 
+/-- `E_κ = e^{-κ z}(A - i e^{κ/2} B) ∈ \overline{HB}`: `A - i λ B ∈ \overline{HB}` for every `λ > 0`
+(the proof of `isHB_compE` gives this, via `isHB_polyA_sub_polyB` for any positive multiplier),
+and `e^{-κ z}` is a real entire factor (`isHB_cexp_real_linear`, `IsHB.mul`). -/
+theorem isHB_compEκ (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (κ : ℝ) :
+    IsHB (compEκ m κ N) := by
+  sorry
+
+/-- `E_κ + E_κ^* = 2 e^{-κ z} A`. -/
+theorem compEκ_add_fstar (hw : OCS.IsMultWeight m a b) (κ : ℝ) (N : ℕ) (z : ℂ) :
+    compEκ m κ N z + fstar (compEκ m κ N) z = 2 * Complex.exp (-((κ : ℂ) * z)) * genA m z := by
+  sorry
+
 /-- `|E(z̄)|² - ...`: `E^* = A + i B`, hence `E + E^* = 2A`. -/
 theorem fstar_compE (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     fstar (compE m N) z = genA m z + Complex.I * compB m N z := by
@@ -319,13 +339,13 @@ theorem genA_translate_limit (hw : OCS.IsMultWeight m a b)
         (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
   sorry
 
-/-- **Local phase rigidity**: for a phase function `φ` of `E = compE m N`,
+/-- **Local phase rigidity**: for a phase function `φ` of `E_κ = compEκ m κ N`,
 `φ(s + τ) - φ(s) - π τ → 0` uniformly in `|τ| ≤ 2` as `|s| → ∞`. -/
 theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
-    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
+    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
   sorry
@@ -336,17 +356,19 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
-    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
+    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     StrictMono φ ∧ ∃ k₀ : ℤ, ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀) := by
   sorry
 
 /-- **The phase construction with phase asymptotics** (generalised at assembly to a linear drift
 `κ`).  If `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` (`κ ≠ 0` is the generic case, e.g. for the
-example of p. 798), the function `E₀ = A - i B` of `exists_hb_of_density` has `|E₀| ≃ e^{U}`, and
-`E = e^{-κ z} E₀` (real entire factor, so `E ∈ \overline{HB}` and `E + E^* = e^{-κ z} (E₀ + E₀^*)`
-has the same zero set `Γ`) satisfies `|E| ≃ e^{π Im z}`.  The phase of `E` on `ℝ` is that of `E₀`
-(the factor `e^{-κ x}` is positive), and the phase asymptotics are proved from the translates
-`e^{-κ s} A(· + s) → c e^{κ z} sin π(z - θ)` (`genA_translate_limit`). -/
+example of p. 798), take `E = compEκ m κ N = e^{-κ z}(A - i e^{κ/2} B)` (the factor `e^{κ/2}`
+compensates the amplitude ratio `e^{-κ/2}` of `A` and `B = A(· - 1/2) P/Q`; the plain twist
+`e^{-κ z}(A - iB)` has the right modulus but not the right phase).  `E_κ + E_κ^* = 2 e^{-κ z} A` has
+zero set `Γ`, `|E_κ| ≃ e^{π Im z}`, `E_κ ∈ \overline{HB}`, and the phase `φ` (with
+`φ' = phaseDeriv E`, needed for the separation step of Corollary 2) satisfies `φ - π M → c₀`.  The
+proof runs through the translates `e^{-κ s} A(· + s) → c e^{κ z} sin π(z - θ)`
+(`genA_translate_limit`) and `E_κ(x + s) → i c e^{-iπ(x - θ)}`-type limits (`phase_rigidity`). -/
 theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a ≤ m t)
     (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
     (hU : ∃ κ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
@@ -355,7 +377,8 @@ theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ 
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
-      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ StrictMono φ ∧ ∃ c₀ : ℝ,
+      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ (∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) ∧
+        StrictMono φ ∧ ∃ c₀ : ℝ,
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀) := by
   sorry
 

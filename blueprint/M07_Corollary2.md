@@ -62,14 +62,20 @@ The proof of Corollary 2 on pp. 800–801 is a sketch with five real gaps. All a
    e^{-κ Re z}`). Concretely: (i) 2.1 under `hU` gives `|A| ≃ e^{π|Im z| + κ Re z} min(1, dist(z, Γ))`;
    (ii) the translates `e^{-κ s_k} A(· + s_k) = A_κ(· + s_k) e^{κ z}` lie in `𝓑_π` with a uniform bound,
    and the normal-family/Liouville argument of 2.7 (a) yields the limits `c e^{κ z} sin π(z - θ)`
-   (`c ≠ 0` real); (iii) `E₀ = A - iB = e^{κ z}(A_κ - i e^{κ/2}·B_κ)` with `B_κ = A_κ(· - 1/2) P/Q`, so
-   `E₀ e^{-κ z}` is the corresponding `A_κ - i c B_κ` (`c = e^{κ/2} > 0` does not affect interlacing),
-   hence `E := e^{-κ z} E₀` is in `\overline{HB}` (`IsHB.mul`, `isHB_cexp_real_linear`), has no real
-   zeros, `|E| ≃ e^{U - κ Re z} ≃ e^{π Im z}`, and `E + E^* = e^{-κ z}(E₀ + E₀^*) = 2 e^{-κ z} A` has zero
-   set `Γ`. (iv) The factor `e^{-κ x}` is positive on `ℝ`, so `E` and `E₀` have the same phase
-   functions, and the phase rigidity / phase level / asymptotics arguments of 2.7 (b)-(d) run
-   verbatim with the limits `E(x + s_k) e^{-κ s_k} → i c e^{κ x} e^{-iπ(x - θ)}` (a nonvanishing function
-   whose phase is unaffected by `e^{κ x}`). For `exists_hb_of_density` (no phase clause) `hshift`
+   (`c ≠ 0` real); (iii) **`B` must be rescaled.** With `A_κ = e^{-κ z} A` and `B_κ(z) = A_κ(z - 1/2) P/Q`, one has
+   `e^{-κ z} B = e^{-κ/2} B_κ`, so the plain twist `e^{-κ z}(A - iB) = A_κ - i e^{-κ/2} B_κ` has the
+   right modulus but its translates tend to `c[sin π(x-θ) + i e^{-κ/2} cos π(x-θ)]`, whose phase is
+   *not* `-πx + const` (for `λ ≠ 1`, `arg(sin πu + iλ cos πu) + πu` is non-constant and 1-periodic):
+   the phase rigidity (2.7 (b)) fails. The right function is
+   `E_κ := A_κ - i B_κ = e^{-κ z}(A - i e^{κ/2} B)` (`compEκ`). It is in `\overline{HB}`: `A - iλB ∈
+   \overline{HB}` for every `λ > 0` (the proof of `isHB_compE` via `isHB_polyA_sub_polyB`, which already
+   allows an arbitrary positive multiplier), and `e^{-κ z}` is a real entire factor (`IsHB.mul`,
+   `isHB_cexp_real_linear`). It has no real zeros, `|E_κ| ≃ e^{U - κ Re z} ≃ e^{π Im z}`, and
+   `E_κ + E_κ^* = 2 e^{-κ z} A` has zero set `Γ`. (iv) `e^{-κ x} > 0` on `ℝ`, and
+   `E_κ(x + s_k) → c[sin π(x-θ) + i cos π(x-θ)] = i c e^{-iπ(x-θ)}`, so 2.7 (b)-(d) run verbatim
+   for `E_κ` (`phase_rigidity`, `phase_levels` are stated for `compEκ m κ N`; for `κ = 0` they are the
+   statements for `compE`). The theorem also returns `HasDerivAt φ (phaseDeriv E x) x` for all `x`
+   (`exists_isPhaseFunction`), which Corollary 2's separation step uses. For `exists_hb_of_density` (no phase clause) `hshift`
    follows from the drifted `hU` with the constant `2C + |κ|/2`.
 3. **"We may assume `ω' ≃ 1`" is the delicate step** (it conceals the potential identity of §3.2 and
    a *moment condition*). `ω' = 1 + ψ' - φ_f'/π` is continuous and `→ 1`, but may be `≤ 0` on a
@@ -642,7 +648,7 @@ theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
-    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
+    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
 ```
@@ -672,7 +678,7 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
-    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
+    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     StrictMono φ ∧ ∃ k₀ : ℤ, ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀) := by
 ```
 
@@ -706,15 +712,15 @@ theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ 
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
-      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ StrictMono φ ∧ ∃ c₀ : ℝ,
+      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ (∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) ∧
+        StrictMono φ ∧ ∃ c₀ : ℝ,
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀) := by
 ```
 
-*Proof.* `exists_hb_of_density` (`hshift` follows from `hU` with the constant `2C + |κ|/2`) gives
-`E₀ = compE m N` with `c e^{U} ≤ |E₀| ≤ C e^{U}`. Put `E := e^{-κ z} E₀`: `E ∈ \overline{HB}` (`IsHB.mul` with
-`isHB_cexp_real_linear`), `E(x) ≠ 0`, `E + E^* = e^{-κ z}(E₀ + E₀^*)` has zero set `Γ`, and
-`|E| = e^{-κ Re z}|E₀| ≃ e^{U - κ Re z} ≃ e^{π Im z}` by `hU`. A phase function of `E` is one of `E₀`
-(`e^{-κ x} > 0`), so the phase statements (b)-(d) for `E₀` apply to `E`; it exists (`exists_isPhaseFunction`), is strictly increasing by (c), and `φ - πM → c₀` by (d). ∎
+*Proof.* Take `E = compEκ m κ N` (`isHB_compEκ`): `E(x) ≠ 0`, `|E| ≃ e^{U - κ Re z} ≃ e^{π Im z}`
+by 2.1-2.6 for `A_κ, B_κ` and `hU`; `E + E^* = 2 e^{-κ z} A` has zero set `Γ` (`compEκ_add_fstar`). A phase
+function with `φ' = phaseDeriv E` exists (`exists_isPhaseFunction`), is strictly increasing by (c), and
+`φ - πM → c₀` by (d) applied to `E_κ`.
 
 ---------------------------------------------------------------------------------------------------
 

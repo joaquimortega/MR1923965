@@ -207,8 +207,10 @@ theorem exists_hb_of_density {m : ℝ → ℝ} {a b : ℝ} (hm : Measurable m) (
 
 /-- With phase asymptotics.  `hU`: `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` for some real `κ`
 (`κ ≠ 0` in general, e.g. the example of p. 798).  The linear drift is absorbed by the real
-entire factor `e^{-κ z}` (it preserves `\overline{HB}`, the zero set of `E + E^*` and the phase on
-`ℝ`), so the conclusion is the normalised one: `|E| ≃ e^{π Im z}`. -/
+entire factor `e^{-κ z}` *together with the rescaling `B ↦ e^{κ/2} B`*: `E = e^{-κ z}(A - i e^{κ/2} B)`
+(the plain twist `e^{-κ z}(A - iB)` has the right modulus but not the right phase, since `A` and
+`B = A(· - 1/2) P/Q` have amplitude ratio `e^{-κ/2}`).  Conclusion: `|E| ≃ e^{π Im z}`,
+`E + E^* = 2 e^{-κ z} A`, phase with `φ' = phaseDeriv E` and `φ - π M → c₀`. -/
 theorem exists_hb_of_density_phase {m : ℝ → ℝ} {a b : ℝ} (hm : Measurable m) (ha : 0 < a)
     (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
     (hU : ∃ κ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
@@ -217,7 +219,8 @@ theorem exists_hb_of_density_phase {m : ℝ → ℝ} {a b : ℝ} (hm : Measurabl
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
-      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ StrictMono φ ∧ ∃ c₀ : ℝ,
+      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ (∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) ∧
+        StrictMono φ ∧ ∃ c₀ : ℝ,
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀)
 ```
 M06 uses `exists_hb_of_density_phase` with `κ = logKappa`; M07's Corollary 2 uses it with the density
