@@ -1808,9 +1808,6 @@ theorem phaseLevel_eq_of_zero_set {E : ℂ → ℂ} {φ : ℝ → ℝ} {Γ : Set
   · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
   · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
 
-theorem enorm_sq_eq_ofReal (z : ℂ) : ‖z‖ₑ ^ 2 = ENNReal.ofReal (‖z‖ ^ 2) := by
-  rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
-
 theorem norm_sAlpha_eq (E : ℂ → ℂ) (x : ℝ) :
     ‖Complex.exp (Complex.I * ((Real.pi / 2 : ℝ) : ℂ)) * E x -
       Complex.exp (-(Complex.I * ((Real.pi / 2 : ℝ) : ℂ))) * fstar E x‖ = 2 * |(E x).re| := by
