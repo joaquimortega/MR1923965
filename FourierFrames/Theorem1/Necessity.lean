@@ -126,6 +126,21 @@ theorem IsSeparated.summable_inv_one_add_sq {Λ : Set ℝ} (h : IsSeparated Λ) 
   obtain ⟨δ, hδ, hsep⟩ := h
   exact IsSeparated.summable_inv_one_add_sq' hδ hsep
 
+/-- Off a finite set, the points of a separated `Λ` have `|λ| ≥ r`. -/
+theorem IsSeparated.eventually_le_abs {Λ : Set ℝ} (h : IsSeparated Λ) (r : ℝ) :
+    ∀ᶠ x : Λ in cofinite, r ≤ |(x : ℝ)| := by
+  rw [Filter.eventually_cofinite]
+  have hfin := h.finite_inter_Icc (|r|)
+  refine (hfin.preimage Subtype.val_injective.injOn).subset fun x hx ↦ ?_
+  simp only [mem_setOf_eq, not_le] at hx
+  simp only [mem_preimage, mem_inter_iff, mem_Icc]
+  refine ⟨x.2, ?_, ?_⟩
+  · have := neg_abs_le r
+    have := abs_lt.1 hx
+    linarith [le_abs_self r, this.1]
+  · have := abs_lt.1 hx
+    linarith [le_abs_self r]
+
 /-! ## 2. The sampling Hilbert space -/
 
 /-- The vector space `PW` as a submodule of `ℂ → ℂ`. -/
@@ -324,8 +339,8 @@ theorem exists_samplingHilbertSpace (hPW : PaleyWienerThm) :
       (∀ h : H, ∃ g : H, ‖g‖ = ‖h‖ ∧ ι g = fstar (ι h)) ∧ (∃ h : H, h ≠ 0) ∧
       (∀ f : ℂ → ℂ, f ∈ Set.range ι ↔ MemPW f) ∧
       ∀ h : H, ENNReal.ofReal (‖h‖ ^ 2) = sampleSum Λ (ι h) := by
-  letI i1 : NormedAddCommGroup PWFun := (sampCore hs).toNormedAddCommGroup
-  letI i2 : InnerProductSpace ℂ PWFun := InnerProductSpace.ofCore (sampCore hs).toCore
+  let i1 : NormedAddCommGroup PWFun := (sampCore hs).toNormedAddCommGroup
+  let i2 : InnerProductSpace ℂ PWFun := InnerProductSpace.ofCore (sampCore hs).toCore
   have hsq : ∀ h : PWFun, ‖h‖ ^ 2 = ∑' x : Λ, ‖PWFun.val h ((x : ℝ) : ℂ)‖ ^ 2 := by
     intro h
     rw [norm_sq_eq_re_inner (𝕜 := ℂ) h]
@@ -561,16 +576,55 @@ def hk (x : ℝ) (z : ℂ) : ℂ := 1 / ((x : ℂ) - z) - ((x / (1 + x ^ 2) : �
 
 /-- `hk x z = (1 + x z)/((x - z)(1 + x²))` for `z ≠ x`. -/
 theorem hk_eq {x : ℝ} {z : ℂ} (hz : z ≠ x) :
-    hk x z = (1 + x * z) / (((x : ℂ) - z) * (1 + (x : ℂ) ^ 2)) := sorry
+    hk x z = (1 + x * z) / (((x : ℂ) - z) * (1 + (x : ℂ) ^ 2)) := by
+  have h1 : (x : ℂ) - z ≠ 0 := sub_ne_zero.2 (Ne.symm hz)
+  have h2 : (1 : ℂ) + (x : ℂ) ^ 2 ≠ 0 := by
+    have : (1 : ℂ) + (x : ℂ) ^ 2 = ((1 + x ^ 2 : ℝ) : ℂ) := by push_cast; ring
+    rw [this]
+    exact_mod_cast (by positivity : (1 + x ^ 2 : ℝ) ≠ 0)
+  unfold hk
+  push_cast
+  field_simp
+  ring
 
 /-- Uniform bound for the tail: `|z| ≤ R`, `2R ≤ |λ|`, `R ≥ 1/2` give
 `|hk λ z| ≤ 2(1+R)/(1+λ²)`. -/
 theorem norm_hk_le {R : ℝ} (hR : 1 / 2 ≤ R) {x : ℝ} {z : ℂ} (hz : ‖z‖ ≤ R) (hx : 2 * R ≤ |x|) :
-    ‖hk x z‖ ≤ 2 * (1 + R) / (1 + x ^ 2) := sorry
+    ‖hk x z‖ ≤ 2 * (1 + R) / (1 + x ^ 2) := by
+  have hxa : 1 ≤ |x| := by linarith
+  have hzx : z ≠ x := by
+    intro h
+    rw [h] at hz
+    simp only [Complex.norm_real, Real.norm_eq_abs] at hz
+    linarith
+  rw [hk_eq hzx]
+  have h1 : |x| / 2 ≤ ‖(x : ℂ) - z‖ := by
+    have := norm_sub_norm_le (x : ℂ) z
+    simp only [Complex.norm_real, Real.norm_eq_abs] at this
+    linarith
+  have h2 : ‖(1 : ℂ) + x * z‖ ≤ 1 + |x| * R := by
+    calc ‖(1 : ℂ) + x * z‖ ≤ ‖(1 : ℂ)‖ + ‖(x : ℂ) * z‖ := norm_add_le _ _
+      _ ≤ 1 + |x| * R := by
+        rw [norm_one, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+        gcongr
+  have h3 : ‖(1 : ℂ) + (x : ℂ) ^ 2‖ = 1 + x ^ 2 := by
+    have : (1 : ℂ) + (x : ℂ) ^ 2 = ((1 + x ^ 2 : ℝ) : ℂ) := by push_cast; ring
+    rw [this, Complex.norm_real, Real.norm_of_nonneg (by positivity)]
+  have hpos : 0 < ‖(x : ℂ) - z‖ := by linarith
+  rw [norm_div, norm_mul, h3, div_le_div_iff₀ (mul_pos hpos (by positivity)) (by positivity)]
+  have h4 : 1 + |x| * R ≤ 2 * (1 + R) * ‖(x : ℂ) - z‖ := by nlinarith
+  have h5 : (0 : ℝ) ≤ 1 + x ^ 2 := by positivity
+  nlinarith [mul_le_mul_of_nonneg_right h4 h5, mul_le_mul_of_nonneg_right h2 h5]
 
 /-- `Re(-i · hk λ z) = y/|λ - z|²` for `y = Im z ≠ 0`. -/
 theorem re_neg_I_mul_hk {x : ℝ} {z : ℂ} (hz : z.im ≠ 0) :
-    (-I * hk x z).re = z.im / (((x : ℝ) - z.re) ^ 2 + z.im ^ 2) := sorry
+    (-I * hk x z).re = z.im / (((x : ℝ) - z.re) ^ 2 + z.im ^ 2) := by
+  have hpos : 0 < ((x : ℝ) - z.re) ^ 2 + z.im ^ 2 := by positivity
+  have h0 : ((x : ℂ) / (1 + (x : ℂ) ^ 2)).im = 0 := by
+    have : ((x : ℂ) / (1 + (x : ℂ) ^ 2)) = ((x / (1 + x ^ 2) : ℝ) : ℂ) := by push_cast; rfl
+    rw [this, Complex.ofReal_im]
+  simp [hk, Complex.inv_im, Complex.normSq_apply, h0]
+  ring
 
 /-- The series `∑_{λ ∈ Λ} c_λ hk λ z`. -/
 def herglotzSum (Λ : Set ℝ) (c : ℝ → ℝ) (z : ℂ) : ℂ :=
@@ -579,23 +633,51 @@ def herglotzSum (Λ : Set ℝ) (c : ℝ → ℝ) (z : ℂ) : ℂ :=
 /-- Absolute convergence of the series for `z ∉ Λ`. -/
 theorem summable_norm_herglotz {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {z : ℂ} (hz : z.im ≠ 0) :
-    Summable fun x : Λ ↦ ‖(c x : ℂ) * hk (x : ℝ) z‖ := sorry
+    Summable fun x : Λ ↦ ‖(c x : ℂ) * hk (x : ℝ) z‖ := by
+  have hR : (1 : ℝ) / 2 ≤ max ‖z‖ (1 / 2) := le_max_right _ _
+  refine Summable.of_norm_bounded_eventually (hcs.mul_left (2 * (1 + max ‖z‖ (1 / 2)))) ?_
+  filter_upwards [hΛ.eventually_le_abs (2 * max ‖z‖ (1 / 2))] with x hx
+  rw [norm_norm, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+  have := norm_hk_le hR (le_max_left ‖z‖ (1 / 2)) hx
+  calc |c x| * ‖hk (x : ℝ) z‖ ≤ |c x| * (2 * (1 + max ‖z‖ (1 / 2)) / (1 + (x : ℝ) ^ 2)) :=
+        mul_le_mul_of_nonneg_left this (abs_nonneg _)
+    _ = _ := by ring
 
 /-- `Re(-i/π · S(z)) = (1/π) ∑ c_λ y/|λ - z|²` on `ℂ₊`. -/
 theorem re_herglotzSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {z : ℂ} (hz : 0 < z.im) :
     ((-I / Real.pi) * herglotzSum Λ c z).re =
-      ∑' x : Λ, c x * (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := sorry
+      ∑' x : Λ, c x * (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := by
+  have hsum := (summable_norm_herglotz hΛ hcs hz.ne').of_norm
+  unfold herglotzSum
+  rw [← tsum_mul_left, Complex.re_tsum (hsum.mul_left _)]
+  refine tsum_congr fun x ↦ ?_
+  have h1 := re_neg_I_mul_hk (x := (x : ℝ)) hz.ne'
+  have h2 : (-I / (Real.pi : ℂ)) * ((c x : ℂ) * hk (x : ℝ) z) =
+      ((c x / Real.pi : ℝ) : ℂ) * (-I * hk (x : ℝ) z) := by
+    push_cast; ring
+  rw [h2, Complex.re_ofReal_mul, h1, div_mul_div_comm, mul_div_assoc]
 
 /-- The entire continuation of `G(z)·hk λ z` when `G(λ) = 0`. -/
 def entTerm (G : ℂ → ℂ) (x : ℝ) (z : ℂ) : ℂ :=
   -dslope G (x : ℂ) z - ((x / (1 + x ^ 2) : ℝ) : ℂ) * G z
 
 theorem differentiable_entTerm {G : ℂ → ℂ} (hG : Differentiable ℂ G) (x : ℝ) :
-    Differentiable ℂ (entTerm G x) := sorry
+    Differentiable ℂ (entTerm G x) := by
+  have h1 : Differentiable ℂ (dslope G (x : ℂ)) :=
+    differentiableOn_univ.1 ((differentiableOn_dslope Filter.univ_mem).2 hG.differentiableOn)
+  unfold entTerm
+  exact h1.neg.sub (hG.const_mul _)
 
 theorem entTerm_eq {G : ℂ → ℂ} {x : ℝ} (hGx : G (x : ℂ) = 0) {z : ℂ} (hz : z ≠ (x : ℂ)) :
-    entTerm G x z = G z * hk x z := sorry
+    entTerm G x z = G z * hk x z := by
+  unfold entTerm hk
+  rw [dslope_of_ne _ hz, slope_def_field, hGx]
+  have h1 : z - (x : ℂ) ≠ 0 := sub_ne_zero.2 hz
+  have h2 : (x : ℂ) - z ≠ 0 := sub_ne_zero.2 (Ne.symm hz)
+  push_cast
+  field_simp
+  ring
 
 /-- The entire function `∑ c_λ · entTerm G λ`. -/
 def entSum (Λ : Set ℝ) (c : ℝ → ℝ) (G : ℂ → ℂ) (z : ℂ) : ℂ :=
@@ -604,18 +686,63 @@ def entSum (Λ : Set ℝ) (c : ℝ → ℝ) (G : ℂ → ℂ) (z : ℂ) : ℂ :=
 theorem differentiable_entSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
     (hG : Differentiable ℂ G) (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) :
-    Differentiable ℂ (entSum Λ c G) := sorry
+    Differentiable ℂ (entSum Λ c G) := by
+  intro z0
+  suffices h : ∀ R : ℝ, 1 / 2 ≤ R → DifferentiableOn ℂ (entSum Λ c G) (Metric.ball 0 R) by
+    refine (h (max (‖z0‖ + 1) (1 / 2)) (le_max_right _ _)).differentiableAt
+      (Metric.isOpen_ball.mem_nhds ?_)
+    rw [mem_ball_zero_iff]
+    exact lt_max_of_lt_left (by linarith)
+  intro R hR
+  obtain ⟨M, hM⟩ := (isCompact_closedBall (0 : ℂ) R).exists_bound_of_continuousOn
+    hG.continuous.continuousOn
+  unfold entSum
+  refine differentiableOn_tsum_of_cofinite_bound
+    (u := fun x : Λ ↦ |M| * (2 * (1 + R)) * (|c x| / (1 + (x : ℝ) ^ 2)))
+    Metric.isOpen_ball (fun x ↦ ((differentiable_entTerm hG x).const_mul _).differentiableOn)
+    (hcs.mul_left _) ?_
+  filter_upwards [hΛ.eventually_le_abs (2 * R)] with x hx w hw
+  rw [mem_ball_zero_iff] at hw
+  have hwx : w ≠ ((x : ℝ) : ℂ) := by
+    intro h
+    rw [h] at hw
+    simp only [Complex.norm_real, Real.norm_eq_abs] at hw
+    linarith
+  rw [entTerm_eq (hG0 _ x.2) hwx, norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+  have h1 := norm_hk_le hR hw.le hx
+  have h2 : ‖G w‖ ≤ |M| := (hM w (mem_closedBall_zero_iff.2 hw.le)).trans (le_abs_self _)
+  calc |c x| * (‖G w‖ * ‖hk (x : ℝ) w‖) ≤ |c x| * (|M| * (2 * (1 + R) / (1 + (x : ℝ) ^ 2))) := by
+        gcongr
+    _ = _ := by ring
 
 theorem entSum_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
     (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) {z : ℂ} (hz : z.im ≠ 0) :
-    entSum Λ c G z = G z * herglotzSum Λ c z := sorry
+    entSum Λ c G z = G z * herglotzSum Λ c z := by
+  unfold entSum herglotzSum
+  rw [← tsum_mul_left]
+  refine tsum_congr fun x ↦ ?_
+  have hzx : z ≠ ((x : ℝ) : ℂ) := fun h ↦ hz (by rw [h]; simp)
+  rw [entTerm_eq (hG0 _ x.2) hzx]
+  ring
 
 /-- `(entSum)^* = entSum` when `G^* = G` (all `c_λ`, `λ` are real). -/
 theorem fstar_entSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
     (hGd : Differentiable ℂ G) (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) (hGs : fstar G = G) :
-    fstar (entSum Λ c G) = entSum Λ c G := sorry
+    fstar (entSum Λ c G) = entSum Λ c G := by
+  refine Differentiable.eq_of_eqOn_upper (Differentiable.fstar (differentiable_entSum hΛ hcs hGd hG0))
+    (differentiable_entSum hΛ hcs hGd hG0) fun z hz ↦ ?_
+  have hz' : (conj z).im ≠ 0 := by simp; exact hz.ne'
+  have hkc : ∀ x : ℝ, conj (hk x (conj z)) = hk x z := fun x ↦ by simp [hk]
+  have hS : conj (herglotzSum Λ c (conj z)) = herglotzSum Λ c z := by
+    unfold herglotzSum
+    rw [Complex.conj_tsum]
+    refine tsum_congr fun x ↦ ?_
+    rw [map_mul, hkc, Complex.conj_ofReal]
+  have hGz : conj (G (conj z)) = G z := congrFun hGs z
+  show conj (entSum Λ c G (conj z)) = entSum Λ c G z
+  rw [entSum_eq hΛ hcs hG0 hz', entSum_eq hΛ hcs hG0 hz.ne', map_mul, hGz, hS]
 
 end Kernel
 
