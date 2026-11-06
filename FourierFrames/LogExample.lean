@@ -1255,7 +1255,110 @@ theorem abs_integral_posLog_mul_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z
 theorem integral_abs_rho_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
     Integrable (fun t : ℝ ↦ |logW t + Real.posLog (|t|)| * |logKernel z t|) ∧
       ∫ t : ℝ, |logW t + Real.posLog (|t|)| * |logKernel z t| ≤ C := by
-  sorry
+  obtain ⟨Cρ, hρ⟩ := abs_logW_add_posLog_le
+  have hC0 : 0 ≤ Cρ := by
+    have h := hρ 1
+    simp only [abs_one] at h
+    have hm : 0 < min (1 : ℝ) (1 / Real.sqrt (1 + 1)) := lt_min one_pos (by positivity)
+    by_contra hneg
+    push Not at hneg
+    have := mul_neg_of_neg_of_pos hneg hm
+    linarith [abs_nonneg (logW 1 + Real.posLog 1)]
+  set I₁ : ℝ := ∫ t : ℝ, (1 + |t|) ^ (-(3 / 2 : ℝ)) with hI₁
+  set I₂ : ℝ := ∫ s : ℝ, (1 + s ^ 2) ^ (-(3 / 4 : ℝ)) with hI₂
+  refine ⟨Cρ * (3 * I₁ + (I₁ / 3 + 2 / 3 * I₂)), fun z hz ↦ ?_⟩
+  have hy : 0 < z.im := by linarith
+  set ρ : ℝ → ℝ := fun t ↦ logW t + Real.posLog |t| with hρdef
+  have hρc : Continuous ρ :=
+    logW_lipschitz.continuous.add (Real.continuous_posLog.comp continuous_abs)
+  have hρ1 : ∀ t, |ρ t| ≤ Cρ * |t| := fun t ↦
+    (hρ t).trans (mul_le_mul_of_nonneg_left (min_le_left _ _) hC0)
+  have hρ2 : ∀ t, |ρ t| ≤ Cρ * (1 + |t|) ^ (-(1 / 2 : ℝ)) := fun t ↦ by
+    refine (hρ t).trans (mul_le_mul_of_nonneg_left ((min_le_right _ _).trans (le_of_eq ?_)) hC0)
+    rw [Real.rpow_neg (by positivity), ← Real.sqrt_eq_rpow, one_div]
+  have hρ3 : ∀ t, |ρ t| ≤ Cρ * (1 + |t|) ^ (1 / 2 : ℝ) := fun t ↦ by
+    refine (hρ2 t).trans (mul_le_mul_of_nonneg_left ?_ hC0)
+    calc (1 + |t|) ^ (-(1 / 2 : ℝ)) ≤ 1 :=
+          Real.rpow_le_one_of_one_le_of_nonpos (by linarith [abs_nonneg t]) (by norm_num)
+      _ ≤ (1 + |t|) ^ (1 / 2 : ℝ) :=
+          Real.one_le_rpow (by linarith [abs_nonneg t]) (by norm_num)
+  have hint : Integrable (fun t : ℝ ↦ ρ t * LogEx.kern z t) :=
+    LogEx.integrable_mul_kern hy hρc.aestronglyMeasurable hC0 hρ1 hρ3
+  have hint' : Integrable (fun t : ℝ ↦ |logW t + Real.posLog (|t|)| * |logKernel z t|) := by
+    have := hint.norm
+    refine this.congr (Filter.Eventually.of_forall fun t ↦ ?_)
+    simp only [norm_mul, Real.norm_eq_abs]
+    rfl
+  refine ⟨hint', ?_⟩
+  -- the majorant
+  set g : ℝ → ℝ := fun t ↦ Cρ * (3 * (1 + |t|) ^ (-(3 / 2 : ℝ)) +
+    (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ))) with hg
+  have hgint : Integrable g :=
+    ((LogEx.integrable_rpow_three_half.const_mul 3).add (LogEx.integrable_uv z.re)).const_mul Cρ
+  have hw12 : ∀ t : ℝ, (1 + |t|) ^ (-(1 / 2 : ℝ)) = 1 / Real.sqrt (1 + |t|) := fun t ↦ by
+    rw [Real.rpow_neg (by positivity), ← Real.sqrt_eq_rpow, one_div]
+  have hw32 : ∀ t : ℝ, (1 + |t|) ^ (-(3 / 2 : ℝ)) = 1 / Real.sqrt (1 + |t|) ^ 3 := fun t ↦ by
+    have h1 : (3 / 2 : ℝ) = (1 / 2 : ℝ) * (3 : ℕ) := by norm_num
+    rw [Real.rpow_neg (by positivity), h1, Real.rpow_mul (by positivity), Real.rpow_natCast,
+      ← Real.sqrt_eq_rpow, one_div]
+  have hpt : ∀ t : ℝ, |logW t + Real.posLog (|t|)| * |logKernel z t| ≤ g t := by
+    intro t
+    have hK : |logKernel z t| ≤ (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) + |t⁻¹| :=
+      LogEx.abs_kern_le_uv hz t
+    have hv0 : 0 ≤ (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) := by positivity
+    have hr0 : 0 ≤ |ρ t| := abs_nonneg _
+    have hA : |ρ t| * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) ≤
+        Cρ * ((1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ))) := by
+      rw [← mul_assoc]; exact mul_le_mul_of_nonneg_right (hρ2 t) hv0
+    have hB : |ρ t| * |t⁻¹| ≤ Cρ * (3 * (1 + |t|) ^ (-(3 / 2 : ℝ))) := by
+      by_cases ht0 : t = 0
+      · subst ht0; simp; positivity
+      have htp : 0 < |t| := abs_pos.2 ht0
+      set s : ℝ := Real.sqrt (1 + |t|) with hs
+      have hs0 : 0 < s := Real.sqrt_pos.2 (by positivity)
+      have hs2 : s ^ 2 = 1 + |t| := Real.sq_sqrt (by positivity)
+      rw [hw32, ← hs, abs_inv]
+      rcases le_or_gt 1 |t| with h1 | h1
+      · have := hρ2 t
+        rw [hw12, ← hs] at this
+        calc |ρ t| * |t|⁻¹ ≤ Cρ * (1 / s) * |t|⁻¹ :=
+              mul_le_mul_of_nonneg_right this (by positivity)
+          _ ≤ Cρ * (3 * (1 / s ^ 3)) := by
+              have : |t|⁻¹ ≤ 2 / s ^ 2 := by
+                rw [inv_eq_one_div, div_le_div_iff₀ htp (by positivity)]
+                nlinarith
+              calc Cρ * (1 / s) * |t|⁻¹ ≤ Cρ * (1 / s) * (2 / s ^ 2) :=
+                    mul_le_mul_of_nonneg_left this (by positivity)
+                _ = Cρ * (2 * (1 / s ^ 3)) := by field_simp
+                _ ≤ _ := by
+                    have : 0 ≤ Cρ * (1 / s ^ 3) := by positivity
+                    nlinarith
+      · have := hρ1 t
+        calc |ρ t| * |t|⁻¹ ≤ Cρ * |t| * |t|⁻¹ := mul_le_mul_of_nonneg_right this (by positivity)
+          _ = Cρ := by field_simp
+          _ ≤ Cρ * (3 * (1 / s ^ 3)) := by
+              have hs1 : s < 3 / 2 := by nlinarith
+              have hs3 : s ^ 3 ≤ 3 := by nlinarith [sq_nonneg s]
+              have : 1 ≤ 3 * (1 / s ^ 3) := by
+                rw [← mul_div_assoc, mul_one, le_div_iff₀ (by positivity)]; linarith
+              nlinarith
+    calc |logW t + Real.posLog (|t|)| * |logKernel z t|
+        = |ρ t| * |logKernel z t| := rfl
+      _ ≤ |ρ t| * ((1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) + |t⁻¹|) :=
+          mul_le_mul_of_nonneg_left hK hr0
+      _ = |ρ t| * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) + |ρ t| * |t⁻¹| := by ring
+      _ ≤ g t := by rw [hg]; simp only []; nlinarith
+  calc ∫ t : ℝ, |logW t + Real.posLog (|t|)| * |logKernel z t| ≤ ∫ t, g t :=
+        integral_mono hint' hgint hpt
+    _ = Cρ * (3 * I₁ + ∫ t : ℝ, (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ))) := by
+        rw [hg, integral_const_mul, integral_add ((LogEx.integrable_rpow_three_half).const_mul 3)
+          (LogEx.integrable_uv z.re), integral_const_mul]
+    _ ≤ _ := by
+        have := LogEx.integral_uv_le z.re
+        have h2 : Cρ * (3 * I₁ + ∫ t : ℝ, (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ))) ≤
+            Cρ * (3 * I₁ + (I₁ / 3 + 2 / 3 * I₂)) :=
+          mul_le_mul_of_nonneg_left (by linarith) hC0
+        exact h2
 
 theorem abs_integral_log_mul_sub_one_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
     |∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1)| ≤ C := by

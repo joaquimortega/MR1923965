@@ -658,4 +658,75 @@ theorem abs_integral_posLog_kern_le {z : ℂ} (hy : 0 < z.im) (hH : IntegrableOn
   rw [← abs_of_nonneg (Real.log_nonneg hR.le), ← abs_mul]
   linarith
 
+/-- `u(t) = (1+|t|)^{-1/2}`, `v(s) = (1+s²)^{-1/2}`. -/
+theorem young_uv (t s : ℝ) :
+    (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + s ^ 2) ^ (-(1 / 2 : ℝ)) ≤
+      (1 + |t|) ^ (-(3 / 2 : ℝ)) / 3 + 2 / 3 * (1 + s ^ 2) ^ (-(3 / 4 : ℝ)) := by
+  have hpq : (3 : ℝ).HolderConjugate (3 / 2) :=
+    Real.holderConjugate_iff.2 ⟨by norm_num, by norm_num⟩
+  have h := Real.young_inequality_of_nonneg (a := (1 + |t|) ^ (-(1 / 2 : ℝ)))
+    (b := (1 + s ^ 2) ^ (-(1 / 2 : ℝ))) (by positivity) (by positivity) hpq
+  rw [← Real.rpow_mul (by positivity), ← Real.rpow_mul (by positivity)] at h
+  have e1 : -(1 / 2 : ℝ) * 3 = -(3 / 2 : ℝ) := by norm_num
+  have e2 : -(1 / 2 : ℝ) * (3 / 2) = -(3 / 4 : ℝ) := by norm_num
+  rw [e1, e2] at h
+  calc _ ≤ _ := h
+    _ = _ := by ring
+
+theorem integrable_rpow_three_half : Integrable (fun t : ℝ ↦ (1 + |t|) ^ (-(3 / 2 : ℝ))) := by
+  have := integrable_one_add_norm (E := ℝ) (μ := volume) (r := 3 / 2) (by simp; norm_num)
+  simpa using this
+
+theorem integrable_rpow_three_quarter : Integrable (fun s : ℝ ↦ (1 + s ^ 2) ^ (-(3 / 4 : ℝ))) := by
+  have := integrable_rpow_neg_one_add_norm_sq (E := ℝ) (μ := volume) (r := 3 / 2) (by simp; norm_num)
+  have e : -(3 / 2 : ℝ) / 2 = -(3 / 4 : ℝ) := by norm_num
+  simpa [e] using this
+
+theorem integrable_uv (x : ℝ) :
+    Integrable (fun t : ℝ ↦ (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - x) ^ 2) ^ (-(1 / 2 : ℝ))) := by
+  have hmaj : Integrable (fun t : ℝ ↦ (1 + |t|) ^ (-(3 / 2 : ℝ)) / 3 +
+      2 / 3 * (1 + (t - x) ^ 2) ^ (-(3 / 4 : ℝ))) :=
+    (integrable_rpow_three_half.div_const 3).add
+      ((integrable_rpow_three_quarter.comp_sub_right x).const_mul _)
+  refine Integrable.mono' hmaj ?_ (Filter.Eventually.of_forall fun t ↦ ?_)
+  · apply Measurable.aestronglyMeasurable
+    fun_prop
+  · rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    exact young_uv t (t - x)
+
+theorem integral_uv_le (x : ℝ) :
+    ∫ t : ℝ, (1 + |t|) ^ (-(1 / 2 : ℝ)) * (1 + (t - x) ^ 2) ^ (-(1 / 2 : ℝ)) ≤
+      (∫ t : ℝ, (1 + |t|) ^ (-(3 / 2 : ℝ))) / 3 +
+        2 / 3 * ∫ s : ℝ, (1 + s ^ 2) ^ (-(3 / 4 : ℝ)) := by
+  have hmaj : Integrable (fun t : ℝ ↦ (1 + |t|) ^ (-(3 / 2 : ℝ)) / 3 +
+      2 / 3 * (1 + (t - x) ^ 2) ^ (-(3 / 4 : ℝ))) :=
+    (integrable_rpow_three_half.div_const 3).add
+      ((integrable_rpow_three_quarter.comp_sub_right x).const_mul _)
+  calc _ ≤ ∫ t : ℝ, ((1 + |t|) ^ (-(3 / 2 : ℝ)) / 3 + 2 / 3 * (1 + (t - x) ^ 2) ^ (-(3 / 4 : ℝ))) :=
+        integral_mono (integrable_uv x) hmaj (fun t ↦ young_uv t (t - x))
+    _ = _ := by
+        rw [integral_add (integrable_rpow_three_half.div_const 3)
+          ((integrable_rpow_three_quarter.comp_sub_right x).const_mul _), integral_div,
+          integral_const_mul]
+        congr 2
+        exact integral_sub_right_eq_self (fun s : ℝ ↦ (1 + s ^ 2) ^ (-(3 / 4 : ℝ))) x
+
+theorem abs_div_sq_add_le {s y : ℝ} (hy : 1 ≤ y) :
+    |s| / (s ^ 2 + y ^ 2) ≤ (1 + s ^ 2) ^ (-(1 / 2 : ℝ)) := by
+  have hy2 : 1 ≤ y ^ 2 := by nlinarith
+  have hD : 0 < s ^ 2 + y ^ 2 := by positivity
+  have hsq : 0 < Real.sqrt (1 + s ^ 2) := Real.sqrt_pos.2 (by positivity)
+  rw [Real.rpow_neg (by positivity), ← Real.sqrt_eq_rpow, ← one_div, div_le_div_iff₀ hD hsq]
+  have h1 : Real.sqrt (1 + s ^ 2) ^ 2 = 1 + s ^ 2 := Real.sq_sqrt (by positivity)
+  nlinarith [sq_nonneg (|s| - Real.sqrt (1 + s ^ 2)), sq_abs s]
+
+theorem abs_kern_le_uv {z : ℂ} (hy : 1 ≤ z.im) (t : ℝ) :
+    |kern z t| ≤ (1 + (t - z.re) ^ 2) ^ (-(1 / 2 : ℝ)) + |t⁻¹| := by
+  unfold kern
+  have h1 := abs_div_sq_add_le (s := t - z.re) hy
+  have h2 := abs_sub ((t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2)) (1 / t)
+  rw [abs_div, abs_of_pos (by positivity : 0 < (t - z.re) ^ 2 + z.im ^ 2), one_div] at h2
+  rw [one_div]
+  linarith
+
 end FF.LogEx
