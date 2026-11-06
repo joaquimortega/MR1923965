@@ -160,7 +160,27 @@ theorem deBrangesKernel_real {E : ℂ → ℂ} {φ : ℝ → ℝ} (hφ : IsPhase
     (hxy : x ≠ y) :
     deBrangesKernel E x y =
       ((‖E x‖ * ‖E y‖ * Real.sin (φ y - φ x) / (Real.pi * (y - x)) : ℝ) : ℂ) := by
-  sorry
+  have hne : (y : ℂ) ≠ conj (x : ℂ) := by
+    rw [Complex.conj_ofReal]; exact_mod_cast hxy.symm
+  unfold deBrangesKernel
+  rw [if_neg hne]
+  have hx := hφ.2 x
+  have hy := hφ.2 y
+  simp only [fstar_apply, Complex.conj_ofReal, Complex.conj_conj]
+  have hs : ((Real.sin (φ y - φ x) : ℝ) : ℂ) =
+      (Complex.exp (-((φ y : ℂ) - φ x) * I) - Complex.exp (((φ y : ℂ) - φ x) * I)) * I / 2 := by
+    rw [Complex.ofReal_sin]; push_cast; exact Complex.sin.eq_1 _
+  have hyne : (y : ℂ) - x ≠ 0 := by
+    intro h; exact hxy (by exact_mod_cast (sub_eq_zero.mp h).symm)
+  have hπ : (Real.pi : ℂ) ≠ 0 := by exact_mod_cast Real.pi_pos.ne'
+  rw [Complex.ofReal_div, Complex.ofReal_mul, Complex.ofReal_mul]
+  rw [hs]
+  conv_lhs => rw [hx, hy]
+  simp only [map_mul, Complex.conj_ofReal, ← Complex.exp_conj, map_neg, map_mul, Complex.conj_I]
+  push_cast
+  field_simp
+  rw [← Complex.exp_add, ← Complex.exp_add]
+  congr 3 <;> ring_nf
 
 /-- The kernels at the points of a complete interpolating sequence are orthogonal:
 `K_E(a, b) = 0` for `a ≠ b` in `Λ` (Theorem D, Cauchy–Schwarz and the norm identity). -/
