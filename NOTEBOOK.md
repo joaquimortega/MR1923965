@@ -163,6 +163,63 @@ entire `f`. The integrals must run over `[t_{n-1}, t_n]`, whose mass is `1`. The
 The proof has to be reconstructed (blueprint M09). Whether the statement holds is under
 investigation.
 
+### N-22 (G/D) — Theorem 2 (i) needs regularity of `ψ` beyond the stated hypotheses — *referee-pending*
+The proof of (i) uses "the smoothness of `ψ` ensures that `∑_{n(z)-1}^{n(z)+1} j_n(z) ≃ 1`"
+(p. 802), and the introduction speaks of "`ψ` sufficiently regular" (p. 790), but the statement of
+Theorem 2 only assumes `ψ' = 1/O(x)` and the logarithmically regular partition.
+- **Counterexample to the construction** (M08 writer): cells with `d_n = √t_n` whose unit mass sits on
+  a spike of length `ℓ_n = log t_n` satisfy all stated hypotheses (including `ψ' = o(1)`), but near
+  the spike `j_n(x) ≈ log(ℓ_n/d_n) → -∞`, so `|U_ψ - log|f||` is unbounded for the paper's `f`.
+  Two half-spikes at the ends of a cell defeat every choice of one zero per cell.
+- **What the proof needs:** `ψ' ≤ K/d_n` on `[t_{n-1}, t_n]` (`DensBound`).
+- **Formalization:** `theorem2_i` assumes in addition that `ψ'` is eventually nonincreasing, which
+  covers the paper's example `√x` and gives `DensBound`. `theorem2_i_of_regular` assumes `DensBound`
+  directly. Whether (i) holds without such a regularity assumption is open.
+
+### N-23 (E) — p. 804: the bound for `V_2` is false for nonreal `z` — *coordinator-checked*
+"`|log|z - r_n| - log|z - z_n|| ≲ d_n²/|z - r_n|²`" fails off the real axis: for `z = i r_n` the
+derivative of `θ ↦ log|z - r_n e^{-iθ}|` at `θ = 0` is `1/2`, so the difference is `≈ c d_n/(2 r_n)`,
+of first order. The correct bound is `≲ d_n²/|z - r_n|² + d_n Im z/|z - r_n|²`; the extra terms sum
+to at most a constant because `∑_n d_n y/|z - r_n|²` is a Riemann sum of a Poisson integral.
+
+### N-24 (G) — p. 802: the window `n(z) - 1, …, n(z) + 1` — *referee-pending*
+When `d_n ≃ d_{n+1}` holds only with a constant `C > 1`, the cells within distance `≲ d_n` of `z` are
+not confined to three indices; the window must depend on `C`. The far cells (`n > n⁺(z)`,
+`n < n⁻(z)`) need the cancellation of the first and second order terms through (9), not a termwise
+bound.
+
+### N-25 (G) — Theorem 2 (i): `φ_f' → 0` is not checked — *referee-pending*
+Corollary 2 requires `φ_f'(x) = o(1)`; the proof of Theorem 2 (i) does not verify it for its `f`. It
+holds: `φ_f'(x) = ∑_n |Im z_n|/|x - z_n|²` with `|Im z_n| ≃ d_n → ∞`. Also, the integrand of `U_ψ`
+must be shown integrable (in Lean a non-integrable integral is `0`).
+
+### N-26 (S) — Theorem 2 (i): the hypothesis `ψ' = 1/O(x)` — *referee-pending*
+The proof only uses `t_n ≤ (1 + C) t_{n-1}`, which already follows from `d_n ≃ d_{n+1}`. The
+hypothesis is kept in the formal statement for faithfulness unless the linter forces its removal
+(removing a hypothesis strengthens the theorem).
+
+### N-27 (T) — p. 790: Fourier frames and sampling — *tex-checked*
+"By the Paley–Wiener theorem, `Λ` is sampling for PW if and only if `{e^{iλ_k x}}` is a Fourier frame":
+the correspondence involves the reflection `t ↦ -t` (the frame uses `e^{-iλx}`, the Paley–Wiener
+representation `e^{izt}`) and the factor `2π` between the norms. The frame bounds `(A, B)` correspond
+to the sampling bounds `(A/2π, B/2π)`.
+
+### N-28 (G) — p. 796: "`E` has no zeros on the real axis since `PW = H(E)`" — *referee-pending*
+True but needs an argument: if `E(x₀) = 0` and `f(x₀) ≠ 0` for some `f ∈ H(E)` (a translate of a PW
+function), then `∫|f/E(x + iy)|² dx ≳ 1/y`, so `f/E ∉ H²`. Likewise Theorem E is applied without
+noting that `E` must be in the strict class (`H(E) = PW ≠ {0}` rules out `E^* = cE`) and that
+`φ_E + φ_F` is strictly increasing.
+
+### N-29 (G) — p. 799: the "evident fact" — *referee-pending*
+"`H(E) = PW` if `|E(z)| ≃ e^{π Im z}` for `Im z ≥ 0`" is true but not evident: `H(E) ⊆ PW` needs a
+Fatou argument for `L²(ℝ)` and a separate bound in the strip `|Im z| ≤ 1`.
+
+### N-30 (T) — p. 798: the product `F` of the example — *tex-checked*
+`F(z) = lim ∏_{|λ_k|<R}(1 - z/λ_k)` is undefined because `λ_0 = 0`; it should be `z ∏_{k ≠ 0}`.
+"This sequence is sampling, because … sine-type" is really sine-type ⇒ complete interpolating ⇒
+sampling. The formalization proves the needed estimate `|E(z)| ≃ e^{π Im z}` (the conjugate function
+of `log|t|` is bounded) and replaces Levin's theorem by Theorem E.
+
 ---
 
 ## Implementation log
