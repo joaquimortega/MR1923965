@@ -1,5 +1,6 @@
 import FourierFrames.HB.DeBranges
 import FourierFrames.PW.PlancherelPolya
+import FourierFrames.Theorem1.Sufficiency.Interlace
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -45,8 +46,8 @@ increasing `φ` is `δ`-separated, then `{φ ∈ π/2 + ε + πℤ}` (`0 < ε < 
 `δ`-separated sets (even and odd index). -/
 theorem phaseLevel_sepBy_two {φ : ℝ → ℝ} (hc : Continuous φ) (hφ : StrictMono φ) {δ : ℝ}
     (hsep : IsSepBy δ (phaseLevel φ (Real.pi / 2))) {ε : ℝ} (hε0 : 0 < ε) (hεπ : ε < Real.pi) :
-    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ IsSepBy δ A ∧ IsSepBy δ B := by
-  sorry
+    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ IsSepBy δ A ∧ IsSepBy δ B :=
+  phaseLevel_sepBy_two_aux hc hφ hsep hε0 hεπ
 
 /-- At most one `n` has `π/2 + π/(n+2)` exceptional, so eventually none has. -/
 theorem eventually_not_exceptional {E : ℂ → ℂ} (hE : IsStrictHB E) :
