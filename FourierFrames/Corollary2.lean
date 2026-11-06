@@ -8,6 +8,7 @@ import FourierFrames.Corollary2.Density
 import FourierFrames.Corollary2.LogInt
 import FourierFrames.Corollary2.Reflection
 import FourierFrames.Corollary2.PotC
+import FourierFrames.Corollary2.PotCDiff
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -126,7 +127,8 @@ theorem potC_re {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g 
 
 theorem differentiableOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     DifferentiableOn ℂ (potC g) {z : ℂ | 0 < z.im} := by
-  sorry
+  intro z hz
+  exact (differentiableAt_potC' hg hM hz).differentiableWithinAt
 
 theorem continuousOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     ContinuousOn (potC g) {z : ℂ | 0 ≤ z.im} := by
