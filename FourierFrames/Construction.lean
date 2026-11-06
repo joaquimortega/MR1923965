@@ -1904,6 +1904,92 @@ theorem phase_asymptotics (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocom
         rw [abs_mul, abs_mul, abs_of_pos hpi] at *
         linarith
 
+theorem pair_bounds {X Y Z W mΓ mB m₀ a₁ a₂ b₁ b₂ : ℝ} (hW : 0 < W) (ha₁ : 0 < a₁)
+    (hb₁ : 0 < b₁) (ha₂ : 0 ≤ a₂) (hb₂ : 0 ≤ b₂) (hm₀ : 0 < m₀) (hmax : m₀ ≤ max mΓ mB)
+    (hmΓ : 0 ≤ mΓ) (hmB : 0 ≤ mB) (hmΓ1 : mΓ ≤ 1) (hmB1 : mB ≤ 1)
+    (hX : a₁ * W * mΓ ≤ X ∧ X ≤ a₂ * W * mΓ) (hY : b₁ * W * mB ≤ Y ∧ Y ≤ b₂ * W * mB)
+    (hZ0 : 0 ≤ Z) (hZ : X ^ 2 + Y ^ 2 ≤ Z ^ 2) (hZ' : Z ≤ X + Y) :
+    min a₁ b₁ * m₀ * W ≤ Z ∧ Z ≤ (a₂ + b₂) * W := by
+  constructor
+  · set κ := min a₁ b₁ with hκ
+    have hκ0 : 0 < κ := lt_min ha₁ hb₁
+    have hXl : κ * W * mΓ ≤ X := le_trans (by gcongr; exact min_le_left _ _) hX.1
+    have hYl : κ * W * mB ≤ Y := le_trans (by gcongr; exact min_le_right _ _) hY.1
+    have hk : 0 ≤ κ * W := by positivity
+    have hX0 : 0 ≤ X := le_trans (by positivity) hXl
+    have hY0 : 0 ≤ Y := le_trans (by positivity) hYl
+    have hZm : (κ * m₀ * W) ^ 2 ≤ Z ^ 2 := by
+      rcases le_max_iff.1 hmax with h | h
+      · have : κ * W * m₀ ≤ X := le_trans (mul_le_mul_of_nonneg_left h hk) hXl
+        nlinarith [sq_nonneg Y, mul_nonneg hk hm₀.le]
+      · have : κ * W * m₀ ≤ Y := le_trans (mul_le_mul_of_nonneg_left h hk) hYl
+        nlinarith [sq_nonneg X, mul_nonneg hk hm₀.le]
+    exact (pow_le_pow_iff_left₀ (by positivity) hZ0 (by norm_num)).1 hZm
+  · calc Z ≤ X + Y := hZ'
+      _ ≤ a₂ * W * mΓ + b₂ * W * mB := add_le_add hX.2 hY.2
+      _ ≤ a₂ * W * 1 + b₂ * W * 1 := by gcongr
+      _ = (a₂ + b₂) * W := by ring
+
+theorem exists_max_ge (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN34 : ∀ j : ℤ, N ≤ |j| → 3 / 4 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+    ∃ m₀ : ℝ, 0 < m₀ ∧ ∀ z : ℂ, m₀ ≤ max (min 1 (infDist z (OCS.multGammaC m)))
+      (min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)))) := by
+  obtain ⟨η, hη, hηd⟩ := exists_eta hw hN34
+  have hΓne : (OCS.multGammaC m).Nonempty := ⟨_, ⟨_, ⟨0, rfl⟩, rfl⟩⟩
+  have hΓBne : (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)).Nonempty := ⟨_, ⟨0, rfl⟩⟩
+  refine ⟨min 1 (η / 2), lt_min one_pos (by positivity), fun z ↦ ?_⟩
+  by_contra hlt
+  push Not at hlt
+  have h1 : min 1 (infDist z (OCS.multGammaC m)) < min 1 (η / 2) :=
+    lt_of_le_of_lt (le_max_left _ _) hlt
+  have h2 : min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) < min 1 (η / 2) :=
+    lt_of_le_of_lt (le_max_right _ _) hlt
+  have hd1 : infDist z (OCS.multGammaC m) < η / 2 := by
+    by_contra hh; push Not at hh
+    have : min (1 : ℝ) (η / 2) ≤ min 1 (infDist z (OCS.multGammaC m)) := min_le_min le_rfl hh
+    linarith
+  have hd2 : infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)) < η / 2 := by
+    by_contra hh; push Not at hh
+    have : min (1 : ℝ) (η / 2) ≤
+        min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) :=
+      min_le_min le_rfl hh
+    linarith
+  have := Comparable.le_infDist_add_infDist hΓne hΓBne hηd z
+  linarith
+
+/-- `|A|² λ² |B|²` bounds for `A - i λ B` on `Im z ≥ 0`. -/
+theorem norm_sq_bounds_lam (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {lam : ℝ}
+    (hlam : 0 < lam) {z : ℂ} (hz : 0 ≤ z.im) :
+    ‖genA m z‖ ^ 2 + (lam * ‖compB m N z‖) ^ 2 ≤
+        ‖genA m z - Complex.I * lam * compB m N z‖ ^ 2 ∧
+      ‖genA m z - Complex.I * lam * compB m N z‖ ≤ ‖genA m z‖ + lam * ‖compB m N z‖ := by
+  have hE := isHB_genA_sub_lam_compB hw hN hlam
+  set E' : ℂ → ℂ := fun z ↦ genA m z - Complex.I * lam * compB m N z with hE'
+  have hfs : fstar E' z = genA m z + Complex.I * lam * compB m N z := by
+    simp only [hE', fstar, map_sub, map_mul, Complex.conj_I, Complex.conj_ofReal]
+    rw [genA_conj hw, compB_conj hw, Complex.conj_conj, Complex.conj_conj]
+    ring
+  have hstar : ‖fstar E' z‖ ≤ ‖E' z‖ := by
+    rcases hz.eq_or_lt with h | h
+    · rw [norm_fstar]
+      have : conj z = z := Complex.conj_eq_iff_im.2 h.symm
+      rw [this]
+    · exact hE.norm_fstar_le h
+  have hpar := parallelogram_law_with_norm ℂ (genA m z) (Complex.I * lam * compB m N z)
+  have h1 : ‖Complex.I * lam * compB m N z‖ = lam * ‖compB m N z‖ := by
+    rw [norm_mul, norm_mul, Complex.norm_I, Complex.norm_real, Real.norm_eq_abs, abs_of_pos hlam,
+      one_mul]
+  rw [h1] at hpar
+  have e1 : genA m z + Complex.I * lam * compB m N z = fstar E' z := hfs.symm
+  have e2 : genA m z - Complex.I * lam * compB m N z = E' z := rfl
+  rw [e1, e2] at hpar
+  have hs2 : ‖fstar E' z‖ ^ 2 ≤ ‖E' z‖ ^ 2 := pow_le_pow_left₀ (norm_nonneg _) hstar 2
+  refine ⟨by nlinarith [sq_nonneg ‖fstar E' z‖], ?_⟩
+  show ‖genA m z - Complex.I * lam * compB m N z‖ ≤ _
+  calc _ ≤ ‖genA m z‖ + ‖Complex.I * lam * compB m N z‖ := norm_sub_le _ _
+    _ = _ := by rw [h1]
+
 /-- **The phase construction with phase asymptotics** (generalised at assembly to a linear drift
 `κ`).  If `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` (`κ ≠ 0` is the generic case, e.g. for the
 example of p. 798), take `E = compEκ m κ N = e^{-κ z}(A - i e^{κ/2} B)` (the factor `e^{κ/2}`
@@ -1924,7 +2010,90 @@ theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ 
       ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ (∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) ∧
         StrictMono φ ∧ ∃ c₀ : ℝ,
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀) := by
-  sorry
+  obtain ⟨κ, C, hUκ⟩ := hU
+  have hw : OCS.IsMultWeight m a b := ⟨hm, ha, hlow, hup⟩
+  obtain ⟨N, hN34⟩ := Gaps.exists_gap_index_strong hw hlim
+  have hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j :=
+    fun j hj ↦ by linarith [hN34 j hj]
+  have hE := isHB_compEκ hw hN κ
+  have h0 := compEκ_ne_zero_real hw hN κ
+  have hUC : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C := ⟨C, hUκ⟩
+  obtain ⟨φ, hφ, hφd⟩ := exists_isPhaseFunction hE.1 h0
+  obtain ⟨hmono, k₀, hk₀⟩ := phase_levels hw hlim hUC hN hφ
+  refine ⟨compEκ m κ N, hE, h0, ?_, ?_, φ, hφ, hφd, hmono, Real.pi * k₀,
+    phase_asymptotics hw hlim hUC hN hφ hk₀⟩
+  · -- bounds `|E_κ| ≃ e^{π Im z}`
+    obtain ⟨m₀, hm₀, hmax⟩ := exists_max_ge hw hN34
+    obtain ⟨cA₁, cA₂, hcA₁, hcA₂, hcA⟩ := norm_genA_comparable_of_hU hw hUC
+    obtain ⟨cB₁, cB₂, hcB₁, hcB₂, hcB⟩ := norm_compB_comparable hw hN
+    set lam := Real.exp (κ / 2) with hlam
+    have hlam0 : 0 < lam := Real.exp_pos _
+    refine ⟨min cA₁ (cB₁ * Real.exp (-C)) * m₀, cA₂ + cB₂ * Real.exp C,
+      by have := hcB₁; have := hcA₁; positivity, fun z hz ↦ ?_⟩
+    have hy : |z.im| = z.im := abs_of_nonneg hz
+    obtain ⟨hA1, hA2⟩ := hcA z
+    obtain ⟨hB1, hB2⟩ := hcB z hz
+    rw [hy] at hA1 hA2
+    have hU1 := abs_le.1 (hUκ (z - 1 / 2) (by simpa using hz))
+    simp only [Complex.sub_re, Complex.sub_im, Complex.one_re, Complex.one_im,
+      Complex.div_ofNat_re, Complex.div_ofNat_im] at hU1
+    set W := Real.exp (Real.pi * z.im + κ * z.re) with hWdef
+    have hW : 0 < W := Real.exp_pos _
+    set U1 := OCS.multU m 0 (z - 1 / 2) with hU1def
+    have e1 : Real.exp U1 ≤ Real.exp C * Real.exp (Real.pi * z.im + κ * (z.re - 1 / 2)) := by
+      rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+    have e2 : Real.exp (-C) * Real.exp (Real.pi * z.im + κ * (z.re - 1 / 2)) ≤ Real.exp U1 := by
+      rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+    have hlW : lam * Real.exp (Real.pi * z.im + κ * (z.re - 1 / 2)) = W := by
+      rw [hlam, hWdef, ← Real.exp_add]; congr 1; ring
+    set mΓ := min 1 (infDist z (OCS.multGammaC m)) with hmΓ
+    set mB := min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) with hmB
+    have hmΓ0 : 0 ≤ mΓ := le_min zero_le_one infDist_nonneg
+    have hmB0 : 0 ≤ mB := le_min zero_le_one infDist_nonneg
+    obtain ⟨hZ1, hZ2⟩ := norm_sq_bounds_lam hw hN hlam0 hz
+    have hpb := pair_bounds (X := ‖genA m z‖) (Y := lam * ‖compB m N z‖)
+      (Z := ‖genA m z - Complex.I * lam * compB m N z‖) (W := W) (mΓ := mΓ) (mB := mB)
+      (m₀ := m₀) (a₁ := cA₁) (a₂ := cA₂) (b₁ := cB₁ * Real.exp (-C)) (b₂ := cB₂ * Real.exp C)
+      hW hcA₁ (by positivity) hcA₂.le (by positivity) hm₀ (hmax z) hmΓ0 hmB0 (min_le_left _ _)
+      (min_le_left _ _) ⟨hA1, hA2⟩ ⟨?_, ?_⟩ (norm_nonneg _) hZ1 hZ2
+    · -- the norm of `E_κ`
+      have hnorm : ‖compEκ m κ N z‖ = Real.exp (-(κ * z.re)) *
+          ‖genA m z - Complex.I * lam * compB m N z‖ := by
+        unfold compEκ
+        rw [norm_mul, Complex.norm_exp]
+        congr 2
+        simp
+      have hexp : Real.exp (-(κ * z.re)) * W = Real.exp (Real.pi * z.im) := by
+        rw [hWdef, ← Real.exp_add]; congr 1; ring
+      have hexp0 : 0 < Real.exp (-(κ * z.re)) := Real.exp_pos _
+      rw [hnorm]
+      obtain ⟨hl, hu⟩ := hpb
+      constructor
+      · calc min cA₁ (cB₁ * Real.exp (-C)) * m₀ * Real.exp (Real.pi * z.im)
+            = Real.exp (-(κ * z.re)) * (min cA₁ (cB₁ * Real.exp (-C)) * m₀ * W) := by
+              rw [← hexp]; ring
+          _ ≤ _ := mul_le_mul_of_nonneg_left hl hexp0.le
+      · calc Real.exp (-(κ * z.re)) * ‖genA m z - Complex.I * lam * compB m N z‖
+            ≤ Real.exp (-(κ * z.re)) * ((cA₂ + cB₂ * Real.exp C) * W) :=
+              mul_le_mul_of_nonneg_left hu hexp0.le
+          _ = (cA₂ + cB₂ * Real.exp C) * Real.exp (Real.pi * z.im) := by rw [← hexp]; ring
+    · calc cB₁ * Real.exp (-C) * W * mB = cB₁ * (lam * (Real.exp (-C) *
+            Real.exp (Real.pi * z.im + κ * (z.re - 1 / 2)))) * mB := by rw [← hlW]; ring
+        _ ≤ cB₁ * (lam * Real.exp U1) * mB := by gcongr
+        _ = lam * (cB₁ * Real.exp U1 * mB) := by ring
+        _ ≤ lam * ‖compB m N z‖ := by gcongr
+    · calc lam * ‖compB m N z‖ ≤ lam * (cB₂ * Real.exp U1 * mB) := by gcongr
+        _ ≤ lam * (cB₂ * (Real.exp C * Real.exp (Real.pi * z.im + κ * (z.re - 1 / 2))) * mB) := by
+            gcongr
+        _ = cB₂ * Real.exp C * W * mB := by rw [← hlW]; ring
+  · intro z
+    rw [show compEκ m κ N z + fstar (compEκ m κ N) z = 2 * Complex.exp (-((κ : ℂ) * z)) *
+      genA m z from compEκ_add_fstar hw κ N z]
+    simp only [mul_eq_zero, two_ne_zero, Complex.exp_ne_zero, false_or, genA_eq_zero_iff hw]
+    constructor
+    · rintro ⟨j, hj⟩; exact ⟨_, ⟨j, rfl⟩, hj⟩
+    · rintro ⟨γ, ⟨j, rfl⟩, hj⟩; exact ⟨j, hj⟩
 
 end Phase
 

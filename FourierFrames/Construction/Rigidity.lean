@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Rigidity of phases under uniform convergence (aux file for `Construction.lean`, M07 §2.7(b))

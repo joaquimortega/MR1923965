@@ -8,8 +8,8 @@ The vendored `OCS.multF_estimate_two` states `∃ c₁ c₂` *after* fixing the 
 an explicit expression in `a, b` only (the constants `K₁, K₂, K₃` of that proof), so the constants
 can be chosen uniformly over all weights `m` with `a ≤ m ≤ b`.  This uniform form is what M09
 (`Theorem2ii.lean`) needs.  The file is not part of the vendored library, which must not be edited;
-its proof is "re-run the proof of `OCS.multF_estimate_two` with `K` taken from the explicit
-formula" and is left as `sorry` in the scaffold.
+its proof re-runs the proof of `OCS.multF_estimate_two` with `K` taken from the explicit
+formula.
 -/
 
 open MeasureTheory Metric Set Complex Filter Topology
