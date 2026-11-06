@@ -4,6 +4,7 @@ import FourierFrames.Theorem1.Sufficiency
 import FourierFrames.HB.Comparable
 import FourierFrames.Corollary2.Affine
 import FourierFrames.Corollary2.Kernel
+import FourierFrames.Corollary2.Density
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -235,7 +236,118 @@ theorem exists_modified_density {w : ℝ → ℝ} (hw : Continuous w)
       (∀ t, m t ≤ b) ∧ (∀ t, R < |t| → m t = 1 + w t) ∧
       (∫ t, (m t - (1 + w t)) = 0) ∧
       (∫ t, (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * ((m t - (1 + w t)) / t)) = -β := by
-  sorry
+  obtain ⟨B, hB⟩ := bounded_of_tendsto_cocompact hw hw0
+  have hB0 : 0 ≤ B := (abs_nonneg _).trans (hB 0)
+  have hwm : Measurable w := hw.measurable
+  set P : ℝ → ℝ := fun R ↦ ∫ t in Icc (-R) R, rho t with hPdef
+  set A : ℝ → ℝ := fun R ↦ ∫ t in Icc (-R) R, rho t * (sig t * w t) with hAdef
+  set W : ℝ → ℝ := fun R ↦ ∫ t in Icc (-R) R, w t with hWdef
+  have hPt : Tendsto P atTop atTop := rho_tendsto
+  have hPpos : ∀ᶠ R in atTop, 0 < P R := hPt.eventually (eventually_gt_atTop 0)
+  -- Cesàro for `w`
+  have hW : Tendsto (fun R ↦ W R / (2 * R)) atTop (𝓝 0) := by
+    have := weighted_cesaro (ρ := fun _ ↦ (1 : ℝ)) (u := w) (fun _ ↦ zero_le_one)
+      (fun R ↦ integrableOn_const (by simp)) hwm hB hw0
+      (by
+        refine tendsto_atTop_mono' atTop (eventually_atTop.mpr ⟨0, fun R hR ↦ ?_⟩)
+          (tendsto_id.const_mul_atTop (show (0:ℝ) < 2 by norm_num))
+        simp only [setIntegral_const, smul_eq_mul, mul_one, id,
+          Real.volume_real_Icc_of_le (by linarith : -R ≤ R)]
+        linarith)
+    refine this.congr' (eventually_atTop.mpr ⟨0, fun R hR ↦ ?_⟩)
+    simp only [setIntegral_const, smul_eq_mul, mul_one, one_mul, Real.volume_real_Icc_of_le (by linarith : -R ≤ R)]
+    simp only [hWdef]
+    ring_nf
+  -- Cesàro for `σ w` against `ρ`
+  have hA : Tendsto (fun R ↦ A R / P R) atTop (𝓝 0) := by
+    refine weighted_cesaro (ρ := rho) (u := fun t ↦ sig t * w t) rho_nonneg integrableOn_rho
+      (measurable_sig.mul hwm) (B := B) (fun t ↦ ?_) ?_ rho_tendsto
+    · rw [abs_mul]
+      calc |sig t| * |w t| ≤ 1 * B := by gcongr; exact abs_sig_le t; exact hB t
+        _ = B := one_mul B
+    · refine squeeze_zero_norm (a := fun t ↦ ‖w t‖) (fun t ↦ ?_) (by simpa using hw0.norm)
+      rw [norm_mul]
+      calc ‖sig t‖ * ‖w t‖ ≤ 1 * ‖w t‖ := by
+            gcongr; simpa using abs_sig_le t
+        _ = _ := one_mul _
+  have hs : Tendsto (fun R ↦ (A R - β) / P R) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun R ↦ β / P R) atTop (𝓝 0) := tendsto_const_nhds.div_atTop hPt
+    have := hA.sub h1
+    simp only [sub_zero] at this
+    refine this.congr' (hPpos.mono fun R hR ↦ ?_)
+    field_simp
+  -- eventually good `R`
+  have hX : ∃ X : ℝ, ∀ t, X ≤ |t| → |w t| ≤ 1 / 4 := by
+    have h1 : {t : ℝ | |w t| < 1 / 4} ∈ cocompact ℝ := by
+      have := hw0.eventually (Metric.ball_mem_nhds 0 (show (0:ℝ) < 1 / 4 by norm_num))
+      filter_upwards [this] with t ht
+      simpa using ht
+    obtain ⟨K, hK, hKs⟩ := Filter.mem_cocompact.mp h1
+    obtain ⟨X, hX⟩ := hK.isBounded.subset_closedBall 0
+    refine ⟨|X| + 1, fun t ht ↦ ?_⟩
+    have : t ∉ K := fun h ↦ by
+      have := hX h
+      simp only [Metric.mem_closedBall, dist_zero_right, Real.norm_eq_abs] at this
+      linarith [le_abs_self X, abs_nonneg X]
+    exact (hKs this).le
+  obtain ⟨X, hX⟩ := hX
+  have hgood : ∀ᶠ R in atTop, 1 < R ∧ |W R / (2 * R)| ≤ 1 / 4 ∧ 0 < P R ∧
+      |(A R - β) / P R| ≤ 1 / 8 ∧ X ≤ R := by
+    have e1 := eventually_gt_atTop (1 : ℝ)
+    have e2 := (Metric.tendsto_nhds.mp hW) (1 / 4) (by norm_num)
+    have e3 := (Metric.tendsto_nhds.mp hs) (1 / 8) (by norm_num)
+    have e4 := eventually_ge_atTop X
+    filter_upwards [e1, e2, hPpos, e3, e4] with R h1 h2 h3 h4 h5
+    refine ⟨h1, ?_, h3, ?_, h5⟩
+    · rw [Real.dist_eq, sub_zero] at h2; exact h2.le
+    · rw [Real.dist_eq, sub_zero] at h4; exact h4.le
+  obtain ⟨R, hR1, hWc, hP, hsb, hXR⟩ := hgood.exists
+  set c : ℝ := 1 + W R / (2 * R) with hc
+  set s : ℝ := (A R - β) / P R with hsdef
+  have hR0 : 0 < R := by linarith
+  refine ⟨R, modDens w R c s, 5 / 8, 2 + B, hR0, by norm_num, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- measurable
+    unfold modDens
+    refine Measurable.ite (measurableSet_le measurable_id.abs measurable_const) ?_ ?_
+    · exact measurable_const.add (measurable_const.mul measurable_sig)
+    · exact measurable_const.add hwm
+  · intro t
+    unfold modDens
+    split_ifs with h
+    · have h1 := abs_sig_le t
+      have h2 : |s| ≤ 1 / 8 := hsb
+      have h3 : |W R / (2 * R)| ≤ 1 / 4 := hWc
+      have h4 : |s * sig t| ≤ 1 / 8 := by
+        rw [abs_mul]; calc |s| * |sig t| ≤ 1 / 8 * 1 := by gcongr
+          _ = 1 / 8 := by norm_num
+      have := abs_le.mp h4
+      have := abs_le.mp h3
+      linarith
+    · push Not at h
+      have := abs_le.mp (hX t (hXR.trans h.le))
+      linarith
+  · intro t
+    unfold modDens
+    split_ifs with h
+    · have h1 := abs_sig_le t
+      have h2 : |s| ≤ 1 / 8 := hsb
+      have h3 : |W R / (2 * R)| ≤ 1 / 4 := hWc
+      have h4 : |s * sig t| ≤ 1 / 8 := by
+        rw [abs_mul]; calc |s| * |sig t| ≤ 1 / 8 * 1 := by gcongr
+          _ = 1 / 8 := by norm_num
+      have := abs_le.mp h4
+      have := abs_le.mp h3
+      linarith
+    · have := (abs_le.mp (hB t)).2
+      linarith
+  · intro t ht
+    unfold modDens
+    simp only [not_le.mpr ht, ↓reduceIte]
+  · refine integral_modDens_sub_zero hw hR0 ?_
+    rw [hc]; field_simp; ring
+  · refine integral_modDens_moment hw hB hR0 ?_
+    show s * P R = A R - β
+    rw [hsdef]; field_simp
 
 /-- **Good density.**  Under the hypotheses of Corollary 2 and for a phase function `φ_f`, there
 are a density `m` (`a ≤ m ≤ b`, `m → 1`) with `U_m - π Im z = O(1)` on `Im z ≥ 0` and a constant `κ`
@@ -374,20 +486,6 @@ theorem sub_le_mul_sub_of_hasDerivAt {Θ d : ℝ → ℝ} (hΘ : ∀ x, HasDeriv
     (hd : ∀ x, d x ≤ C) {x y : ℝ} (hxy : x ≤ y) : Θ y - Θ x ≤ C * (y - x) :=
   image_sub_le_mul_sub_of_deriv_le (fun x ↦ (hΘ x).differentiableAt)
     (fun x ↦ by rw [(hΘ x).deriv]; exact hd x) hxy
-
-/-- A continuous function tending to `0` at infinity is bounded. -/
-theorem bounded_of_tendsto_cocompact {g : ℝ → ℝ} (hg : Continuous g)
-    (h : Tendsto g (cocompact ℝ) (𝓝 0)) : ∃ M : ℝ, ∀ x, |g x| ≤ M := by
-  have h1 : {x | g x ∈ Metric.closedBall (0 : ℝ) 1} ∈ cocompact ℝ :=
-    h.eventually (Metric.closedBall_mem_nhds 0 one_pos)
-  obtain ⟨t, ht, hts⟩ := Filter.mem_cocompact.mp h1
-  obtain ⟨C, hC⟩ := ht.exists_bound_of_continuousOn hg.continuousOn
-  refine ⟨max C 1, fun x ↦ ?_⟩
-  by_cases hx : x ∈ t
-  · exact (hC x hx).trans (le_max_left _ _)
-  · have := hts hx
-    simp only [mem_ofPred_eq, Metric.mem_closedBall, dist_zero_right, Real.norm_eq_abs] at this
-    exact this.trans (le_max_right _ _)
 
 end PhasePerturbation
 
