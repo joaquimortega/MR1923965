@@ -90,7 +90,8 @@ theorem multU_compact_sub_linear {h : ℝ → ℝ} (hh : Measurable h) {M R : �
     (hM : ∀ t, |h t| ≤ M) (hR : ∀ t, R < |t| → h t = 0) (h0 : ∫ t, h t = 0) :
     ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU h 0 z - (∫ t, (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * (h t / t)) * z.re| ≤ C := by
-  sorry
+  obtain ⟨C, hC⟩ := multU_compact_aux hh hM hR h0
+  exact ⟨C, fun z _ ↦ hC z⟩
 
 end Potentials
 

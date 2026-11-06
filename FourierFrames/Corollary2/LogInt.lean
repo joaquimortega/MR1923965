@@ -378,4 +378,205 @@ theorem potBound_le (z : ℂ) : potBound z ≤ 45 * (1 + ‖z‖) ^ (3 / 2 : ℝ
   linarith
 
 
+
+theorem log_norm_one_sub_div (z : ℂ) {t : ℝ} (ht : t ≠ 0) (hz : t ≠ z.re) :
+    Real.log ‖1 - z / (t : ℂ)‖ = Real.log ‖(t : ℂ) - z‖ - Real.log |t| := by
+  have htc : (t : ℂ) ≠ 0 := by exact_mod_cast ht
+  have h1 : ‖1 - z / (t : ℂ)‖ = ‖(t : ℂ) - z‖ / |t| := by
+    have : (1 : ℂ) - z / t = ((t : ℂ) - z) / t := by field_simp
+    rw [this, norm_div]; simp
+  have hnz : ‖(t : ℂ) - z‖ ≠ 0 := by
+    intro h
+    have := norm_eq_zero.mp h
+    have := congrArg Complex.re this
+    simp at this
+    exact hz (by linarith)
+  rw [h1, Real.log_div hnz (abs_ne_zero.mpr ht)]
+
+theorem potKernel_mul_split (z : ℂ) (h : ℝ → ℝ) (t : ℝ) :
+    potKernel z t * h t = Real.log ‖1 - z / (t : ℂ)‖ * h t + z.re * (chi t * (h t / t)) := by
+  unfold potKernel
+  have : (z / (t : ℂ)).re = z.re / t := Complex.div_ofReal_re z t
+  show (Real.log ‖1 - z / (t : ℂ)‖ + chi t * (z / (t : ℂ)).re) * h t = _
+  rw [this]; ring
+
+/-- A function supported in `[-R, R]` has the same integral over `ℝ` and over `[-R, R]`. -/
+theorem integral_eq_Icc_of_support {F : ℝ → ℝ} {R : ℝ} (hR : 0 ≤ R) (hF : ∀ t, R < |t| → F t = 0) :
+    ∫ t in Icc (-R) R, F t = ∫ t, F t := by
+  refine setIntegral_eq_integral_of_forall_compl_eq_zero fun t ht ↦ hF t ?_
+  simp only [mem_Icc, not_and_or, not_le] at ht
+  rcases ht with h1 | h1
+  · rw [abs_of_neg (by linarith)]; linarith
+  · rw [abs_of_pos (by linarith)]; linarith
+
+
+theorem abs_log_norm_one_sub_le {u : ℂ} (hu : ‖u‖ ≤ 1 / 2) : |Real.log ‖1 - u‖| ≤ 1 := by
+  have h1 : Real.log ‖1 - u‖ = (Complex.log (1 + (-u))).re := by
+    rw [Complex.log_re, ← sub_eq_add_neg]
+  rw [h1]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  have := Complex.norm_log_one_add_half_le_self (z := -u) (by rw [norm_neg]; exact hu)
+  rw [norm_neg] at this
+  linarith
+
+theorem multU_compact_aux {h : ℝ → ℝ} (hh : Measurable h) {M R : ℝ}
+    (hM : ∀ t, |h t| ≤ M) (hR : ∀ t, R < |t| → h t = 0) (h0 : ∫ t, h t = 0) :
+    ∃ C : ℝ, ∀ z : ℂ,
+      |OCS.multU h 0 z - (∫ t, chi t * (h t / t)) * z.re| ≤ C := by
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
+  set Rm : ℝ := max R 1 with hRm
+  have hRm1 : 1 ≤ Rm := le_max_right _ _
+  have hRm0 : 0 ≤ Rm := by linarith
+  have hsupp : ∀ t, Rm < |t| → h t = 0 := fun t ht ↦ hR t (lt_of_le_of_lt (le_max_left _ _) ht)
+  set A1 : ℝ := 2 * Rm * Real.log (3 * Rm + 3) + 2 with hA1
+  set A0 : ℝ := 2 * Rm * Real.log (1 + Rm) + 2 with hA0
+  have hA1' : 0 ≤ A1 := by
+    have : 0 ≤ Real.log (3 * Rm + 3) := Real.log_nonneg (by linarith)
+    simp only [hA1]; positivity
+  have hA0' : 0 ≤ A0 := by
+    have : 0 ≤ Real.log (1 + Rm) := Real.log_nonneg (by linarith)
+    simp only [hA0]; positivity
+  refine ⟨M * (A1 + A0 + 2 * Rm), fun z ↦ ?_⟩
+  have hint := integrable_potKernel_mul hh hM z
+  have hmeasL : Measurable fun t : ℝ ↦ chi t * (h t / t) :=
+    measurable_chi.mul (hh.div measurable_id)
+  have hLb : ∀ t, |chi t * (h t / t)| ≤ M := fun t ↦ by
+    have : chi t * (h t / t) = (chi t / t) * h t := by ring
+    rw [this, abs_mul]
+    calc |chi t / t| * |h t| ≤ 1 * M := mul_le_mul (abs_chi_div_le t) (hM t) (abs_nonneg _) zero_le_one
+      _ = M := one_mul M
+  have hℓi : IntegrableOn (fun t ↦ chi t * (h t / t)) (Icc (-Rm) Rm) :=
+    integrableOn_of_abs_le hmeasL hLb Rm
+  have hℓ : ∫ t, chi t * (h t / t) = ∫ t in Icc (-Rm) Rm, chi t * (h t / t) :=
+    (integral_eq_Icc_of_support hRm0 fun t ht ↦ by simp [hsupp t ht]).symm
+  have e1 : OCS.multU h 0 z = ∫ t in Icc (-Rm) Rm, potKernel z t * h t := by
+    rw [multU_eq_integral, integral_eq_Icc_of_support hRm0 fun t ht ↦ by simp [hsupp t ht]]
+  have hκi : IntegrableOn (fun t : ℝ ↦ Real.log ‖1 - z / (t : ℂ)‖ * h t) (Icc (-Rm) Rm) := by
+    have := hint.integrableOn (s := Icc (-Rm) Rm) |>.sub (hℓi.const_mul z.re)
+    refine this.congr_fun (fun t _ ↦ ?_) measurableSet_Icc
+    show potKernel z t * h t - z.re * (chi t * (h t / t)) = _
+    rw [potKernel_mul_split z h t]; ring
+  have e3 : OCS.multU h 0 z - (∫ t, chi t * (h t / t)) * z.re =
+      ∫ t in Icc (-Rm) Rm, Real.log ‖1 - z / (t : ℂ)‖ * h t := by
+    rw [e1, hℓ]
+    simp_rw [potKernel_mul_split z h]
+    rw [integral_add hκi (hℓi.const_mul z.re), integral_const_mul]
+    ring
+  rw [e3]
+  have hnull : ∀ᵐ t ∂(volume : Measure ℝ), t ∉ ({0, z.re} : Set ℝ) :=
+    (Set.toFinite _).countable.ae_notMem volume
+  have hI0 := (integrableOn_log_norm_sub 0 Rm).abs
+  have e0 := integral_abs_log_norm_sub_le 0 hRm0
+  simp only [norm_zero, add_zero] at e0
+  by_cases hz : ‖z‖ ≤ 2 * Rm + 2
+  · -- small `z`
+    have hI1 := (integrableOn_log_norm_sub z Rm).abs
+    have e1' := integral_abs_log_norm_sub_le z hRm0
+    have hlog : Real.log (1 + Rm + ‖z‖) ≤ Real.log (3 * Rm + 3) :=
+      Real.log_le_log (by linarith [norm_nonneg z]) (by linarith)
+    calc |∫ t in Icc (-Rm) Rm, Real.log ‖1 - z / (t : ℂ)‖ * h t|
+        ≤ ∫ t in Icc (-Rm) Rm, |Real.log ‖1 - z / (t : ℂ)‖ * h t| := abs_integral_le_integral_abs
+      _ ≤ ∫ t in Icc (-Rm) Rm, M * (|Real.log ‖(t : ℂ) - z‖| + |Real.log ‖(t : ℂ) - 0‖|) := by
+          refine integral_mono_ae hκi.abs ((hI1.add hI0).const_mul M) ?_
+          filter_upwards [ae_restrict_of_ae hnull] with t ht
+          simp only [mem_insert_iff, mem_singleton_iff, not_or] at ht
+          rw [log_norm_one_sub_div z ht.1 ht.2, abs_mul]
+          have h1 : |Real.log ‖(t : ℂ) - z‖ - Real.log (|t|)| ≤
+              |Real.log ‖(t : ℂ) - z‖| + |Real.log ‖(t : ℂ) - 0‖| := by
+            have : Real.log ‖(t : ℂ) - 0‖ = Real.log |t| := by simp
+            rw [this]; exact abs_sub _ _
+          calc |Real.log ‖(t : ℂ) - z‖ - Real.log (|t|)| * |h t|
+              ≤ (|Real.log ‖(t : ℂ) - z‖| + |Real.log ‖(t : ℂ) - 0‖|) * M :=
+                mul_le_mul h1 (hM t) (abs_nonneg _) (by positivity)
+            _ = _ := by ring
+      _ = M * ((∫ t in Icc (-Rm) Rm, |Real.log ‖(t : ℂ) - z‖|) +
+            ∫ t in Icc (-Rm) Rm, |Real.log ‖(t : ℂ) - 0‖|) := by
+          rw [integral_const_mul, integral_add hI1 hI0]
+      _ ≤ M * (A1 + A0) := by
+          gcongr
+          · calc (∫ t in Icc (-Rm) Rm, |Real.log ‖(t : ℂ) - z‖|)
+                ≤ 2 * Rm * Real.log (1 + Rm + ‖z‖) + 2 := e1'
+              _ ≤ A1 := by simp only [hA1]
+                           gcongr
+      _ ≤ _ := by nlinarith [mul_nonneg hM0 hRm0]
+  · -- large `z`
+    push Not at hz
+    have hz0 : z ≠ 0 := by
+      intro h; rw [h, norm_zero] at hz; linarith
+    have hzpos : 0 < ‖z‖ := norm_pos_iff.mpr hz0
+    have hhI : IntegrableOn h (Icc (-Rm) Rm) := integrableOn_of_abs_le hh hM Rm
+    have hu : ∀ t ∈ Icc (-Rm) Rm, ‖(t / z : ℂ)‖ ≤ 1 / 2 := by
+      intro t ht
+      rw [norm_div]
+      have : ‖(t : ℂ)‖ ≤ Rm := by simpa using abs_le.mpr ⟨ht.1, ht.2⟩
+      rw [div_le_iff₀ hzpos]
+      linarith
+    have hB1m : Measurable fun t : ℝ ↦ Real.log ‖1 - (t : ℂ) / z‖ * h t :=
+      (Real.measurable_log.comp (by fun_prop)).mul hh
+    have hB1i : IntegrableOn (fun t : ℝ ↦ Real.log ‖1 - (t : ℂ) / z‖ * h t) (Icc (-Rm) Rm) := by
+      refine Measure.integrableOn_of_bounded (M := M) (by simp) hB1m.aestronglyMeasurable ?_
+      filter_upwards [ae_restrict_mem measurableSet_Icc] with t ht
+      rw [Real.norm_eq_abs, abs_mul]
+      calc |Real.log ‖1 - (t : ℂ) / z‖| * |h t| ≤ 1 * M :=
+            mul_le_mul (abs_log_norm_one_sub_le (hu t ht)) (hM t) (abs_nonneg _) zero_le_one
+        _ = M := one_mul M
+    have hlogh : IntegrableOn (fun t : ℝ ↦ Real.log ‖(t : ℂ) - 0‖ * h t) (Icc (-Rm) Rm) :=
+      (integrableOn_log_norm_sub 0 Rm).mul_bdd (c := M) hh.aestronglyMeasurable
+        (ae_of_all _ fun t ↦ by simpa using hM t)
+    have hconsth : IntegrableOn (fun t : ℝ ↦ Real.log ‖z‖ * h t) (Icc (-Rm) Rm) := hhI.const_mul _
+    have hsplit : ∀ᵐ t : ℝ ∂(volume.restrict (Icc (-Rm) Rm)),
+        Real.log ‖1 - z / (t : ℂ)‖ * h t = Real.log ‖1 - (t : ℂ) / z‖ * h t + Real.log ‖z‖ * h t
+          - Real.log ‖(t : ℂ) - 0‖ * h t := by
+      filter_upwards [ae_restrict_of_ae hnull, ae_restrict_mem measurableSet_Icc] with t ht ht'
+      simp only [mem_insert_iff, mem_singleton_iff, not_or] at ht
+      have htc : (t : ℂ) ≠ 0 := by exact_mod_cast ht.1
+      have hpos : 0 < ‖1 - (t : ℂ) / z‖ := by
+        rw [norm_pos_iff]
+        intro h1
+        have := hu t ht'
+        have h2 : (t : ℂ) / z = 1 := by linear_combination -h1
+        rw [h2] at this; simp at this; linarith
+      have e : ‖1 - z / (t : ℂ)‖ = ‖z‖ / |t| * ‖1 - (t : ℂ) / z‖ := by
+        have : (1 : ℂ) - z / t = (-z / t) * (1 - t / z) := by field_simp; ring
+        rw [this, norm_mul, norm_div, norm_neg]; simp
+      rw [e, Real.log_mul (div_pos hzpos (abs_pos.mpr ht.1)).ne' hpos.ne',
+        Real.log_div hzpos.ne' (abs_ne_zero.mpr ht.1)]
+      simp only [sub_zero, Complex.norm_real, Real.norm_eq_abs]
+      ring
+    have e4 : ∫ t in Icc (-Rm) Rm, Real.log ‖1 - z / (t : ℂ)‖ * h t =
+        (∫ t in Icc (-Rm) Rm, Real.log ‖1 - (t : ℂ) / z‖ * h t) + Real.log ‖z‖ * 0
+          - ∫ t in Icc (-Rm) Rm, Real.log ‖(t : ℂ) - 0‖ * h t := by
+      rw [integral_congr_ae hsplit]
+      have hsum : IntegrableOn (fun t : ℝ ↦ Real.log ‖1 - (t : ℂ) / z‖ * h t + Real.log ‖z‖ * h t)
+          (Icc (-Rm) Rm) := hB1i.add hconsth
+      rw [integral_sub hsum hlogh, integral_add hB1i hconsth, integral_const_mul,
+        integral_eq_Icc_of_support hRm0 hsupp, h0]
+    rw [e4]
+    have b1 : |∫ t in Icc (-Rm) Rm, Real.log ‖1 - (t : ℂ) / z‖ * h t| ≤ M * (2 * Rm) := by
+      calc _ ≤ ∫ t in Icc (-Rm) Rm, |Real.log ‖1 - (t : ℂ) / z‖ * h t| := abs_integral_le_integral_abs
+        _ ≤ ∫ t in Icc (-Rm) Rm, M := by
+            refine integral_mono_ae hB1i.abs (integrableOn_const (by simp)) ?_
+            filter_upwards [ae_restrict_mem measurableSet_Icc] with t ht
+            rw [abs_mul]
+            calc |Real.log ‖1 - (t : ℂ) / z‖| * |h t| ≤ 1 * M :=
+                  mul_le_mul (abs_log_norm_one_sub_le (hu t ht)) (hM t) (abs_nonneg _) zero_le_one
+              _ = M := one_mul M
+        _ = M * (2 * Rm) := by
+            simp only [setIntegral_const, smul_eq_mul, Real.volume_real_Icc_of_le (by linarith : -Rm ≤ Rm)]
+            ring
+    have b2 : |∫ t in Icc (-Rm) Rm, Real.log ‖(t : ℂ) - 0‖ * h t| ≤ M * A0 := by
+      calc _ ≤ ∫ t in Icc (-Rm) Rm, |Real.log ‖(t : ℂ) - 0‖ * h t| := abs_integral_le_integral_abs
+        _ ≤ ∫ t in Icc (-Rm) Rm, M * |Real.log ‖(t : ℂ) - 0‖| := by
+            refine integral_mono_ae hlogh.abs (hI0.const_mul M) ?_
+            filter_upwards with t
+            rw [abs_mul, mul_comm]
+            exact mul_le_mul_of_nonneg_right (hM t) (abs_nonneg _)
+        _ = M * ∫ t in Icc (-Rm) Rm, |Real.log ‖(t : ℂ) - 0‖| := integral_const_mul _ _
+        _ ≤ M * A0 := by gcongr
+    simp only [mul_zero, add_zero]
+    have := abs_sub (∫ t in Icc (-Rm) Rm, Real.log ‖1 - (t : ℂ) / z‖ * h t)
+      (∫ t in Icc (-Rm) Rm, Real.log ‖(t : ℂ) - 0‖ * h t)
+    nlinarith [mul_nonneg hM0 hA1', mul_nonneg hM0 hA0']
+
+
 end FF
