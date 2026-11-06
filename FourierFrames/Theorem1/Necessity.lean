@@ -444,16 +444,32 @@ def sampMeasure (Λ : Set ℝ) (E : ℂ → ℂ) : Measure ℝ :=
 
 theorem lintegral_sampMeasure (Λ : Set ℝ) (E : ℂ → ℂ) (g : ℝ → ℝ≥0∞) :
     ∫⁻ t, g t ∂(sampMeasure Λ E) =
-      ∑' x : Λ, ENNReal.ofReal (‖E ((x : ℝ) : ℂ)‖ ^ 2) * g (x : ℝ) := sorry
+      ∑' x : Λ, ENNReal.ofReal (‖E ((x : ℝ) : ℂ)‖ ^ 2) * g (x : ℝ) := by
+  unfold sampMeasure
+  rw [lintegral_sum_measure]
+  refine tsum_congr fun x ↦ ?_
+  rw [lintegral_smul_measure, lintegral_dirac]
+  rfl
 
 /-- `∫ |f/E|² dμ = ∑_{λ ∈ Λ} |f(λ)|²` when `E` has no real zeros. -/
 theorem lintegral_sampMeasure_div {Λ : Set ℝ} {E : ℂ → ℂ} (hE0 : ∀ x : ℝ, E (x : ℂ) ≠ 0)
-    (f : ℂ → ℂ) : ∫⁻ t : ℝ, ‖f t / E t‖ₑ ^ 2 ∂(sampMeasure Λ E) = sampleSum Λ f := sorry
+    (f : ℂ → ℂ) : ∫⁻ t : ℝ, ‖f t / E t‖ₑ ^ 2 ∂(sampMeasure Λ E) = sampleSum Λ f := by
+  rw [lintegral_sampMeasure]
+  unfold sampleSum
+  refine tsum_congr fun x ↦ ?_
+  have h0 : ‖E ((x : ℝ) : ℂ)‖ ≠ 0 := by simpa using hE0 x
+  rw [← ofReal_norm (f ((x : ℝ) : ℂ) / E ((x : ℝ) : ℂ)), ← ofReal_norm (f ((x : ℝ) : ℂ)),
+    ← ENNReal.ofReal_pow (norm_nonneg _), ← ENNReal.ofReal_pow (norm_nonneg _),
+    ← ENNReal.ofReal_mul (by positivity)]
+  congr 1
+  rw [norm_div]
+  field_simp
 
 theorem poissonInt_sampMeasure (Λ : Set ℝ) (E : ℂ → ℂ) (z : ℂ) :
     poissonInt (sampMeasure Λ E) z =
       ∑' x : Λ, ENNReal.ofReal (‖E ((x : ℝ) : ℂ)‖ ^ 2) *
-        ENNReal.ofReal (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := sorry
+        ENNReal.ofReal (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) :=
+  lintegral_sampMeasure Λ E _
 
 /-- The quotient `(E + E^* A)/(E - E^* A)` of Theorem F. -/
 def hbQuot (E A : ℂ → ℂ) (z : ℂ) : ℂ :=
@@ -461,11 +477,24 @@ def hbQuot (E A : ℂ → ℂ) (z : ℂ) : ℂ :=
 
 /-- The denominator does not vanish on `ℂ₊` (this uses strictness of `E`). -/
 theorem denom_ne_zero {E A : ℂ → ℂ} (hE : IsStrictHB E) {z : ℂ} (hz : 0 < z.im)
-    (hA : ‖A z‖ ≤ 1) : E z - fstar E z * A z ≠ 0 := sorry
+    (hA : ‖A z‖ ≤ 1) : E z - fstar E z * A z ≠ 0 := by
+  intro h
+  have h1 : E z = fstar E z * A z := sub_eq_zero.1 h
+  have h2 := hE.2 z hz
+  rw [← norm_fstar] at h2
+  have h3 : ‖E z‖ ≤ ‖fstar E z‖ := by
+    rw [h1, norm_mul]
+    exact mul_le_of_le_one_right (norm_nonneg _) hA
+  linarith
 
 theorem differentiableOn_hbQuot {E A : ℂ → ℂ} (hE : IsStrictHB E)
     (hA : DifferentiableOn ℂ A {z : ℂ | 0 < z.im}) (hA1 : ∀ z : ℂ, 0 < z.im → ‖A z‖ ≤ 1) :
-    DifferentiableOn ℂ (hbQuot E A) {z : ℂ | 0 < z.im} := sorry
+    DifferentiableOn ℂ (hbQuot E A) {z : ℂ | 0 < z.im} := by
+  have hEd : Differentiable ℂ E := hE.1.1
+  have h1 : DifferentiableOn ℂ E {z : ℂ | 0 < z.im} := hEd.differentiableOn
+  have h2 : DifferentiableOn ℂ (fstar E) {z : ℂ | 0 < z.im} := (Differentiable.fstar hEd).differentiableOn
+  unfold hbQuot
+  exact (h1.add (h2.mul hA)).div (h1.sub (h2.mul hA)) fun z hz ↦ denom_ne_zero hE hz (hA1 z hz)
 
 /-- Step 3: Theorem F, with all the consequences used later (real-valued reformulation of the
 Poisson integral and summability of `|E(λ)|²/(1+λ²)`). -/
@@ -480,7 +509,45 @@ theorem exists_herglotz_data (hF : TheoremF) (Λ : Set ℝ) {E : ℂ → ℂ} (h
             (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2)))) ∧
           (∑' x : Λ, ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
             (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2)))) + p * z.im =
-            (hbQuot E A z).re := sorry
+            (hbQuot E A z).re := by
+  have hμ : ∀ f : ℂ → ℂ, MemHE E f →
+      ∫⁻ t : ℝ, ‖f t / E t‖ₑ ^ 2 ∂(sampMeasure Λ E) = heNormSq E f := by
+    intro f hf
+    rw [lintegral_sampMeasure_div hE0, hnorm f hf]
+  obtain ⟨A, hAd, hA1, p, hp, hP⟩ := hF (sampMeasure Λ E) E hE hE0 hμ
+  -- real reformulation of the Poisson integral
+  have hreal : ∀ z : ℂ, 0 < z.im →
+      Summable (fun x : Λ ↦ ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
+        (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2)))) ∧
+      (poissonInt (sampMeasure Λ E) z).toReal =
+        ∑' x : Λ, ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
+          (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := by
+    intro z hz
+    have hne := (hP z hz).1
+    have hnn : ∀ x : Λ, 0 ≤ ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
+        (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := fun x ↦ by positivity
+    have hpois : poissonInt (sampMeasure Λ E) z = ∑' x : Λ, ENNReal.ofReal
+        (‖E ((x : ℝ) : ℂ)‖ ^ 2 * (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2)))) := by
+      rw [poissonInt_sampMeasure]
+      refine tsum_congr fun x ↦ ?_
+      rw [ENNReal.ofReal_mul (by positivity)]
+    rw [hpois] at hne ⊢
+    have hs1 := ENNReal.summable_toReal hne
+    have hs2 : Summable (fun x : Λ ↦ ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
+        (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2)))) :=
+      hs1.congr fun x ↦ ENNReal.toReal_ofReal (hnn x)
+    refine ⟨hs2, ?_⟩
+    rw [ENNReal.tsum_toReal_eq (fun x ↦ ENNReal.ofReal_ne_top)]
+    exact tsum_congr fun x ↦ ENNReal.toReal_ofReal (hnn x)
+  refine ⟨A, hAd, hA1, p, hp, ?_, fun z hz ↦ ⟨(hreal z hz).1, ?_⟩⟩
+  · have h1 := (hreal I (by simp)).1.mul_left Real.pi
+    refine h1.congr fun x ↦ ?_
+    simp only [Complex.I_re, Complex.I_im, sub_zero]
+    have : (1 : ℝ) + (x : ℝ) ^ 2 ≠ 0 := by positivity
+    field_simp
+    ring
+  · rw [← (hreal z hz).2]
+    exact (hP z hz).2
 
 end StepF
 
