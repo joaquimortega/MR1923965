@@ -9,6 +9,7 @@ import FourierFrames.Corollary2.LogInt
 import FourierFrames.Corollary2.Reflection
 import FourierFrames.Corollary2.PotC
 import FourierFrames.Corollary2.PotCDiff
+import FourierFrames.Corollary2.LogNorm
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -76,16 +77,12 @@ theorem multU_const_mul {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : �
 `∫_{-T}^{T} log|1 - z/t| dt` with the antiderivative of `½ log(u² + y²)` and let `T → ∞`;
 the odd term `Re(z/t)` integrates to `0` over `[-T, T] ∖ [-1, 1]`.) -/
 theorem multU_one (z : ℂ) : OCS.multU (fun _ ↦ (1 : ℝ)) 0 z = Real.pi * |z.im| := by
-  sorry
+  exact multU_one_aux z
 
 /-- Growth of potentials of bounded densities. -/
 theorem abs_multU_le_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     ∃ K : ℝ, ∀ z : ℂ, |OCS.multU g 0 z| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
-  refine ⟨45 * M, fun z ↦ ?_⟩
-  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
-  calc |OCS.multU g 0 z| ≤ M * potBound z := abs_multU_le_potBound hg hM z
-    _ ≤ M * (45 * (1 + ‖z‖) ^ (3 / 2 : ℝ)) := by gcongr; exact potBound_le z
-    _ = 45 * M * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by ring
+  exact abs_multU_le_aux hg hM
 
 /-- Potential of a compactly supported bounded density of total mass `0`: bounded up to the linear
 term `(∫_{|t| > 1} h(t)/t dt) Re z` coming from the `Re(z/t)` normalisation. -/
@@ -156,60 +153,7 @@ theorem exists_entire_reflection {H : ℂ → ℂ} (hc : ContinuousOn H {z : ℂ
 theorem entire_affine_of_re_growth {H : ℂ → ℂ} (hH : Differentiable ℂ H) {K : ℝ}
     (hK : ∀ z : ℂ, |(H z).re| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ)) :
     ∃ α β : ℂ, ∀ z : ℂ, H z = α + β * z := by
-  obtain ⟨C, hC0, hC⟩ := norm_le_of_re_growth hH hK
-  have hH' : Differentiable ℂ (deriv H) := hH.deriv
-  -- bound on the derivative
-  have hder : ∀ R : ℝ, 1 ≤ R → ∀ w : ℂ, ‖w‖ ≤ 2 * R →
-      ‖deriv H w‖ ≤ C * (3 * R) ^ (3 / 2 : ℝ) / R := by
-    intro R hR w hw
-    refine Complex.norm_deriv_le_of_forall_mem_sphere_norm_le (by linarith) hH.diffContOnCl
-      (fun u hu ↦ ?_)
-    have hu' : ‖u - w‖ = R := by simpa [dist_eq_norm] using hu
-    have : ‖u‖ ≤ 3 * R := by
-      calc ‖u‖ = ‖(u - w) + w‖ := by ring_nf
-        _ ≤ ‖u - w‖ + ‖w‖ := norm_add_le _ _
-        _ ≤ 3 * R := by linarith
-    exact hC (3 * R) (by linarith) u this
-  have hsecond : ∀ c : ℂ, deriv (deriv H) c = 0 := by
-    intro c
-    have hbound : ∀ R : ℝ, 1 + ‖c‖ ≤ R → ‖deriv (deriv H) c‖ ≤ C * 3 ^ (3 / 2 : ℝ) / Real.sqrt R := by
-      intro R hR
-      have hR1 : 1 ≤ R := by linarith [norm_nonneg c]
-      have hRpos : 0 < R := by linarith
-      refine (Complex.norm_deriv_le_of_forall_mem_sphere_norm_le hRpos hH'.diffContOnCl
-        (C := C * (3 * R) ^ (3 / 2 : ℝ) / R) (fun u hu ↦ ?_)).trans ?_
-      · have hu' : ‖u - c‖ = R := by simpa [dist_eq_norm] using hu
-        refine hder R hR1 u ?_
-        calc ‖u‖ = ‖(u - c) + c‖ := by ring_nf
-          _ ≤ ‖u - c‖ + ‖c‖ := norm_add_le _ _
-          _ ≤ 2 * R := by linarith
-      · have hsq : Real.sqrt R * Real.sqrt R = R := Real.mul_self_sqrt hRpos.le
-        have hsqpos : 0 < Real.sqrt R := Real.sqrt_pos.mpr hRpos
-        have h32 : R ^ (3 / 2 : ℝ) = R * Real.sqrt R := by
-          rw [Real.sqrt_eq_rpow, ← Real.rpow_one_add' hRpos.le (by norm_num)]
-          norm_num
-        rw [Real.mul_rpow (by norm_num) hRpos.le, h32]
-        have : C * (3 ^ (3 / 2 : ℝ) * (R * Real.sqrt R)) / R / R = C * 3 ^ (3 / 2 : ℝ) / Real.sqrt R := by
-          field_simp
-          nlinarith [hsq]
-        rw [this]
-    have hlim : Tendsto (fun R : ℝ ↦ C * 3 ^ (3 / 2 : ℝ) / Real.sqrt R) atTop (𝓝 0) := by
-      have : Tendsto (fun R : ℝ ↦ Real.sqrt R) atTop atTop := by
-        simpa [Real.sqrt_eq_rpow] using tendsto_rpow_atTop (show (0:ℝ) < 1 / 2 by norm_num)
-      exact this.const_div_atTop _ |>.congr' (by filter_upwards with R; rfl)
-    have := ge_of_tendsto hlim (eventually_atTop.mpr ⟨1 + ‖c‖, fun R hR ↦ hbound R hR⟩)
-    exact norm_le_zero_iff.mp this
-  have hconst : ∀ z, deriv H z = deriv H 0 := fun z ↦
-    is_const_of_deriv_eq_zero hH' hsecond z 0
-  refine ⟨H 0, deriv H 0, fun z ↦ ?_⟩
-  have h2 : Differentiable ℂ (fun z ↦ H z - deriv H 0 * z) := hH.sub (differentiable_const _ |>.mul differentiable_id)
-  have h3 : ∀ z, deriv (fun z ↦ H z - deriv H 0 * z) z = 0 := fun z ↦ by
-    have hd : HasDerivAt (fun z ↦ H z - deriv H 0 * z) (deriv H z - deriv H 0 * 1) z :=
-      (hH z).hasDerivAt.sub ((hasDerivAt_id z).const_mul _)
-    rw [hd.deriv, hconst z]; ring
-  have := is_const_of_deriv_eq_zero h2 h3 z 0
-  simp at this
-  linear_combination this
+  exact entire_affine_aux hH hK
 
 /-- **Key identity** (the harmonic correction is affine).  Let `f` be entire without zeros on
 `Im z ≥ 0` with phase function `φ`, `φ' = g` continuous and bounded, and `|log|f|| ≲ (1+|z|)^{3/2}`
@@ -228,7 +172,7 @@ theorem log_norm_eq_multU_add_affine {f : ℂ → ℂ} (hf : Differentiable ℂ 
       |Real.log ‖f z‖| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ)) :
     ∃ b c : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       Real.log ‖f z‖ = OCS.multU g 0 z / Real.pi + b * z.re + c := by
-  sorry
+  exact log_norm_aux hf hf0 hφ hφ' hg hM hgrow
 
 end LogPotential
 

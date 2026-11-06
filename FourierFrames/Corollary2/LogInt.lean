@@ -579,4 +579,12 @@ theorem multU_compact_aux {h : ℝ → ℝ} (hh : Measurable h) {M R : ℝ}
     nlinarith [mul_nonneg hM0 hA1', mul_nonneg hM0 hA0']
 
 
+theorem abs_multU_le_aux {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
+    ∃ K : ℝ, ∀ z : ℂ, |OCS.multU g 0 z| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
+  refine ⟨45 * M, fun z ↦ ?_⟩
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
+  calc |OCS.multU g 0 z| ≤ M * potBound z := abs_multU_le_potBound hg hM z
+    _ ≤ M * (45 * (1 + ‖z‖) ^ (3 / 2 : ℝ)) := by gcongr; exact potBound_le z
+    _ = 45 * M * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by ring
+
 end FF
