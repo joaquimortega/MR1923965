@@ -1,6 +1,7 @@
 import FourierFrames.Theorem1.Necessity
 import FourierFrames.Theorem1.Sufficiency
 import FourierFrames.Corollary1.Rotate
+import FourierFrames.Corollary1.Kernel
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -188,8 +189,8 @@ theorem kernel_orthogonal (hPW : PaleyWienerThm) (hD : TheoremD) {E : ℂ → �
     (hEHB : IsHB E) (hEPW : HEEqPW E) {Λ : Set ℝ} (hΛ : IsSeparated Λ)
     (hcis : IsCompleteInterpolating Λ)
     (hnorm : ∀ f : ℂ → ℂ, MemPW f → heNormSq E f = sampleSum Λ f)
-    {a b : ℝ} (ha : a ∈ Λ) (hb : b ∈ Λ) (hab : a ≠ b) : deBrangesKernel E a b = 0 := by
-  sorry
+    {a b : ℝ} (ha : a ∈ Λ) (hb : b ∈ Λ) (hab : a ≠ b) : deBrangesKernel E a b = 0 :=
+  kernel_orthogonal_aux hPW hD hEHB hEPW hΛ hcis hnorm ha hb hab
 
 /-- Completeness: a complete interpolating `Λ` is a full level set of the phase. -/
 theorem levelSet_eq_of_cis (hPW : PaleyWienerThm) (hD : TheoremD) {E : ℂ → ℂ}
