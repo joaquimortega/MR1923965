@@ -2,6 +2,7 @@ import FourierFrames.Theorem1.Necessity
 import FourierFrames.Theorem1.Sufficiency
 import FourierFrames.Corollary1.Rotate
 import FourierFrames.Corollary1.Kernel
+import FourierFrames.Corollary1.ClosedGraph
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -133,8 +134,8 @@ theorem corollary1 (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE) (hF : 
 /-- A complete interpolating sequence is a sampling sequence (bounded inverse of the sampling map
 `PW → ℓ²(Λ)`, open mapping theorem). -/
 theorem isSampling_of_isCompleteInterpolating (hPW : PaleyWienerThm) {Λ : Set ℝ}
-    (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) : IsSampling Λ := by
-  sorry
+    (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) : IsSampling Λ :=
+  CG.isSampling_aux hPW hΛ hcis
 
 theorem HEEqPW.rotate {E : ℂ → ℂ} (h : HEEqPW E) (θ : ℝ) :
     HEEqPW (fun z ↦ Complex.exp (I * θ) * E z) :=
@@ -164,7 +165,7 @@ theorem deBrangesKernel_real {E : ℂ → ℂ} {φ : ℝ → ℝ} (hφ : IsPhase
   have hne : (y : ℂ) ≠ conj (x : ℂ) := by
     rw [Complex.conj_ofReal]; exact_mod_cast hxy.symm
   unfold deBrangesKernel
-  rw [if_neg hne]
+  simp only [hne, ↓reduceIte]
   have hx := hφ.2 x
   have hy := hφ.2 y
   simp only [fstar_apply, Complex.conj_ofReal, Complex.conj_conj]
