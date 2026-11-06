@@ -291,4 +291,52 @@ theorem integral_modDens_moment {w : ℝ → ℝ} (hw : Continuous w) {B : ℝ} 
   linarith
 
 
+theorem intervalIntegrable_of_abs_le {h : ℝ → ℝ} (hh : Measurable h) {M : ℝ}
+    (hM : ∀ t, |h t| ≤ M) (a b : ℝ) : IntervalIntegrable h volume a b := by
+  rw [intervalIntegrable_iff]
+  exact Measure.integrableOn_of_bounded (M := M) (by simp) hh.aestronglyMeasurable
+    (ae_of_all _ fun t ↦ by simpa using hM t)
+
+theorem integral_zero_of_mass_zero {h : ℝ → ℝ} (hh : Measurable h) {M R : ℝ}
+    (hM : ∀ t, |h t| ≤ M) (hR0 : 0 ≤ R) (hR : ∀ t, R < |t| → h t = 0) (h0 : ∫ t, h t = 0)
+    {x : ℝ} (hx : R ≤ |x|) : ∫ t in (0 : ℝ)..x, h t = ∫ t in (0 : ℝ)..R, h t := by
+  have hii := intervalIntegrable_of_abs_le hh hM
+  have htot : ∫ t in (-R)..R, h t = 0 := by
+    rw [intervalIntegral.integral_of_le (by linarith), ← integral_Icc_eq_integral_Ioc,
+      setIntegral_eq_integral_of_forall_compl_eq_zero, h0]
+    intro t ht
+    apply hR
+    simp only [mem_Icc, not_and_or, not_le] at ht
+    rcases ht with h1 | h1
+    · rw [abs_of_neg (by linarith)]; linarith
+    · rw [abs_of_pos (by linarith)]; linarith
+  have hsplit : ∫ t in (-R)..R, h t = (∫ t in (-R)..(0 : ℝ), h t) + ∫ t in (0 : ℝ)..R, h t :=
+    (intervalIntegral.integral_add_adjacent_intervals (hii _ _) (hii _ _)).symm
+  rcases le_total 0 x with hx0 | hx0
+  · rw [abs_of_nonneg hx0] at hx
+    rw [← intervalIntegral.integral_add_adjacent_intervals (hii 0 R) (hii R x)]
+    have : ∫ t in R..x, h t = 0 := by
+      rw [intervalIntegral.integral_of_le hx]
+      refine setIntegral_eq_zero_of_forall_eq_zero fun t ht ↦ hR t ?_
+      rw [abs_of_pos (by linarith [ht.1])]; exact ht.1
+    rw [this, add_zero]
+  · rw [abs_of_nonpos hx0] at hx
+    have h1 : ∫ t in x..(-R), h t = 0 := by
+      rw [intervalIntegral.integral_of_le (by linarith)]
+      have : ∀ᵐ t ∂(volume : Measure ℝ), t ∈ Ioc x (-R) → h t = 0 := by
+        filter_upwards [(Set.countable_singleton (-R)).ae_notMem volume] with t ht1 ht2
+        apply hR
+        have : t ≠ -R := by simpa using ht1
+        have : t < -R := lt_of_le_of_ne ht2.2 this
+        rw [abs_of_neg (by linarith)]; linarith
+      rw [setIntegral_congr_ae measurableSet_Ioc this]
+      simp
+    have h2 : ∫ t in x..(0 : ℝ), h t = ∫ t in (-R)..(0 : ℝ), h t := by
+      rw [← intervalIntegral.integral_add_adjacent_intervals (hii x (-R)) (hii (-R) 0), h1, zero_add]
+    have h3 : ∫ t in (0 : ℝ)..x, h t = -∫ t in x..(0 : ℝ), h t := intervalIntegral.integral_symm _ _
+    rw [h3, h2]
+    linarith
+
+
+
 end FF

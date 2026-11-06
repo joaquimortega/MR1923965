@@ -361,7 +361,157 @@ theorem exists_good_density {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) {f : �
       Tendsto m (cocompact ℝ) (𝓝 1) ∧
       (∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) ∧
       ∀ x : ℝ, R ≤ |x| → Real.pi * OCS.multPrim m x + φf x = Real.pi * (x + ψ x) + κ := by
-  sorry
+  obtain ⟨C, hC⟩ := happ
+  have hf0z : ∀ z : ℂ, 0 ≤ z.im → f z ≠ 0 := fun z hz h0 ↦ by
+    have := (hC z hz).1
+    rw [h0, norm_zero] at this
+    exact absurd this (not_le.mpr (Real.exp_pos _))
+  have hf0 : ∀ x : ℝ, f x ≠ 0 := fun x ↦ hf0z (x : ℂ) (by simp)
+  set g : ℝ → ℝ := phaseDeriv f with hgdef
+  have hgc : Continuous g := continuous_phaseDeriv hf.1 hf0
+  obtain ⟨Mg, hMg⟩ := bounded_of_tendsto_cocompact hgc hφ
+  set ψ' : ℝ → ℝ := deriv ψ with hψ'def
+  have hψ'c : Continuous ψ' := hψ.1.continuous_deriv le_rfl
+  obtain ⟨Mψ, hMψ⟩ := bounded_of_tendsto_cocompact hψ'c hψ.2.2.2
+  have hψd : ∀ x, HasDerivAt ψ (ψ' x) x := fun x ↦
+    ((hψ.1.differentiable one_ne_zero) x).hasDerivAt
+  -- growth of `log |f|`
+  have hgrow : ∃ K : ℝ, ∀ z : ℂ, 0 ≤ z.im → |Real.log ‖f z‖| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
+    obtain ⟨K1, hK1⟩ := abs_multU_le_of_bdd hψ'c.measurable hMψ
+    refine ⟨|K1| + |C|, fun z hz ↦ ?_⟩
+    have hpos : 0 < ‖f z‖ := norm_pos_iff.mpr (hf0z z hz)
+    have h1 := Real.log_le_log (Real.exp_pos _) (hC z hz).1
+    have h2 := Real.log_le_log hpos (hC z hz).2
+    rw [Real.log_exp] at h1 h2
+    have hU : |UPsi ψ z| ≤ K1 * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
+      rw [UPsi_eq_multU]; exact hK1 z
+    have hX : 1 ≤ (1 + ‖z‖) ^ (3 / 2 : ℝ) :=
+      Real.one_le_rpow (by linarith [norm_nonneg z]) (by norm_num)
+    have : |Real.log ‖f z‖| ≤ |UPsi ψ z| + |C| := by
+      rw [abs_le]; constructor <;> cases abs_cases (UPsi ψ z) <;> cases abs_cases C <;> linarith
+    calc |Real.log ‖f z‖| ≤ K1 * (1 + ‖z‖) ^ (3 / 2 : ℝ) + |C| := this.trans (by linarith)
+      _ ≤ (|K1| + |C|) * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
+          nlinarith [le_abs_self K1, abs_nonneg C, abs_nonneg K1]
+  obtain ⟨b₀, c₀, hlog⟩ := log_norm_eq_multU_add_affine hf.1 hf0z hφf hφf' hgc hMg hgrow
+  -- the density
+  set w : ℝ → ℝ := fun t ↦ ψ' t - g t / Real.pi with hwdef
+  have hwc : Continuous w := hψ'c.sub (hgc.div_const _)
+  have hw0 : Tendsto w (cocompact ℝ) (𝓝 0) := by
+    have := hψ.2.2.2.sub (hφ.div_const Real.pi)
+    simpa using this
+  obtain ⟨R, m, a, b, hR, ha, hmeas, hlow, hup, hmw, hint0, hmom⟩ :=
+    exists_modified_density hwc hw0 b₀
+  obtain ⟨Bw, hBw⟩ := bounded_of_tendsto_cocompact hwc hw0
+  set h : ℝ → ℝ := fun t ↦ m t - (1 + w t) with hhdef
+  have hhm : Measurable h := hmeas.sub (measurable_const.add hwc.measurable)
+  have hhb : ∀ t, |h t| ≤ b + 1 + Bw + 1 := fun t ↦ by
+    have h1 := hlow t; have h2 := hup t; have h3 := hBw t
+    have := abs_le.mp h3
+    rw [abs_le]; simp only [hhdef]; constructor <;> linarith
+  have hhR : ∀ t, R < |t| → h t = 0 := fun t ht ↦ by simp [hhdef, hmw t ht]
+  have hπ : 0 < Real.pi := Real.pi_pos
+  -- `m` as a sum
+  have hm_eq : ∀ t, m t = ((1 + ψ' t) + (-(1 / Real.pi)) * g t) + h t := fun t ↦ by
+    simp only [hhdef, hwdef]; ring
+  have hMg0 : 0 ≤ Mg := (abs_nonneg _).trans (hMg 0)
+  have hMψ0 : 0 ≤ Mψ := (abs_nonneg _).trans (hMψ 0)
+  have hMh0 : 0 ≤ b + 1 + Bw + 1 := (abs_nonneg _).trans (hhb 0)
+  set Mall : ℝ := 1 + Mψ + Mg + (b + 1 + Bw + 1) with hMall
+  have hπ1 : 1 / Real.pi ≤ 1 := by rw [div_le_one hπ]; linarith [Real.pi_gt_three]
+  have hu1 : ∀ t : ℝ, |(1 : ℝ)| ≤ Mall := fun t ↦ by simp only [abs_one, hMall]; linarith
+  have hu2 : ∀ t, |ψ' t| ≤ Mall := fun t ↦ (hMψ t).trans (by simp only [hMall]; linarith)
+  have hu3' : ∀ t, |(-(1 / Real.pi)) * g t| ≤ Mg := fun t ↦ by
+    rw [abs_mul, abs_neg, abs_of_pos (by positivity)]
+    calc 1 / Real.pi * |g t| ≤ 1 * Mg := by gcongr; exact hMg t
+      _ = Mg := one_mul _
+  have hu3 : ∀ t, |(-(1 / Real.pi)) * g t| ≤ Mall := fun t ↦
+    (hu3' t).trans (by simp only [hMall]; linarith)
+  have hu4 : ∀ t, |h t| ≤ Mall := fun t ↦ (hhb t).trans (by simp only [hMall]; linarith)
+  have hu12' : ∀ t, |1 + ψ' t| ≤ 1 + Mψ := fun t ↦ by
+    calc |1 + ψ' t| ≤ |(1 : ℝ)| + |ψ' t| := abs_add_le _ _
+      _ ≤ 1 + Mψ := by rw [abs_one]; linarith [hMψ t]
+  have hu12 : ∀ t, |1 + ψ' t| ≤ Mall := fun t ↦
+    (hu12' t).trans (by simp only [hMall]; linarith)
+  have hu123 : ∀ t, |(1 + ψ' t) + (-(1 / Real.pi)) * g t| ≤ Mall := fun t ↦ by
+    calc |(1 + ψ' t) + (-(1 / Real.pi)) * g t| ≤ |1 + ψ' t| + |(-(1 / Real.pi)) * g t| :=
+          abs_add_le _ _
+      _ ≤ (1 + Mψ) + Mg := add_le_add (hu12' t) (hu3' t)
+      _ ≤ Mall := by simp only [hMall]; linarith
+  have hsplit : ∀ z : ℂ, OCS.multU m 0 z = OCS.multU (fun _ ↦ (1 : ℝ)) 0 z + OCS.multU ψ' 0 z
+      + (-(1 / Real.pi)) * OCS.multU g 0 z + OCS.multU h 0 z := by
+    intro z
+    have hmf : m = fun t ↦ ((1 + ψ' t) + (-(1 / Real.pi)) * g t) + h t := funext hm_eq
+    have e1 := multU_add (g := fun t ↦ (1 + ψ' t) + (-(1 / Real.pi)) * g t) (h := h)
+      ((measurable_const.add hψ'c.measurable).add (measurable_const.mul hgc.measurable)) hhm hu123 hu4 z
+    have e2 := multU_add (g := fun t ↦ 1 + ψ' t) (h := fun t ↦ (-(1 / Real.pi)) * g t)
+      (measurable_const.add hψ'c.measurable) (measurable_const.mul hgc.measurable) hu12 hu3 z
+    have e3 := multU_add (g := fun _ ↦ (1 : ℝ)) (h := ψ') measurable_const hψ'c.measurable hu1 hu2 z
+    have e4 := multU_const_mul hgc.measurable hMg (-(1 / Real.pi)) z
+    beta_reduce at e1 e2 e3
+    rw [hmf, e1, e2, e3, e4]
+  -- the potential
+  obtain ⟨Ch, hCh⟩ := multU_compact_sub_linear hhm hhb hhR hint0
+  have hmom' : (∫ t, (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * (h t / t)) = -b₀ := hmom
+  have hpot : ∃ C' : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C' := by
+    refine ⟨C + |c₀| + Ch, fun z hz ↦ ?_⟩
+    rw [hsplit z, multU_one, abs_of_nonneg hz, ← UPsi_eq_multU]
+    have h1 := hlog z hz
+    have h2 := hCh z hz
+    rw [hmom'] at h2
+    have h3 := (hC z hz)
+    have hpos : 0 < ‖f z‖ := norm_pos_iff.mpr (hf0z z hz)
+    have h4 := Real.log_le_log (Real.exp_pos _) h3.1
+    have h5 := Real.log_le_log hpos h3.2
+    rw [Real.log_exp] at h4 h5
+    have e : OCS.multU g 0 z = Real.pi * (Real.log ‖f z‖ - b₀ * z.re - c₀) := by
+      rw [h1]; field_simp; ring
+    rw [e]
+    have : -(1 / Real.pi) * (Real.pi * (Real.log ‖f z‖ - b₀ * z.re - c₀)) =
+        -(Real.log ‖f z‖) + b₀ * z.re + c₀ := by field_simp; ring
+    have hexp : Real.pi * z.im + UPsi ψ z + -(1 / Real.pi) * (Real.pi * (Real.log ‖f z‖ - b₀ * z.re - c₀)) +
+        OCS.multU h 0 z - Real.pi * z.im =
+        (UPsi ψ z - Real.log ‖f z‖) + c₀ + (OCS.multU h 0 z - -b₀ * z.re) := by
+      rw [this]; ring
+    rw [hexp]
+    have h6 := abs_le.mp h2
+    rw [abs_le]
+    constructor <;> cases abs_cases c₀ <;> linarith [abs_nonneg c₀, h6.1, h6.2]
+  obtain ⟨C', hC'⟩ := hpot
+  -- limit
+  have hlim : Tendsto m (cocompact ℝ) (𝓝 1) := by
+    have h1 : Tendsto (fun t ↦ 1 + w t) (cocompact ℝ) (𝓝 1) := by
+      simpa using (tendsto_const_nhds (x := (1 : ℝ))).add hw0
+    refine h1.congr' ?_
+    have hev : ∀ᶠ t : ℝ in cocompact ℝ, R < |t| :=
+      (tendsto_norm_cocompact_atTop (E := ℝ)).eventually (eventually_gt_atTop R)
+    filter_upwards [hev] with t ht
+    exact (hmw t ht).symm
+  -- phase
+  have hhint := intervalIntegrable_of_abs_le hhm hhb
+  have h1int : ∀ x y : ℝ, IntervalIntegrable (fun t : ℝ ↦ 1 + w t) volume x y := fun x y ↦
+    (continuous_const.add hwc).intervalIntegrable x y
+  have hmsplit : ∀ t, m t = (1 + w t) + h t := fun t ↦ by simp only [hhdef]; ring
+  refine ⟨m, a, b, -Real.pi * ψ 0 + φf 0 + Real.pi * ∫ t in (0 : ℝ)..R, h t, R, hmeas, ha, hlow, hup,
+    hlim, ⟨C', hC'⟩, fun x hx ↦ ?_⟩
+  have hx0 := integral_zero_of_mass_zero hhm hhb hR.le hhR hint0 hx
+  have hψint : ∫ t in (0 : ℝ)..x, ψ' t = ψ x - ψ 0 :=
+    intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ ↦ hψd t) (hψ'c.intervalIntegrable _ _)
+  have hφint : ∫ t in (0 : ℝ)..x, g t = φf x - φf 0 :=
+    intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ ↦ hφf' t) (hgc.intervalIntegrable _ _)
+  have hwint : ∫ t in (0 : ℝ)..x, (1 + w t) = x + (ψ x - ψ 0) - (φf x - φf 0) / Real.pi := by
+    rw [intervalIntegral.integral_add (intervalIntegrable_const) (hwc.intervalIntegrable _ _)]
+    simp only [hwdef]
+    rw [intervalIntegral.integral_sub (hψ'c.intervalIntegrable _ _) ((hgc.div_const _).intervalIntegrable _ _),
+      intervalIntegral.integral_div, hψint, hφint]
+    simp only [intervalIntegral.integral_const, sub_zero, smul_eq_mul, mul_one]
+    ring
+  have hM : OCS.multPrim m x = x + (ψ x - ψ 0) - (φf x - φf 0) / Real.pi + ∫ t in (0 : ℝ)..R, h t := by
+    unfold OCS.multPrim
+    simp_rw [hmsplit]
+    rw [intervalIntegral.integral_add (h1int _ _) (hhint _ _), hwint, hx0]
+  rw [hM]
+  field_simp
+  ring
 
 end Density
 
