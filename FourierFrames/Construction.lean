@@ -317,11 +317,12 @@ theorem dslope_step {F : ℂ → ℂ} (hF : Differentiable ℂ F) (hs : ∀ t, F
   rw [h0, mul_zero] at this
   exact this rfl
 
-theorem divZeros_eq_zero_iff {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF : Differentiable ℂ F)
-    (hs : ∀ t, F t = 0 → deriv F t ≠ 0) (hF0 : ∀ t ∈ l, F t = 0) (z : ℂ) :
-    divZeros l F z = 0 ↔ F z = 0 ∧ z ∉ l := by
+theorem divZeros_zeros {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF : Differentiable ℂ F)
+    (hs : ∀ t, F t = 0 → deriv F t ≠ 0) (hF0 : ∀ t ∈ l, F t = 0) :
+    (∀ z, divZeros l F z = 0 ↔ F z = 0 ∧ z ∉ l) ∧
+      ∀ t, divZeros l F t = 0 → deriv (divZeros l F) t ≠ 0 := by
   induction l generalizing F with
-  | nil => simp [divZeros]
+  | nil => exact ⟨fun z ↦ by simp [divZeros], hs⟩
   | cons a l ih =>
     rw [List.nodup_cons] at hl
     have ha : F a = 0 := hF0 a (List.mem_cons_self ..)
@@ -333,10 +334,17 @@ theorem divZeros_eq_zero_iff {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF
       exact (h z (Set.mem_univ z)).differentiableAt Filter.univ_mem
     have hG0 : ∀ t ∈ l, dslope F a t = 0 := fun t ht ↦
       (hkey t).2 ⟨hF0 t (List.mem_cons_of_mem _ ht), fun h ↦ hl.1 (h ▸ ht)⟩
+    obtain ⟨ih1, ih2⟩ := ih hl.2 hG hsG hG0
+    refine ⟨fun z ↦ ?_, ih2⟩
     simp only [divZeros]
-    rw [ih hl.2 hG hsG hG0, hkey z]
+    rw [ih1 z, hkey z]
     simp only [List.mem_cons, not_or]
     tauto
+
+theorem divZeros_eq_zero_iff {l : List ℂ} (hl : l.Nodup) {F : ℂ → ℂ} (hF : Differentiable ℂ F)
+    (hs : ∀ t, F t = 0 → deriv F t ≠ 0) (hF0 : ∀ t ∈ l, F t = 0) (z : ℂ) :
+    divZeros l F z = 0 ↔ F z = 0 ∧ z ∉ l :=
+  (divZeros_zeros hl hF hs hF0).1 z
 
 /-- Interlacing: `γ_j < β_j < γ_{j+1}` for all `j` (given the choice of `N`). -/
 theorem compBeta_interlace (hw : OCS.IsMultWeight m a b) {N : ℕ}
@@ -416,6 +424,128 @@ theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) {N : ℕ}
       subst hkj
       exact hlt (abs_lt.2 (Finset.mem_Ioo.1 hj))
 
+theorem compBeta_of_not_lt {N : ℕ} {j : ℤ} (hj : j ∉ Finset.Ioo (-(N : ℤ)) N) :
+    compBeta m N j = OCS.multBary m j + 1 / 2 := by
+  have : ¬ (|j| < N) := by
+    rw [abs_lt]; intro h; exact hj (Finset.mem_Ioo.2 h)
+  simp [compBeta, this]
+
+theorem compBeta_injective (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+    Function.Injective (compBeta m N) := by
+  intro j k h
+  by_contra hjk
+  have hmono := (OCS.strictMono_multBary hw).monotone
+  obtain ⟨hj1, hj2⟩ := compBeta_interlace hw hN j
+  obtain ⟨hk1, hk2⟩ := compBeta_interlace hw hN k
+  rcases lt_or_gt_of_ne hjk with hlt | hlt
+  · have := hmono (show j + 1 ≤ k by omega); linarith
+  · have := hmono (show k + 1 ≤ j by omega); linarith
+
+/-- Simple zero of `P(z) = ∏_{j ∈ S} (z - β_j)` at `β_i`. -/
+theorem deriv_compP_ne_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {i : ℤ}
+    (hi : i ∈ Finset.Ioo (-(N : ℤ)) N) :
+    deriv (fun z : ℂ ↦ ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)))
+      (compBeta m N i : ℂ) ≠ 0 := by
+  have e : (fun z : ℂ ↦ ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))) =
+      fun z ↦ (z - (compBeta m N i : ℂ)) *
+        ∏ j ∈ (Finset.Ioo (-(N : ℤ)) N).erase i, (z - (compBeta m N j : ℂ)) := by
+    funext z
+    rw [Finset.mul_prod_erase _ (fun j ↦ z - (compBeta m N j : ℂ)) hi]
+  rw [e]
+  have hG : Differentiable ℂ (fun z : ℂ ↦
+      ∏ j ∈ (Finset.Ioo (-(N : ℤ)) N).erase i, (z - (compBeta m N j : ℂ))) := by fun_prop
+  have h1 : HasDerivAt (fun z : ℂ ↦ (z - (compBeta m N i : ℂ)) *
+      ∏ j ∈ (Finset.Ioo (-(N : ℤ)) N).erase i, (z - (compBeta m N j : ℂ)))
+      (1 * ∏ j ∈ (Finset.Ioo (-(N : ℤ)) N).erase i, ((compBeta m N i : ℂ) - (compBeta m N j : ℂ)) +
+        ((compBeta m N i : ℂ) - (compBeta m N i : ℂ)) * deriv (fun z : ℂ ↦
+          ∏ j ∈ (Finset.Ioo (-(N : ℤ)) N).erase i, (z - (compBeta m N j : ℂ)))
+          (compBeta m N i : ℂ)) (compBeta m N i : ℂ) :=
+    ((hasDerivAt_id (compBeta m N i : ℂ)).sub_const (compBeta m N i : ℂ)).mul
+      (hG (compBeta m N i : ℂ)).hasDerivAt
+  rw [h1.deriv]
+  simp only [sub_self, zero_mul, add_zero, one_mul]
+  rw [Finset.prod_ne_zero_iff]
+  intro j hj
+  rw [sub_ne_zero]
+  intro h
+  have := Complex.ofReal_injective h
+  exact (Finset.ne_of_mem_erase hj) ((compBeta_injective hw hN this).symm)
+
+/-- The zeros of `B` are simple. -/
+theorem compB_simple (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {t : ℂ}
+    (ht : compB m N t = 0) : deriv (compB m N) t ≠ 0 := by
+  have hFd : Differentiable ℂ (fun w ↦ genA m (w - 1 / 2)) := fun z ↦
+    ((differentiable_genA hw) (z - 1 / 2)).comp z (differentiableAt_id.sub_const _)
+  have hFs : ∀ t, genA m (t - 1 / 2) = 0 → deriv (fun w ↦ genA m (w - 1 / 2)) t ≠ 0 := by
+    intro t ht
+    have : deriv (fun w ↦ genA m (w - 1 / 2)) t = deriv (genA m) (t - 1 / 2) :=
+      deriv_comp_sub_const (f := genA m) (a := 1 / 2) (x := t)
+    rw [this]
+    exact genA_simple hw ht
+  obtain ⟨hD, hDs⟩ := divZeros_zeros (nodup_compRemoved hw N) hFd hFs (genA_shift_zero hw N)
+  set D := divZeros (compRemoved m N) (fun w ↦ genA m (w - 1 / 2)) with hDdef
+  set P : ℂ → ℂ := fun z ↦ ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) with hP
+  have hDd : Differentiable ℂ D := differentiable_divZeros _ hFd
+  have hPd : Differentiable ℂ P := by rw [hP]; fun_prop
+  have hB : compB m N = fun z ↦ D z * P z := rfl
+  have hPz : ∀ z, P z = 0 ↔ ∃ j ∈ Finset.Ioo (-(N : ℤ)) N, z = (compBeta m N j : ℂ) := by
+    intro z
+    rw [hP]
+    simp only
+    rw [Finset.prod_eq_zero_iff]
+    simp [sub_eq_zero]
+  have hmemrem : ∀ z, z ∈ compRemoved m N ↔
+      ∃ j ∈ Finset.Ioo (-(N : ℤ)) N, z = ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ) := by
+    intro z
+    unfold compRemoved
+    simp only [List.mem_map, Finset.mem_toList]
+    constructor
+    · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
+    · rintro ⟨j, hj, rfl⟩; exact ⟨j, hj, rfl⟩
+  have hder : deriv (compB m N) t = deriv D t * P t + D t * deriv P t := by
+    rw [hB]; exact deriv_fun_mul (hDd t) (hPd t)
+  rw [hB] at ht
+  simp only at ht
+  rw [hder]
+  rcases mul_eq_zero.1 ht with h | h
+  · -- D t = 0
+    have hPt : P t ≠ 0 := by
+      intro hP0
+      obtain ⟨j, hj, rfl⟩ := (hPz t).1 hP0
+      obtain ⟨hF, hnot⟩ := (hD _).1 h
+      rw [genA_eq_zero_iff hw] at hF
+      obtain ⟨k, hk⟩ := hF
+      have hk' : (compBeta m N j : ℂ) = ((OCS.multBary m k + 1 / 2 : ℝ) : ℂ) := by
+        rw [Complex.ofReal_add] ; push_cast at hk ⊢; rw [← hk]; ring
+      have hkS : k ∉ Finset.Ioo (-(N : ℤ)) N := fun hkS ↦ hnot ((hmemrem _).2 ⟨k, hkS, hk'⟩)
+      have : compBeta m N j = compBeta m N k := by
+        rw [compBeta_of_not_lt hkS]; exact_mod_cast hk'
+      exact hkS (compBeta_injective hw hN this ▸ hj)
+    rw [h, zero_mul, add_zero]
+    exact mul_ne_zero (hDs t h) hPt
+  · -- P t = 0
+    obtain ⟨j, hj, rfl⟩ := (hPz t).1 h
+    have hDt : D (compBeta m N j : ℂ) ≠ 0 := by
+      intro hD0
+      obtain ⟨hF, hnot⟩ := (hD _).1 hD0
+      exact hnot ((hmemrem _).2 (by
+        rw [genA_eq_zero_iff hw] at hF
+        obtain ⟨k, hk⟩ := hF
+        have hk' : (compBeta m N j : ℂ) = ((OCS.multBary m k + 1 / 2 : ℝ) : ℂ) := by
+          push_cast at hk ⊢; rw [← hk]; ring
+        have hkS : k ∈ Finset.Ioo (-(N : ℤ)) N := by
+          by_contra hkS
+          have : compBeta m N j = compBeta m N k := by
+            rw [compBeta_of_not_lt hkS]; exact_mod_cast hk'
+          exact hkS (compBeta_injective hw hN this ▸ hj)
+        exact ⟨k, hkS, hk'⟩))
+    have hPs := deriv_compP_ne_zero hw hN hj
+    rw [h, mul_zero, zero_add]
+    exact mul_ne_zero hDt hPs
+
 /-- `B(z) = A(z - 1/2) P(z) / Q(z)` off the zeros of `Q`; in particular `B(z) / A(z - 1/2) → 1`
 as `|z| → ∞` away from `ℝ`-neighbourhoods of `Γ + 1/2`. -/
 theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) {N : ℕ}
@@ -490,12 +620,6 @@ theorem polyA_eq_prod (hw : OCS.IsMultWeight m a b) (R : ℕ) (z : ℂ) :
       ((-1 / (OCS.multBary m j : ℂ)) * (z - OCS.multBary m j)) := by
   unfold polyA
   exact Finset.prod_congr rfl fun j _ ↦ one_sub_div_eq hw j z
-
-theorem compBeta_of_not_lt {N : ℕ} {j : ℤ} (hj : j ∉ Finset.Ioo (-(N : ℤ)) N) :
-    compBeta m N j = OCS.multBary m j + 1 / 2 := by
-  have : ¬ (|j| < N) := by
-    rw [abs_lt]; intro h; exact hj (Finset.mem_Ioo.2 h)
-  simp [compBeta, this]
 
 theorem polyB_eq_prod (hw : OCS.IsMultWeight m a b) {N R : ℕ} (hNR : N ≤ R) (z : ℂ) :
     polyB m N R z = ∏ j ∈ Finset.Icc (-(R : ℤ)) R,

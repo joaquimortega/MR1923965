@@ -234,6 +234,57 @@ theorem comparable_on_compact (hF : Differentiable ℂ F) (hs : ∀ t, F t = 0 �
 
 end Compact
 
+/-! ### Generic helpers -/
+
+theorem finite_bounds {ι : Type*} {S : Set ι} (hS : S.Finite) (f : ι → ℝ)
+    (hf : ∀ x ∈ S, 0 < f x) :
+    ∃ u₁ u₂ : ℝ, 0 < u₁ ∧ 0 < u₂ ∧ ∀ x ∈ S, u₁ ≤ f x ∧ f x ≤ u₂ := by
+  induction S, hS using Set.Finite.induction_on with
+  | empty => exact ⟨1, 1, one_pos, one_pos, by simp⟩
+  | @insert a s ha hs ih =>
+    obtain ⟨u₁, u₂, h1, h2, h⟩ := ih (fun x hx ↦ hf x (Set.mem_insert_of_mem _ hx))
+    have hfa := hf a (Set.mem_insert _ _)
+    refine ⟨min u₁ (f a), max u₂ (f a), lt_min h1 hfa, lt_max_of_lt_right hfa, fun x hx ↦ ?_⟩
+    rcases hx with rfl | hx
+    · exact ⟨min_le_right _ _, le_max_right _ _⟩
+    · exact ⟨(min_le_left _ _).trans (h x hx).1, (h x hx).2.trans (le_max_left _ _)⟩
+
+theorem min_one_infDist_congr {S T : Set ℂ} (hS : S.Nonempty) (hT : T.Nonempty) (z : ℂ)
+    (h : ∀ x ∈ S, x ∉ T → 1 ≤ dist z x) (h' : ∀ x ∈ T, x ∉ S → 1 ≤ dist z x) :
+    min 1 (infDist z S) = min 1 (infDist z T) := by
+  have key : ∀ {S T : Set ℂ}, T.Nonempty → (∀ x ∈ T, x ∉ S → 1 ≤ dist z x) →
+      min 1 (infDist z S) ≤ min 1 (infDist z T) := by
+    intro S T hT h'
+    refine le_min (min_le_left _ _) ?_
+    rw [le_infDist hT]
+    intro y hy
+    by_cases hyS : y ∈ S
+    · exact (min_le_right _ _).trans (infDist_le_dist_of_mem hyS)
+    · exact (min_le_left _ _).trans (h' y hy hyS)
+  exact le_antisymm (key hT h') (key hS h)
+
+/-- `(z - β)/(z - a) → 1` as `z → ∞`. -/
+theorem tendsto_sub_div_sub (β a : ℂ) :
+    Tendsto (fun z : ℂ ↦ (z - β) / (z - a)) (cocompact ℂ) (𝓝 1) := by
+  have h1 : Tendsto (fun z : ℂ ↦ z - a) (cocompact ℂ) (cocompact ℂ) :=
+    (Homeomorph.subRight a).isClosedEmbedding.tendsto_cocompact
+  have h2 : Tendsto (fun z : ℂ ↦ (z - a)⁻¹) (cocompact ℂ) (𝓝 0) := by
+    have := tendsto_inv₀_cobounded (α := ℂ)
+    rw [← Metric.cobounded_eq_cocompact] at h1 ⊢
+    exact this.comp h1
+  have h3 := (tendsto_const_nhds (x := a - β)).mul h2
+  have h4 := (tendsto_const_nhds (x := (1 : ℂ))).add h3
+  simp only [mul_zero, add_zero] at h4
+  refine h4.congr' ?_
+  have : ∀ᶠ z : ℂ in cocompact ℂ, z ≠ a := by
+    have := (isCompact_singleton (x := a)).compl_mem_cocompact
+    filter_upwards [this] with z hz
+    simpa using hz
+  filter_upwards [this] with z hz
+  have : z - a ≠ 0 := sub_ne_zero.2 hz
+  field_simp
+  ring
+
 end Comparable
 
 end FF
