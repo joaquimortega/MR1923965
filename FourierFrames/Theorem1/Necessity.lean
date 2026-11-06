@@ -1,6 +1,7 @@
 import FourierFrames.HB.DeBranges
 import FourierFrames.PW.Complete
 import OrtegaCerdaSeip.Products.Canonical
+import FourierFrames.Theorem1.Necessity.Sep
 
 /-!
 # M03 — Theorem 1, necessity
@@ -31,23 +32,99 @@ differentiable on `U`. -/
 theorem differentiableOn_tsum_of_cofinite_bound {ι : Type*} {F : ι → ℂ → ℂ} {U : Set ℂ}
     (hU : IsOpen U) (hF : ∀ i, DifferentiableOn ℂ (F i) U) {u : ι → ℝ} (hu : Summable u)
     (hb : ∀ᶠ i in cofinite, ∀ w ∈ U, ‖F i w‖ ≤ u i) :
-    DifferentiableOn ℂ (fun w ↦ ∑' i, F i w) U := sorry
+    DifferentiableOn ℂ (fun w ↦ ∑' i, F i w) U := by
+  classical
+  set s : Set ι := {i | ¬ ∀ w ∈ U, ‖F i w‖ ≤ u i} with hs_def
+  have hsfin : s.Finite := Filter.eventually_cofinite.1 hb
+  let G : ι → ℂ → ℂ := fun i w ↦ if i ∈ s then 0 else F i w
+  have hGd : ∀ i, DifferentiableOn ℂ (G i) U := by
+    intro i
+    by_cases h : i ∈ s
+    · simp only [G, h, ite_true]; exact differentiableOn_const _
+    · simp only [G, h, ite_false]; exact hF i
+  have hGb : ∀ i, ∀ w ∈ U, ‖G i w‖ ≤ |u i| := by
+    intro i w hw
+    by_cases h : i ∈ s
+    · simp only [G, h, ite_true, norm_zero]; exact abs_nonneg _
+    · simp only [G, h, ite_false]
+      have : ‖F i w‖ ≤ u i := by
+        by_contra hc
+        exact h (fun h' ↦ hc (h' w hw))
+      exact this.trans (le_abs_self _)
+  have hG := differentiableOn_tsum_of_summable_norm hu.abs hGd hU hGb
+  have hfin : DifferentiableOn ℂ (fun w ↦ ∑ i ∈ hsfin.toFinset, F i w) U :=
+    DifferentiableOn.fun_sum fun i _ ↦ hF i
+  refine (hfin.add hG).congr fun w hw ↦ ?_
+  have hsum : Summable fun i ↦ F i w :=
+    hu.of_norm_bounded_eventually (by
+      filter_upwards [hb] with i hi using hi w hw)
+  have hsumG : Summable fun i ↦ G i w :=
+    Summable.of_norm_bounded hu.abs (fun i ↦ hGb i w hw)
+  have hsum1 : Summable fun i ↦ (if i ∈ s then F i w else 0) :=
+    summable_of_ne_finset_zero (s := hsfin.toFinset) (fun i hi ↦ by
+      have : i ∉ s := by simpa using hi
+      simp [this])
+  have hsplit : (fun i ↦ F i w) = fun i ↦ (if i ∈ s then F i w else 0) + G i w := by
+    funext i
+    by_cases h : i ∈ s <;> simp [G, h]
+  show ∑' i, F i w = (∑ i ∈ hsfin.toFinset, F i w) + ∑' i, G i w
+  rw [hsplit, hsum1.tsum_add hsumG]
+  congr 1
+  rw [tsum_eq_sum (s := hsfin.toFinset) (fun i hi ↦ by
+    have : i ∉ s := by simpa using hi
+    simp [this])]
+  refine Finset.sum_congr rfl fun i hi ↦ ?_
+  have : i ∈ s := by simpa using hi
+  simp [G, this]
 
 /-- Two entire functions that agree on the open upper half-plane are equal. -/
 theorem Differentiable.eq_of_eqOn_upper {f g : ℂ → ℂ} (hf : Differentiable ℂ f)
-    (hg : Differentiable ℂ g) (h : ∀ z : ℂ, 0 < z.im → f z = g z) : f = g := sorry
+    (hg : Differentiable ℂ g) (h : ∀ z : ℂ, 0 < z.im → f z = g z) : f = g := by
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hev : f =ᶠ[𝓝 I] g :=
+    Filter.eventuallyEq_of_mem (hU.mem_nhds (by simp)) (fun z hz ↦ h z hz)
+  funext z
+  exact AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq (𝕜 := ℂ)
+    (fun w _ ↦ hf.analyticAt w) (fun w _ ↦ hg.analyticAt w) isPreconnected_univ (mem_univ I) hev
+    (mem_univ z)
 
 /-- A holomorphic function on the upper half-plane with vanishing real part is a constant
 imaginary number. -/
 theorem exists_const_of_re_eq_zero {D : ℂ → ℂ} (hD : DifferentiableOn ℂ D {z : ℂ | 0 < z.im})
     (hre : ∀ z : ℂ, 0 < z.im → (D z).re = 0) :
-    ∃ a : ℝ, ∀ z : ℂ, 0 < z.im → D z = a * I := sorry
+    ∃ a : ℝ, ∀ z : ℂ, 0 < z.im → D z = a * I := by
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hpre : IsPreconnected {z : ℂ | 0 < z.im} := (convex_halfSpace_im_gt 0).isPreconnected
+  have hI : (I : ℂ) ∈ {z : ℂ | 0 < z.im} := by simp
+  have han : AnalyticOnNhd ℂ D {z : ℂ | 0 < z.im} := hD.analyticOnNhd hU
+  rcases han.is_constant_or_isOpen hpre with ⟨w, hw⟩ | hopen
+  · refine ⟨(D I).im, fun z hz ↦ ?_⟩
+    rw [hw z hz]
+    have h1 := hw I hI
+    have h2 := hre I (by simp)
+    apply Complex.ext
+    · simp [← h1, h2]
+    · simp [← h1]
+  · exfalso
+    have hopen' := hopen _ (Subset.refl _) hU
+    obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.1 hopen' (D I) ⟨I, hI, rfl⟩
+    have hmem : D I + ((r / 2 : ℝ) : ℂ) ∈ Metric.ball (D I) r := by
+      rw [Metric.mem_ball, dist_eq_norm]
+      simp [abs_of_pos hr]
+      linarith
+    obtain ⟨z, hz, hzeq⟩ := hball hmem
+    have := hre z hz
+    rw [hzeq] at this
+    simp [hre I (by simp)] at this
+    linarith
 
 /-! ## 1. Separated sets -/
 
 /-- `∑_{λ ∈ Λ} 1/(1+λ²) < ∞` for a separated `Λ`. -/
 theorem IsSeparated.summable_inv_one_add_sq {Λ : Set ℝ} (h : IsSeparated Λ) :
-    Summable fun x : Λ ↦ 1 / (1 + (x : ℝ) ^ 2) := sorry
+    Summable fun x : Λ ↦ 1 / (1 + (x : ℝ) ^ 2) := by
+  obtain ⟨δ, hδ, hsep⟩ := h
+  exact IsSeparated.summable_inv_one_add_sq' hδ hsep
 
 /-! ## 2. The sampling Hilbert space -/
 
