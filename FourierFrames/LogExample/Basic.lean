@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Auxiliary lemmas for `FourierFrames/LogExample.lean`: elementary logarithm estimates.

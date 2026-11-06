@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Auxiliary lemma for `LogExample.lean`: `∫ cos² φ` over long intervals for an increasing phase.
