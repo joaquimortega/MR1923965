@@ -748,10 +748,275 @@ theorem logW_lipschitz : LipschitzWith 19 logW := by
   push_cast
   constructor <;> nlinarith
 
+theorem abs_log_sub_log_le {a b c : ℝ} (hc : 1 ≤ c) (ha : c ≤ a) (hb : c ≤ b) :
+    |Real.log a - Real.log b| ≤ |a - b| / c := by
+  wlog hab : b ≤ a generalizing a b
+  · rw [abs_sub_comm, abs_sub_comm a b]; exact this hb ha (le_of_not_ge hab)
+  have hb0 : 0 < b := by linarith
+  have h1 : Real.log a - Real.log b = Real.log (a / b) := (Real.log_div (by linarith) hb0.ne').symm
+  have h2 : 0 ≤ Real.log (a / b) := Real.log_nonneg ((one_le_div hb0).2 hab)
+  have h3 := Real.log_le_sub_one_of_pos (div_pos (by linarith : 0 < a) hb0)
+  rw [h1, abs_of_nonneg h2, abs_of_nonneg (by linarith)]
+  calc Real.log (a / b) ≤ a / b - 1 := h3
+    _ = (a - b) / b := by field_simp
+    _ ≤ (a - b) / c := div_le_div_of_nonneg_left (by linarith) (by linarith) hb
+
+theorem abs_posLog_abs_sub_le {x y c : ℝ} (hc : 1 ≤ c) (hx : c ≤ |x|) (hy : c ≤ |y|) :
+    |(Real.posLog |x| - Real.posLog |y|)| ≤ |x - y| / c := by
+  have hx1 : Real.posLog |x| = Real.log |x| := Real.posLog_eq_log (by rw [abs_abs]; linarith)
+  have hy1 : Real.posLog |y| = Real.log |y| := Real.posLog_eq_log (by rw [abs_abs]; linarith)
+  rw [hx1, hy1]
+  refine (abs_log_sub_log_le hc hx hy).trans ?_
+  exact div_le_div_of_nonneg_right (abs_abs_sub_abs_le_abs_sub x y) (by linarith)
+
+theorem logW_logPt (j : ℤ) :
+    logW (logPt j) = -(Real.posLog |((j : ℝ) - 1)| + Real.posLog |(j : ℝ)|) / 2 := by
+  unfold logW
+  rw [multPrim_logDensity_logPt]
+  unfold logPt logLam
+  push_cast
+  ring
+
+theorem abs_logW_sub_le {s t D : ℝ} (h : ∀ u ∈ Set.uIcc s t, |logDensity u - 1| ≤ D) :
+    |logW t - logW s| ≤ D * |t - s| := by
+  have h1 : logW t - logW s = ∫ u in s..t, (logDensity u - 1) := by
+    unfold logW
+    rw [intervalIntegral.integral_sub (isMultWeight_logDensity.intervalIntegrable s t)
+      intervalIntegrable_const, ← OCS.multPrim_sub_eq isMultWeight_logDensity]
+    simp; ring
+  rw [h1, ← Real.norm_eq_abs]
+  refine (intervalIntegral.norm_integral_le_of_norm_le_const fun u hu ↦ ?_)
+  rw [Real.norm_eq_abs]
+  exact h u (Set.uIoc_subset_uIcc hu)
+
+theorem abs_logW_le (t : ℝ) : |logW t| ≤ 19 * |t| := by
+  have := logW_lipschitz.dist_le_mul t 0
+  have h0 : logW 0 = 0 := by simp [logW, OCS.multPrim_zero]
+  simpa [Real.dist_eq, h0] using this
+
+theorem logPt_sub_logPt_le (j : ℤ) : logPt (j + 1) - logPt j ≤ 17 / 10 := by
+  rw [logPt_succ_sub]
+  have := (logGap_bounds (j - 1)).2
+  have := (logGap_bounds j).2
+  linarith
+
+/-- `δ_j = p_j - j`. -/
+theorem logPt_sub_int (j : ℤ) :
+    logPt j - j = (Real.posLog |((j : ℝ) - 1)| + Real.posLog |(j : ℝ)|) / 2 := by
+  unfold logPt logLam
+  push_cast
+  ring
+
+theorem log_two_add_le {J : ℝ} (hJ : 0 ≤ J) : Real.log (2 + J) ≤ J / 4 + 9 / 10 := by
+  have h4 : Real.log 4 < 7 / 5 := by
+    have : Real.log 4 = 2 * Real.log 2 := by
+      rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]; norm_num
+    have := LogEx.log_two_lt
+    linarith
+  have h := Real.log_le_sub_one_of_pos (show 0 < (2 + J) / 4 by positivity)
+  have : Real.log ((2 + J) / 4) = Real.log (2 + J) - Real.log 4 := Real.log_div (by positivity) (by norm_num)
+  linarith
+
+theorem posLog_abs_le_log {x J : ℝ} (hx : |x| ≤ J + 1) : Real.posLog |x| ≤ Real.log (2 + J) := by
+  have h1 : Real.posLog |x| ≤ Real.log (1 + |x|) := Real.posLog_le_log_one_add (abs_nonneg x)
+  exact h1.trans (Real.log_le_log (by positivity) (by linarith))
+
+
+theorem rho_big {j : ℤ} (hj : 7 ≤ |(j : ℝ)|) {t : ℝ} (ht : t ∈ Ico (logPt j) (logPt (j + 1))) :
+    |(logW t + Real.posLog |t|)| ≤ (7488 + 2 * Real.log (2 + |(j : ℝ)|)) / |(j : ℝ)| := by
+  set J : ℝ := |(j : ℝ)| with hJ
+  have hJ0 : 0 < J := by linarith
+  set L : ℝ := Real.log (2 + J) with hL
+  have hLle : L ≤ J / 4 + 9 / 10 := log_two_add_le hJ0.le
+  have hj1 : |((j : ℝ) - 1)| ≤ J + 1 := by
+    have := abs_sub (j : ℝ) 1
+    simpa [hJ] using this
+  have hδ := logPt_sub_int j
+  have ha0 := Real.posLog_nonneg (x := |((j : ℝ) - 1)|)
+  have hb0 := Real.posLog_nonneg (x := |(j : ℝ)|)
+  have ha1 : Real.posLog |((j : ℝ) - 1)| ≤ L := posLog_abs_le_log hj1
+  have hb1 : Real.posLog |(j : ℝ)| ≤ L := posLog_abs_le_log (by linarith)
+  set δ : ℝ := logPt j - j with hδdef
+  have hδ0 : 0 ≤ δ := by rw [hδ]; linarith
+  have hδ1 : δ ≤ L := by rw [hδ]; linarith
+  -- size of `p_j`
+  have hp : J / 2 ≤ |logPt j| := by
+    have e : logPt j = j + δ := by rw [hδdef]; ring
+    rcases le_or_gt 0 (j : ℝ) with h | h
+    · rw [e, abs_of_nonneg (by linarith)]
+      have : J = j := by rw [hJ, abs_of_nonneg h]
+      linarith
+    · have : J = -j := by rw [hJ, abs_of_neg h]
+      rw [e, abs_of_nonpos (by linarith)]
+      linarith
+  have hd : 0 ≤ t - logPt j ∧ t - logPt j ≤ 17 / 10 := by
+    have := logPt_sub_logPt_le j
+    constructor <;> linarith [ht.1, ht.2]
+  have hJ7 : 7 ≤ J := hj
+  -- the three terms
+  have T1 : |logW t - logW (logPt j)| ≤ 7480 / J := by
+    have hmid : ∀ u ∈ Set.uIcc (logPt j) t, |logDensity u - 1| ≤ 4400 / J := by
+      intro u hu
+      rw [Set.uIcc_of_le (by linarith [hd.1])] at hu
+      have hu1 : J / 4 ≤ |u| := by
+        have : |logPt j| ≤ |u| + |u - logPt j| := by
+          have := abs_sub_abs_le_abs_sub (logPt j) u
+          rw [abs_sub_comm] at this
+          have h2 := abs_sub_comm u (logPt j)
+          linarith [abs_sub_abs_le_abs_sub (logPt j) u]
+        have h3 : |u - logPt j| ≤ 17 / 10 := by
+          rw [abs_of_nonneg (by linarith [hu.1])]; linarith [hu.2]
+        linarith
+      refine (abs_logDensity_sub_one_le u).trans ?_
+      rw [div_le_div_iff₀ (by positivity) hJ0]
+      nlinarith [abs_nonneg u]
+    have := abs_logW_sub_le hmid
+    rw [abs_of_nonneg hd.1] at this
+    calc _ ≤ 4400 / J * (t - logPt j) := this
+      _ ≤ 4400 / J * (17 / 10) := by gcongr; exact hd.2
+      _ = 7480 / J := by ring
+  have T3 : |(Real.posLog |t| - Real.posLog |logPt j|)| ≤ 68 / 10 / J := by
+    have ht1 : J / 4 ≤ |t| := by
+      have h3 : |t - logPt j| ≤ 17 / 10 := by
+        rw [abs_of_nonneg hd.1]; exact hd.2
+      have := abs_sub_abs_le_abs_sub (logPt j) t
+      rw [abs_sub_comm] at this
+      linarith [abs_sub_comm t (logPt j)]
+    have := abs_posLog_abs_sub_le (x := t) (y := logPt j) (c := J / 4) (by linarith) ht1
+      (by linarith)
+    refine this.trans ?_
+    rw [abs_of_nonneg hd.1]
+    rw [div_le_div_iff₀ (by positivity) hJ0]
+    nlinarith
+  have T2 : |(Real.posLog |logPt j| + logW (logPt j))| ≤ (2 * L + 1) / J := by
+    rw [logW_logPt]
+    have h1 := abs_posLog_abs_sub_le (x := logPt j) (y := (j : ℝ)) (c := J / 2) (by linarith) hp
+      (by rw [← hJ]; linarith)
+    have h2 := abs_posLog_abs_sub_le (x := (j : ℝ)) (y := (j : ℝ) - 1) (c := J - 1) (by linarith)
+      (by rw [← hJ]; linarith) (by
+        have := abs_sub_abs_le_abs_sub (j : ℝ) 1
+        have h5 := abs_sub_abs_le_abs_sub (j : ℝ) ((j : ℝ) - 1)
+        have : |(j : ℝ)| - 1 ≤ |(j : ℝ) - 1| := by
+          have := abs_sub_abs_le_abs_sub (1 : ℝ) (-(j : ℝ) + 1 - 1 + 0)
+          have h6 : |(j : ℝ)| ≤ |(j : ℝ) - 1| + 1 := by
+            have := abs_add_le ((j : ℝ) - 1) 1
+            simpa using this
+          linarith
+        linarith)
+    have e1 : logPt j - (j : ℝ) = δ := rfl
+    rw [e1] at h1
+    rw [abs_of_nonneg hδ0] at h1
+    have h1' : |(Real.posLog |logPt j| - Real.posLog |(j : ℝ)|)| ≤ 2 * L / J := by
+      refine h1.trans ?_
+      rw [div_le_div_iff₀ (by positivity) hJ0]
+      nlinarith
+    have h2' : |(Real.posLog |(j : ℝ)| - Real.posLog |((j : ℝ) - 1)|)| ≤ 2 / J := by
+      refine h2.trans ?_
+      have : |(j : ℝ) - ((j : ℝ) - 1)| = 1 := by simp
+      rw [this, div_le_div_iff₀ (by linarith) hJ0]
+      linarith
+    have hsplit : Real.posLog |logPt j| + -(Real.posLog |((j : ℝ) - 1)| + Real.posLog |(j : ℝ)|) / 2 =
+        (Real.posLog |logPt j| - Real.posLog |(j : ℝ)|) +
+          (Real.posLog |(j : ℝ)| - Real.posLog |((j : ℝ) - 1)|) / 2 := by ring
+    rw [hsplit]
+    calc _ ≤ |(Real.posLog |logPt j| - Real.posLog |(j : ℝ)|)| +
+          |(Real.posLog |(j : ℝ)| - Real.posLog |((j : ℝ) - 1)|) / 2| := abs_add_le _ _
+      _ ≤ 2 * L / J + (2 / J) / 2 := by
+          gcongr
+          rw [abs_div, abs_two]
+          gcongr
+      _ = (2 * L + 1) / J := by ring
+  have hsum : logW t + Real.posLog |t| = (logW t - logW (logPt j)) +
+      (Real.posLog |logPt j| + logW (logPt j)) + (Real.posLog |t| - Real.posLog |logPt j|) := by ring
+  rw [hsum]
+  calc _ ≤ |(logW t - logW (logPt j)) + (Real.posLog |logPt j| + logW (logPt j))| +
+        |(Real.posLog |t| - Real.posLog |logPt j|)| := abs_add_le _ _
+    _ ≤ |logW t - logW (logPt j)| + |(Real.posLog |logPt j| + logW (logPt j))| +
+        |(Real.posLog |t| - Real.posLog |logPt j|)| := by
+          gcongr; exact abs_add_le _ _
+    _ ≤ 7480 / J + (2 * L + 1) / J + 68 / 10 / J := by gcongr
+    _ = (7488 + 2 * L) / J - 1 / 5 / J := by ring
+    _ ≤ (7488 + 2 * L) / J := by
+        have : 0 ≤ 1 / 5 / J := by positivity
+        linarith
+
+
+theorem log_le_two_sqrt {y : ℝ} (hy : 0 < y) : Real.log y ≤ 2 * Real.sqrt y := by
+  have h1 := Real.log_le_sub_one_of_pos (Real.sqrt_pos.2 hy)
+  have h2 : Real.log (Real.sqrt y) = Real.log y / 2 := Real.log_sqrt hy.le
+  linarith
+
+
 /-- `W(t) = -log⁺|t| + ρ(t)` with `|ρ(t)| ≤ C_ρ min(|t|, (1+|t|)^{-1/2})`. -/
 theorem abs_logW_add_posLog_le : ∃ Cρ : ℝ, ∀ t : ℝ,
     |logW t + Real.posLog (|t|)| ≤ Cρ * min |t| (1 / Real.sqrt (1 + |t|)) := by
-  sorry
+  refine ⟨8000, fun t ↦ ?_⟩
+  have hq0 : 0 < Real.sqrt (1 + |t|) := Real.sqrt_pos.2 (by positivity)
+  set q : ℝ := Real.sqrt (1 + |t|) with hq
+  have hq2 : q ^ 2 = 1 + |t| := Real.sq_sqrt (by positivity)
+  rcases le_or_gt |t| 1 with h1 | h1
+  · -- small `t`
+    have hp : Real.posLog |t| = 0 := by
+      rw [Real.posLog_abs]; exact (Real.posLog_eq_zero_iff t).2 h1
+    rw [hp, add_zero]
+    have hq1 : q ≤ 2 := by nlinarith [abs_nonneg t]
+    have hmin : |t| / 2 ≤ min |t| (1 / q) := by
+      refine le_min (by linarith [abs_nonneg t]) ?_
+      rw [le_div_iff₀ hq0]; nlinarith [abs_nonneg t]
+    calc |logW t| ≤ 19 * |t| := abs_logW_le t
+      _ ≤ 8000 * (|t| / 2) := by nlinarith [abs_nonneg t]
+      _ ≤ _ := by gcongr
+  · have hmin : min |t| (1 / q) = 1 / q := by
+      refine min_eq_right ?_
+      have : 1 / q ≤ 1 := by
+        rw [div_le_one hq0]; nlinarith
+      linarith
+    rw [hmin, mul_one_div, le_div_iff₀ hq0]
+    obtain ⟨hj1, hj2⟩ := logIdx_spec t
+    set j := logIdx t with hj
+    have ht : t ∈ Ico (logPt j) (logPt (j + 1)) := ⟨hj1, hj2⟩
+    have h5 := one_add_abs_le_of_mem ht
+    rcases le_or_gt 7 |(j : ℝ)| with hJ | hJ
+    · have hb := rho_big hJ ht
+      set J : ℝ := |(j : ℝ)| with hJdef
+      have hJ0 : 0 < J := by linarith
+      set s : ℝ := Real.sqrt J with hs
+      have hs0 : 0 < s := Real.sqrt_pos.2 hJ0
+      have hs2 : s ^ 2 = J := Real.sq_sqrt hJ0.le
+      have hs26 : 2.6 ≤ s := by nlinarith
+      have hqs : q ≤ 5 / 2 * s := by nlinarith
+      have hL : Real.log (2 + J) ≤ 3 * s := by
+        have h1 := log_le_two_sqrt (show 0 < 2 + J by linarith)
+        have hr0 : 0 ≤ Real.sqrt (2 + J) := Real.sqrt_nonneg _
+        have hr2 : Real.sqrt (2 + J) ^ 2 = 2 + J := Real.sq_sqrt (by linarith)
+        have : Real.sqrt (2 + J) ≤ 3 / 2 * s := by nlinarith
+        linarith
+      calc |(logW t + Real.posLog |t|)| * q ≤ ((7488 + 2 * Real.log (2 + J)) / J) * q :=
+            mul_le_mul_of_nonneg_right hb hq0.le
+        _ ≤ ((7488 + 6 * s) / s ^ 2) * (5 / 2 * s) := by
+            have hL0 := Real.log_nonneg (show (1:ℝ) ≤ 2 + J by linarith)
+            rw [hs2]
+            have hn : 7488 + 2 * Real.log (2 + J) ≤ 7488 + 6 * s := by linarith
+            rw [← hs2] at hn ⊢
+            exact mul_le_mul (div_le_div_of_nonneg_right hn (by positivity)) hqs hq0.le (by positivity)
+        _ = (7488 + 6 * s) * (5 / 2) / s := by field_simp
+        _ ≤ 8000 := by
+            rw [div_le_iff₀ hs0]; nlinarith
+    · have hJ' : |(j : ℝ)| ≤ 7 := hJ.le
+      have hq35 : q ≤ 7 := by nlinarith [abs_nonneg (j : ℝ)]
+      have ht' : |t| ≤ 39 := by linarith
+      have h1 := abs_logW_le t
+      have h2 : Real.posLog |t| ≤ |t| := by
+        have := Real.posLog_le_abs |t|
+        rwa [abs_abs] at this
+      have : |(logW t + Real.posLog |t|)| ≤ 20 * |t| := by
+        calc _ ≤ |logW t| + abs (Real.posLog |t|) := abs_add_le _ _
+          _ ≤ 19 * |t| + |t| := by
+              rw [abs_of_nonneg (Real.posLog_nonneg (x := |t|))]; linarith
+          _ = 20 * |t| := by ring
+      calc |(logW t + Real.posLog |t|)| * q ≤ (20 * 39) * 7 :=
+            mul_le_mul (this.trans (by linarith)) hq35 hq0.le (by norm_num)
+        _ ≤ 8000 := by norm_num
 
 /-- `κ = ∫_{|t|>1} (m(t) - 1)/t dt` (absolutely convergent). -/
 def logKappa : ℝ :=
