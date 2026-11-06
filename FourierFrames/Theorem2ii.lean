@@ -698,9 +698,88 @@ theorem isExpTypeLE_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a�
   exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.2 h2) hC₀.le
 
 /-- `∫ env < ∞` and `testFn ∈ L²(ℝ)`. -/
+theorem env_pos {a₁ a₂ : ℝ} (ha₁ : 0 < a₁) (ha₂ : 0 < a₂) (x : ℝ) : 0 < env a₁ a₂ x := by
+  unfold env
+  exact mul_pos (div_pos ha₁ (lt_of_lt_of_le ha₁ (le_max_left _ _)))
+    (div_pos ha₂ (lt_of_lt_of_le ha₂ (le_max_left _ _)))
+
+theorem env_le_one {a₁ a₂ : ℝ} (ha₁ : 0 < a₁) (ha₂ : 0 < a₂) (x : ℝ) : env a₁ a₂ x ≤ 1 := by
+  unfold env
+  have h1 : a₁ / max a₁ |x| ≤ 1 := (div_le_one (lt_of_lt_of_le ha₁ (le_max_left _ _))).2 (le_max_left _ _)
+  have h2 : a₂ / max a₂ |x| ≤ 1 := (div_le_one (lt_of_lt_of_le ha₂ (le_max_left _ _))).2 (le_max_left _ _)
+  have h3 : 0 ≤ a₁ / max a₁ |x| := div_nonneg ha₁.le (lt_of_lt_of_le ha₁ (le_max_left _ _)).le
+  have h4 : 0 ≤ a₂ / max a₂ |x| := div_nonneg ha₂.le (lt_of_lt_of_le ha₂ (le_max_left _ _)).le
+  nlinarith
+
+theorem env_mul_le {a₁ a₂ : ℝ} (ha₁ : 0 < a₁) (h12 : a₁ ≤ a₂) (x : ℝ) :
+    env a₁ a₂ x * (1 + x ^ 2) ≤ 1 + a₁ * a₂ := by
+  have ha₂ : 0 < a₂ := lt_of_lt_of_le ha₁ h12
+  unfold env
+  have hx : x ^ 2 = |x| ^ 2 := (sq_abs x).symm
+  rw [hx]
+  set u := |x| with hu
+  have hu0 : 0 ≤ u := abs_nonneg x
+  rcases le_total u a₁ with h | h
+  · rw [max_eq_left h, max_eq_left (h.trans h12), div_self ha₁.ne', div_self ha₂.ne']
+    nlinarith
+  · rw [max_eq_right h]
+    have hupos : 0 < u := lt_of_lt_of_le ha₁ h
+    rcases le_total u a₂ with h' | h'
+    · rw [max_eq_left h']
+      rw [div_self ha₂.ne', mul_one, div_mul_eq_mul_div, div_le_iff₀ hupos]
+      have : a₁ ≤ u := h
+      nlinarith [mul_le_mul_of_nonneg_left h' ha₁.le]
+    · rw [max_eq_right h']
+      have : a₁ * a₂ ≤ u ^ 2 := by nlinarith
+      rw [div_mul_div_comm, div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+      nlinarith [mul_pos ha₁ ha₂]
+
+theorem integrable_env_shift {a₁ a₂ : ℝ} (ha₁ : 0 < a₁) (h12 : a₁ ≤ a₂) :
+    Integrable (fun x : ℝ ↦ env a₁ a₂ (x + 1 / 2)) := by
+  have ha₂ : 0 < a₂ := lt_of_lt_of_le ha₁ h12
+  have hg : Integrable (fun x : ℝ ↦ (1 + a₁ * a₂) * (1 + (x + 1 / 2) ^ 2)⁻¹) :=
+    (integrable_inv_one_add_sq.comp_add_right (1 / 2)).const_mul _
+  refine hg.mono' ?_ (ae_of_all _ fun x ↦ ?_)
+  · have : Measurable (env a₁ a₂) := by
+      unfold env
+      have h1 : Measurable fun x : ℝ ↦ max a₁ |x| := measurable_const.max measurable_id.abs
+      have h2 : Measurable fun x : ℝ ↦ max a₂ |x| := measurable_const.max measurable_id.abs
+      exact (measurable_const.div h1).mul (measurable_const.div h2)
+    exact (this.comp (measurable_id.add_const _)).aestronglyMeasurable
+  · rw [Real.norm_eq_abs, abs_of_pos (env_pos ha₁ ha₂ _)]
+    have := env_mul_le ha₁ h12 (x + 1 / 2)
+    have hp : 0 < 1 + (x + 1 / 2) ^ 2 := by positivity
+    rw [← div_eq_mul_inv, le_div_iff₀ hp]
+    exact this
+
 theorem memLp_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
     MemLp (fun x : ℝ ↦ testFn a₁ a₂ x) 2 := by
-  sorry
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have hcont : Continuous fun x : ℝ ↦ testFn a₁ a₂ x :=
+    (differentiable_testFn h₁ h₂).continuous.comp Complex.continuous_ofReal
+  rw [memLp_two_iff_integrable_sq_norm hcont.aestronglyMeasurable]
+  obtain ⟨c, C, hc, hC, hbd⟩ := testFn_norm_real
+  have hw := dens_isMultWeight h₁ h₂
+  have hint := (integrable_env_shift ha₁ (by linarith : a₁ ≤ a₂)).const_mul (4 * C ^ 2)
+  refine hint.mono' (hcont.norm.pow 2).aestronglyMeasurable (ae_of_all _ fun x ↦ ?_)
+  have h1 := (hbd a₁ a₂ h₁ h₂ x).2
+  have h2 := infDist_multGammaC_le hw (x + 1 / 2)
+  have hd0 : 0 ≤ infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) := infDist_nonneg
+  have hs := Real.sqrt_nonneg (env a₁ a₂ (x + 1 / 2))
+  have h3 : ‖testFn a₁ a₂ x‖ ≤ C * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * 2 := by
+    refine h1.trans ?_
+    have : infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) ≤ 2 := by
+      have := h2; norm_num at this; linarith
+    exact mul_le_mul_of_nonneg_left this (by positivity)
+  rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+  have h4 : ‖testFn a₁ a₂ x‖ ^ 2 ≤ (C * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * 2) ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) h3 2
+  refine h4.trans (le_of_eq ?_)
+  have := Real.sq_sqrt (env_pos ha₁ ha₂ (x + 1 / 2)).le
+  calc (C * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * 2) ^ 2 =
+      4 * C ^ 2 * (Real.sqrt (env a₁ a₂ (x + 1 / 2))) ^ 2 := by ring
+    _ = _ := by rw [this]
 
 theorem memPW_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
     MemPW (testFn a₁ a₂) :=
