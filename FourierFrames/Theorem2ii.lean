@@ -501,23 +501,201 @@ theorem infDist_multGammaC_le {m : ℝ → ℝ} {a b : ℝ} (hw : OCS.IsMultWeig
 /-- **Two-sided estimate on `ℝ`** with absolute constants `0 < c ≤ C`:
 `c √env(x + 1/2) · dist(x + 1/2, Γ) ≤ |f(x)| ≤ C √env(x + 1/2) · dist(x + 1/2, Γ)`
 (uniform in `a₁, a₂` with `1 ≤ a₁`, `2 a₁ < a₂`). -/
+theorem norm_testFn_mul_exp {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) (x : ℝ) :
+    ‖testFn a₁ a₂ x‖ * Real.exp (-potW a₁ a₂ ((x + 1 / 2 : ℝ) : ℂ)) =
+      ‖OCS.multF (dens a₁ a₂) 0 ((x + 1 / 2 : ℝ) : ℂ)‖ *
+        Real.exp (-OCS.multU (dens a₁ a₂) 0 ((x + 1 / 2 : ℝ) : ℂ)) := by
+  have hz : (x : ℂ) + 1 / 2 = ((x + 1 / 2 : ℝ) : ℂ) := by push_cast; ring
+  have hn : ‖testFn a₁ a₂ x‖ = ‖OCS.multF (dens a₁ a₂) 0 ((x + 1 / 2 : ℝ) : ℂ)‖ *
+      Real.exp (-(kappaMu a₁ a₂ * (x + 1 / 2))) := by
+    unfold testFn gFun
+    rw [norm_mul, hz, Complex.norm_exp]
+    congr 2
+    simp
+  rw [hn, multU_dens h₁ h₂]
+  simp only [Complex.ofReal_im, abs_zero, mul_zero, zero_add, Complex.ofReal_re]
+  rw [mul_assoc, ← Real.exp_add]
+  congr 2
+  ring
+
+theorem exp_potW_bounds {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) (x : ℝ) :
+    Real.exp (-4) * Real.sqrt (env a₁ a₂ x) ≤ Real.exp (potW a₁ a₂ (x : ℂ)) ∧
+      Real.exp (potW a₁ a₂ (x : ℂ)) ≤ Real.exp 4 * Real.sqrt (env a₁ a₂ x) := by
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have henv : 0 < env a₁ a₂ x := by
+    unfold env
+    exact mul_pos (div_pos ha₁ (lt_of_lt_of_le ha₁ (le_max_left _ _)))
+      (div_pos ha₂ (lt_of_lt_of_le ha₂ (le_max_left _ _)))
+  have hs : Real.sqrt (env a₁ a₂ x) = Real.exp (Real.log (env a₁ a₂ x) / 2) := by
+    rw [← Real.log_sqrt henv.le, Real.exp_log (Real.sqrt_pos.2 henv)]
+  have := abs_le.1 (potW_estimate h₁ h₂ x)
+  rw [hs, ← Real.exp_add, ← Real.exp_add]
+  constructor <;> apply Real.exp_le_exp.2 <;> linarith [this.1, this.2]
+
 theorem testFn_norm_real :
     ∃ c C : ℝ, 0 < c ∧ 0 < C ∧ ∀ a₁ a₂ : ℝ, 1 ≤ a₁ → 2 * a₁ < a₂ → ∀ x : ℝ,
       c * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
           infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) ≤ ‖testFn a₁ a₂ x‖ ∧
       ‖testFn a₁ a₂ x‖ ≤ C * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
           infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) := by
-  sorry
+  obtain ⟨c₁, c₂, hc₁, hc₂, hL⟩ := lemma3_estimate_uniform (a := 1 / 2) (b := 1) (by norm_num)
+    (by norm_num)
+  refine ⟨c₁ * Real.exp (-4), c₂ * Real.exp 4, by positivity, by positivity, ?_⟩
+  intro a₁ a₂ h₁ h₂ x
+  have hw := dens_isMultWeight h₁ h₂
+  have hl := hL _ hw 0 (((x + 1 / 2 : ℝ)) : ℂ) (by simp)
+  rw [← norm_testFn_mul_exp h₁ h₂ x] at hl
+  have hb := exp_potW_bounds h₁ h₂ (x + 1 / 2)
+  set d := infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂))
+  set N := ‖testFn a₁ a₂ x‖
+  set W := potW a₁ a₂ ((x + 1 / 2 : ℝ) : ℂ)
+  have hNW : N = (N * Real.exp (-W)) * Real.exp W := by
+    rw [mul_assoc, ← Real.exp_add]; simp
+  have hd0 : 0 ≤ d := infDist_nonneg
+  have hs0 := Real.sqrt_nonneg (env a₁ a₂ (x + 1 / 2))
+  have hNn : 0 ≤ N * Real.exp (-W) := mul_nonneg (norm_nonneg _) (Real.exp_pos _).le
+  constructor
+  · rw [hNW]
+    calc c₁ * Real.exp (-4) * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * d
+        = (c₁ * d) * (Real.exp (-4) * Real.sqrt (env a₁ a₂ (x + 1 / 2))) := by ring
+      _ ≤ (N * Real.exp (-W)) * Real.exp W := by
+        apply mul_le_mul hl.1 hb.1 (by positivity) hNn
+  · rw [hNW]
+    have h := mul_le_mul hl.2 hb.2 (Real.exp_pos _).le (by positivity)
+    calc (N * Real.exp (-W)) * Real.exp W ≤ (c₂ * d) * (Real.exp 4 * Real.sqrt (env a₁ a₂ (x + 1 / 2))) := h
+      _ = c₂ * Real.exp 4 * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * d := by ring
 
 /-- `testFn` is entire. -/
 theorem differentiable_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
     Differentiable ℂ (testFn a₁ a₂) := by
-  sorry
+  have hw := dens_isMultWeight h₁ h₂
+  unfold testFn gFun
+  have h1 : Differentiable ℂ (fun w : ℂ ↦ OCS.multF (dens a₁ a₂) 0 w *
+      Complex.exp (-(kappaMu a₁ a₂ : ℂ) * w)) :=
+    (OCS.differentiable_multF hw 0).mul ((differentiable_id.const_mul _).cexp)
+  exact h1.comp (differentiable_id.add_const _)
 
 /-- `testFn` has exponential type `≤ π`: `|f(z)| ≤ C e^{π |Im z|}`. -/
+theorem norm_gFun_eq {a₁ a₂ : ℝ} (w : ℂ) :
+    ‖gFun a₁ a₂ w‖ = ‖OCS.multF (dens a₁ a₂) 0 w‖ * Real.exp (-(kappaMu a₁ a₂ * w.re)) := by
+  unfold gFun
+  rw [norm_mul, Complex.norm_exp]
+  congr 2
+  simp
+
+/-- `|F(w)| ≤ e^{U(w) + π}` away from the real axis (estimate (3) of Lemma 3). -/
+theorem norm_multF_le_of_one_le_im {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) {w : ℂ}
+    (hw1 : 1 ≤ |w.im|) :
+    ‖OCS.multF (dens a₁ a₂) 0 w‖ ≤ Real.exp (OCS.multU (dens a₁ a₂) 0 w + Real.pi) := by
+  have hw := dens_isMultWeight h₁ h₂
+  have him : w.im ≠ 0 := by intro h; rw [h] at hw1; norm_num at hw1
+  have h3 := OCS.multF_estimate_three hw 0 him
+  have hre : (OCS.multL (dens a₁ a₂) 0 w).re - OCS.multU (dens a₁ a₂) 0 w ≤ Real.pi := by
+    have h4 := Complex.re_le_norm (OCS.multL (dens a₁ a₂) 0 w - OCS.multU (dens a₁ a₂) 0 w -
+      Complex.I * OCS.multV (dens a₁ a₂) 0 w)
+    have h5 : (OCS.multL (dens a₁ a₂) 0 w - OCS.multU (dens a₁ a₂) 0 w -
+      Complex.I * OCS.multV (dens a₁ a₂) 0 w).re =
+        (OCS.multL (dens a₁ a₂) 0 w).re - OCS.multU (dens a₁ a₂) 0 w := by simp
+    have h6 : Real.pi / (2 * (1 / 2)) / |w.im| ≤ Real.pi := by
+      rw [show (2 : ℝ) * (1 / 2) = 1 by norm_num, div_one, div_le_iff₀ (by linarith)]
+      nlinarith [Real.pi_pos]
+    linarith
+  rw [← OCS.exp_multL hw 0 him, Complex.norm_exp]
+  exact Real.exp_le_exp.2 (by linarith)
+
+theorem exists_norm_gFun_le {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
+    ∃ C₀ : ℝ, 0 < C₀ ∧ ∀ w : ℂ, ‖gFun a₁ a₂ w‖ ≤ C₀ * Real.exp (Real.pi * |w.im|) := by
+  have hw := dens_isMultWeight h₁ h₂
+  obtain ⟨c₁, c₂, hc₁, hc₂, hL⟩ := lemma3_estimate_uniform (a := 1 / 2) (b := 1) (by norm_num)
+    (by norm_num)
+  refine ⟨(1 + 3 * c₂) * Real.exp (Real.log (2 * a₂) + 1) * Real.exp Real.pi, by positivity, ?_⟩
+  intro w
+  have hP := potW_le_complex h₁ h₂ w
+  have hU := multU_dens h₁ h₂ w
+  have hexpP : Real.exp (potW a₁ a₂ w) ≤ Real.exp (Real.log (2 * a₂) + 1) := Real.exp_le_exp.2 hP
+  have hπ1 : 1 ≤ Real.exp Real.pi := Real.one_le_exp Real.pi_pos.le
+  have hgn := norm_gFun_eq (a₁ := a₁) (a₂ := a₂) w
+  have hkey : ∀ B : ℝ, ‖OCS.multF (dens a₁ a₂) 0 w‖ ≤ B * Real.exp (OCS.multU (dens a₁ a₂) 0 w) →
+      ‖gFun a₁ a₂ w‖ ≤ B * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) := by
+    intro B hB
+    rw [hgn]
+    calc ‖OCS.multF (dens a₁ a₂) 0 w‖ * Real.exp (-(kappaMu a₁ a₂ * w.re))
+        ≤ (B * Real.exp (OCS.multU (dens a₁ a₂) 0 w)) * Real.exp (-(kappaMu a₁ a₂ * w.re)) := by
+          gcongr
+      _ = B * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) := by
+          have e : Real.exp (OCS.multU (dens a₁ a₂) 0 w) * Real.exp (-(kappaMu a₁ a₂ * w.re)) =
+              Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) := by
+            rw [← Real.exp_add, ← Real.exp_add, hU]; congr 1; ring
+          rw [mul_assoc, e]; ring
+  by_cases hbig : 1 ≤ |w.im|
+  · have := norm_multF_le_of_one_le_im h₁ h₂ hbig
+    have h' : ‖OCS.multF (dens a₁ a₂) 0 w‖ ≤ Real.exp Real.pi * Real.exp (OCS.multU (dens a₁ a₂) 0 w) := by
+      rw [← Real.exp_add, add_comm]; exact this
+    have := hkey _ h'
+    calc ‖gFun a₁ a₂ w‖ ≤ Real.exp Real.pi * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) := this
+      _ ≤ _ := by
+        have h0 : 0 < Real.exp (Real.pi * |w.im|) := Real.exp_pos _
+        have h2 : 0 ≤ 3 * c₂ := by positivity
+        have e1 : Real.exp Real.pi * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) ≤
+            Real.exp Real.pi * Real.exp (Real.pi * |w.im|) * Real.exp (Real.log (2 * a₂) + 1) := by
+          gcongr
+        refine e1.trans ?_
+        have : (1 + 3 * c₂) ≥ 1 := by linarith
+        nlinarith [Real.exp_pos (Real.log (2 * a₂) + 1), Real.exp_pos Real.pi,
+          mul_pos h0 (Real.exp_pos (Real.log (2 * a₂) + 1)), mul_pos (mul_pos h0 (Real.exp_pos (Real.log (2 * a₂) + 1))) (Real.exp_pos Real.pi)]
+  · rw [not_le] at hbig
+    have hlow := (hL _ hw 0 w hbig.le).2
+    have hd : infDist w (OCS.multGammaC (dens a₁ a₂)) ≤ 3 := by
+      have h1 := infDist_multGammaC_le hw w.re
+      have h2 : infDist w (OCS.multGammaC (dens a₁ a₂)) ≤
+          infDist ((w.re : ℝ) : ℂ) (OCS.multGammaC (dens a₁ a₂)) + dist w ((w.re : ℝ) : ℂ) :=
+        Metric.infDist_le_infDist_add_dist
+      have h3 : dist w ((w.re : ℝ) : ℂ) = |w.im| := by
+        rw [Complex.dist_eq]
+        have : w - ((w.re : ℝ) : ℂ) = ((w.im : ℝ) : ℂ) * Complex.I := by
+          apply Complex.ext <;> simp
+        rw [this, norm_mul, Complex.norm_real, Complex.norm_I, mul_one, Real.norm_eq_abs]
+      norm_num at h1
+      linarith
+    have h' : ‖OCS.multF (dens a₁ a₂) 0 w‖ ≤ (3 * c₂) * Real.exp (OCS.multU (dens a₁ a₂) 0 w) := by
+      have e : ‖OCS.multF (dens a₁ a₂) 0 w‖ =
+          (‖OCS.multF (dens a₁ a₂) 0 w‖ * Real.exp (-OCS.multU (dens a₁ a₂) 0 w)) *
+            Real.exp (OCS.multU (dens a₁ a₂) 0 w) := by
+        rw [mul_assoc, ← Real.exp_add]; simp
+      have hX : ‖OCS.multF (dens a₁ a₂) 0 w‖ * Real.exp (-OCS.multU (dens a₁ a₂) 0 w) ≤ 3 * c₂ := by
+        calc _ ≤ c₂ * infDist w (OCS.multGammaC (dens a₁ a₂)) := hlow
+          _ ≤ c₂ * 3 := by gcongr
+          _ = 3 * c₂ := by ring
+      rw [e]
+      exact mul_le_mul_of_nonneg_right hX (Real.exp_pos _).le
+    have := hkey _ h'
+    calc ‖gFun a₁ a₂ w‖ ≤ (3 * c₂) * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) := this
+      _ ≤ _ := by
+        have h0 : 0 < Real.exp (Real.pi * |w.im|) := Real.exp_pos _
+        have e1 : (3 * c₂) * Real.exp (Real.pi * |w.im|) * Real.exp (potW a₁ a₂ w) ≤
+            (3 * c₂) * Real.exp (Real.pi * |w.im|) * Real.exp (Real.log (2 * a₂) + 1) := by
+          gcongr
+        refine e1.trans ?_
+        have hE := Real.exp_pos (Real.log (2 * a₂) + 1)
+        have : (3 * c₂) * Real.exp (Real.pi * |w.im|) * Real.exp (Real.log (2 * a₂) + 1) * 1 ≤
+            (3 * c₂) * Real.exp (Real.pi * |w.im|) * Real.exp (Real.log (2 * a₂) + 1) * Real.exp Real.pi := by
+          gcongr
+        nlinarith [mul_pos h0 hE, this]
+
 theorem isExpTypeLE_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
     IsExpTypeLE Real.pi (testFn a₁ a₂) := by
-  sorry
+  obtain ⟨C₀, hC₀, hC⟩ := exists_norm_gFun_le h₁ h₂
+  intro ε hε
+  refine ⟨C₀, fun z ↦ ?_⟩
+  have h1 := hC (z + 1 / 2)
+  have him : (z + 1 / 2).im = z.im := by simp
+  rw [him] at h1
+  refine h1.trans ?_
+  have := Complex.abs_im_le_norm z
+  have h2 : Real.pi * |z.im| ≤ (Real.pi + ε) * ‖z‖ := by
+    nlinarith [Real.pi_pos, norm_nonneg z, abs_nonneg z.im]
+  exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.2 h2) hC₀.le
 
 /-- `∫ env < ∞` and `testFn ∈ L²(ℝ)`. -/
 theorem memLp_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
