@@ -810,6 +810,140 @@ theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
         rw [← hq]
         ring
 
+/-! ### Comparability of `B` -/
+
+/-- `Γ + 1/2`. -/
+def compZ₁ (m : ℝ → ℝ) : Set ℂ := (fun w : ℂ ↦ w + 1 / 2) '' OCS.multGammaC m
+
+theorem compZ₁_eq (hw : OCS.IsMultWeight m a b) :
+    compZ₁ m = {t | genA m (t - 1 / 2) = 0} := by
+  ext t
+  simp only [compZ₁, Set.mem_image, Set.mem_ofPred_eq, genA_eq_zero_iff hw, OCS.mem_multGammaC_iff]
+  constructor
+  · rintro ⟨w, ⟨γ, ⟨j, rfl⟩, rfl⟩, rfl⟩
+    exact ⟨j, by ring⟩
+  · rintro ⟨j, hj⟩
+    exact ⟨(OCS.multBary m j : ℂ), ⟨_, ⟨j, rfl⟩, rfl⟩, by rw [← hj]; ring⟩
+
+theorem infDist_compZ₁ (z : ℂ) :
+    infDist z (compZ₁ m) = infDist (z - 1 / 2) (OCS.multGammaC m) := by
+  have hiso : Isometry (fun w : ℂ ↦ w + 1 / 2) := (IsometryEquiv.addRight (1 / 2 : ℂ)).isometry
+  have := Metric.infDist_image hiso (x := z - 1 / 2) (t := OCS.multGammaC m)
+  rw [sub_add_cancel] at this
+  exact this
+
+theorem range_compBeta_eq (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+    (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)) = {t | compB m N t = 0} := by
+  ext t
+  simp only [Set.mem_range, Set.mem_ofPred_eq, compB_eq_zero_iff hw hN t]
+  constructor
+  · rintro ⟨j, rfl⟩; exact ⟨j, rfl⟩
+  · rintro ⟨j, rfl⟩; exact ⟨j, rfl⟩
+
+theorem exists_far (m : ℝ → ℝ) (N : ℕ) :
+    ∃ ρ₀ : ℝ, ∀ z : ℂ, ρ₀ ≤ ‖z‖ →
+      (∀ j ∈ Finset.Ioo (-(N : ℤ)) N, 1 ≤ ‖z - (compBeta m N j : ℂ)‖ ∧
+        1 ≤ ‖z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖) ∧
+      ‖(∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))) /
+          (∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))) - 1‖
+        ≤ 1 / 2 := by
+  have h : Tendsto (fun z : ℂ ↦ ∏ j ∈ Finset.Ioo (-(N : ℤ)) N,
+      ((z - (compBeta m N j : ℂ)) / (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))))
+      (cocompact ℂ) (𝓝 1) := by
+    have := tendsto_finsetProd (Finset.Ioo (-(N : ℤ)) N)
+      (fun j _ ↦ Comparable.tendsto_sub_div_sub (compBeta m N j : ℂ)
+        ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
+    simpa using this
+  have hev := (Metric.tendsto_nhds.1 h) (1 / 2) (by norm_num)
+  obtain ⟨K, hK, hKs⟩ := mem_cocompact.1 hev
+  obtain ⟨r, hr⟩ := hK.isBounded.subset_closedBall 0
+  refine ⟨max (r + 1) (1 + ∑ j ∈ Finset.Ioo (-(N : ℤ)) N,
+    (‖(compBeta m N j : ℂ)‖ + ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖)), fun z hz ↦ ⟨fun j hj ↦ ?_, ?_⟩⟩
+  · have h1 : ‖(compBeta m N j : ℂ)‖ + ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖ ≤
+        ∑ j ∈ Finset.Ioo (-(N : ℤ)) N,
+          (‖(compBeta m N j : ℂ)‖ + ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖) :=
+      Finset.single_le_sum (f := fun j ↦ ‖(compBeta m N j : ℂ)‖ +
+        ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖) (fun j _ ↦ by positivity) hj
+    have h2 := le_max_right (r + 1) (1 + ∑ j ∈ Finset.Ioo (-(N : ℤ)) N,
+      (‖(compBeta m N j : ℂ)‖ + ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖))
+    have h3 := norm_sub_norm_le z (compBeta m N j : ℂ)
+    have h4 := norm_sub_norm_le z ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)
+    have h5 := norm_nonneg (compBeta m N j : ℂ)
+    have h6 := norm_nonneg ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)
+    constructor <;> linarith
+  · have hzK : z ∉ K := fun hzK ↦ by
+      have := hr hzK
+      rw [mem_closedBall, dist_zero_right] at this
+      have := le_max_left (r + 1) (1 + ∑ j ∈ Finset.Ioo (-(N : ℤ)) N,
+        (‖(compBeta m N j : ℂ)‖ + ‖((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)‖))
+      linarith
+    have := hKs hzK
+    rw [Set.mem_ofPred_eq, dist_eq_norm, Finset.prod_div_distrib] at this
+    exact this.le
+
+/-- `e^{U(z - 1/2)}` is bounded above and below on compact sets. -/
+theorem expU_bounds_on_compact (hw : OCS.IsMultWeight m a b) {K : Set ℂ} (hK : IsCompact K) :
+    ∃ u₁ u₂ : ℝ, 0 < u₁ ∧ 0 < u₂ ∧ ∀ z ∈ K,
+      u₁ ≤ Real.exp (OCS.multU m 0 (z - 1 / 2)) ∧ Real.exp (OCS.multU m 0 (z - 1 / 2)) ≤ u₂ := by
+  obtain ⟨c₁, c₂, hc₁, hc₂, hc⟩ := norm_genA_comparable hw
+  have hFd : Differentiable ℂ (fun w ↦ genA m (w - 1 / 2)) := fun z ↦
+    ((differentiable_genA hw) (z - 1 / 2)).comp z (differentiableAt_id.sub_const _)
+  have hFs : ∀ t, genA m (t - 1 / 2) = 0 → deriv (fun w ↦ genA m (w - 1 / 2)) t ≠ 0 := by
+    intro t ht
+    have : deriv (fun w ↦ genA m (w - 1 / 2)) t = deriv (genA m) (t - 1 / 2) :=
+      deriv_comp_sub_const (f := genA m) (a := 1 / 2) (x := t)
+    rw [this]
+    exact genA_simple hw ht
+  have hne : ∃ t, genA m (t - 1 / 2) = 0 :=
+    ⟨(OCS.multBary m 0 : ℂ) + 1 / 2, by
+      rw [add_sub_cancel_right, genA_eq_zero_iff hw]; exact ⟨0, rfl⟩⟩
+  obtain ⟨d₁, d₂, hd₁, hd₂, hd⟩ := Comparable.comparable_on_compact hFd hFs hne hK
+  have hset : {t | genA m (t - 1 / 2) = 0} = compZ₁ m := (compZ₁_eq hw).symm
+  have hcl : IsClosed (compZ₁ m) := by
+    rw [← hset]; exact isClosed_eq hFd.continuous continuous_const
+  -- the finite set `K ∩ Z₁`
+  have hfin : (K ∩ compZ₁ m).Finite := by
+    obtain ⟨R, hR⟩ := hK.isBounded.subset_closedBall 0
+    have h1 := (OCS.isGenusOneData_multGammaC hw).finite_inter_ball (R + 1)
+    refine ((h1.image (fun w : ℂ ↦ w + 1 / 2))).subset ?_
+    rintro t ⟨htK, w, hwΓ, rfl⟩
+    refine ⟨w, ⟨hwΓ, ?_⟩, rfl⟩
+    have := hR htK
+    rw [mem_closedBall, dist_zero_right] at this
+    rw [mem_ball_zero_iff]
+    have h2 : ‖w‖ ≤ ‖w + 1 / 2‖ + ‖(1 / 2 : ℂ)‖ := by
+      have := norm_sub_le (w + 1 / 2) (1 / 2 : ℂ)
+      simpa using this
+    have : ‖(1 / 2 : ℂ)‖ = 1 / 2 := by simp
+    linarith
+  obtain ⟨v₁, v₂, hv₁, hv₂, hv⟩ := Comparable.finite_bounds hfin
+    (fun z ↦ Real.exp (OCS.multU m 0 (z - 1 / 2))) (fun z _ ↦ Real.exp_pos _)
+  refine ⟨min v₁ (d₁ / c₂), max v₂ (d₂ / c₁), lt_min hv₁ (by positivity),
+    lt_max_of_lt_left hv₂, fun z hz ↦ ?_⟩
+  by_cases hzZ : z ∈ compZ₁ m
+  · obtain ⟨h1, h2⟩ := hv z ⟨hz, hzZ⟩
+    exact ⟨(min_le_left _ _).trans h1, h2.trans (le_max_left _ _)⟩
+  · have hw1 : 0 < infDist z (compZ₁ m) := by
+      have hne' : (compZ₁ m).Nonempty := by rw [← hset]; exact hne
+      exact (hcl.notMem_iff_infDist_pos hne').1 hzZ
+    have hm : 0 < min 1 (infDist z (compZ₁ m)) := lt_min one_pos hw1
+    obtain ⟨hd1, hd2⟩ := hd z hz
+    rw [hset] at hd1 hd2
+    obtain ⟨hc1, hc2⟩ := hc (z - 1 / 2)
+    rw [← infDist_compZ₁] at hc1 hc2
+    have hE := Real.exp_pos (OCS.multU m 0 (z - 1 / 2))
+    set E := Real.exp (OCS.multU m 0 (z - 1 / 2))
+    set w₁ := min 1 (infDist z (compZ₁ m))
+    set a₁ := ‖genA m (z - 1 / 2)‖
+    constructor
+    · refine (min_le_right _ _).trans ?_
+      rw [div_le_iff₀ hc₂]
+      nlinarith [mul_pos hE hm]
+    · refine le_trans ?_ (le_max_right _ _)
+      rw [le_div_iff₀ hc₁]
+      nlinarith [mul_pos hE hm]
+
 /-- `|B| ≃ e^{U(z - 1/2)} min(1, dist(z, {β_j}))` on `Im z ≥ 0`. -/
 theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
@@ -819,7 +953,101 @@ theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
         ‖compB m N z‖ ∧
       ‖compB m N z‖ ≤ c₂ * Real.exp (OCS.multU m 0 (z - 1 / 2)) *
           min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) := by
-  sorry
+  obtain ⟨c₁, c₂, hc₁, hc₂, hc⟩ := norm_genA_comparable hw
+  obtain ⟨ρ₀, hfar⟩ := exists_far m N
+  have hK : IsCompact (closedBall (0 : ℂ) ρ₀) := isCompact_closedBall _ _
+  obtain ⟨u₁, u₂, hu₁, hu₂, hu⟩ := expU_bounds_on_compact hw hK
+  have hne : ∃ t, compB m N t = 0 := ⟨(compBeta m N 0 : ℂ), (compB_eq_zero_iff hw hN _).2 ⟨0, rfl⟩⟩
+  obtain ⟨e₁, e₂, he₁, he₂, he⟩ := Comparable.comparable_on_compact (differentiable_compB hw N)
+    (fun t ht ↦ compB_simple hw hN ht) hne hK
+  rw [← range_compBeta_eq hw hN] at he
+  refine ⟨min (c₁ / 2) (e₁ / u₂), max (3 * c₂ / 2) (e₂ / u₁), lt_min (by positivity) (by positivity),
+    lt_max_of_lt_left (by positivity), fun z _ ↦ ?_⟩
+  set wB := min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) with hwB
+  set E := Real.exp (OCS.multU m 0 (z - 1 / 2)) with hE
+  have hE0 : 0 < E := Real.exp_pos _
+  have hwB0 : 0 ≤ wB := le_min zero_le_one infDist_nonneg
+  by_cases hz : ρ₀ ≤ ‖z‖
+  · -- far region
+    obtain ⟨hSig, hR⟩ := hfar z hz
+    have hQ : ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) ≠ 0 := by
+      rw [Finset.prod_ne_zero_iff]
+      intro j hj h
+      have := (hSig j hj).2
+      rw [sub_eq_zero.1 h, sub_self, norm_zero] at this
+      linarith
+    have hBQ := compB_mul_Q hw hN z
+    set P := ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))
+    set Q := ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
+    have hBeq : compB m N z = genA m (z - 1 / 2) * (P / Q) := by
+      rw [mul_div_assoc', eq_div_iff hQ]
+      exact hBQ
+    have hn : ‖compB m N z‖ = ‖genA m (z - 1 / 2)‖ * ‖P / Q‖ := by rw [hBeq, norm_mul]
+    have hR1 : 1 / 2 ≤ ‖P / Q‖ := by
+      have := norm_sub_norm_le (1 : ℂ) (P / Q)
+      rw [norm_sub_rev] at this
+      simp only [norm_one] at this
+      linarith
+    have hR2 : ‖P / Q‖ ≤ 3 / 2 := by
+      have := norm_le_norm_add_norm_sub' (P / Q) 1
+      simp only [norm_one] at this
+      linarith
+    -- the minima agree
+    have hΓBne : (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)).Nonempty := ⟨_, ⟨0, rfl⟩⟩
+    have hZne : (compZ₁ m).Nonempty := ⟨_, ⟨(OCS.multBary m 0 : ℂ), ⟨_, ⟨0, rfl⟩, rfl⟩, rfl⟩⟩
+    have hmin : min 1 (infDist z (compZ₁ m)) = wB := by
+      rw [hwB]
+      refine Comparable.min_one_infDist_congr hZne hΓBne z ?_ ?_
+      · rintro x ⟨w, ⟨γ, ⟨j, rfl⟩, rfl⟩, rfl⟩ hx
+        by_cases hj : j ∈ Finset.Ioo (-(N : ℤ)) N
+        · rw [dist_eq_norm]
+          have := (hSig j hj).2
+          push_cast at this ⊢
+          exact this
+        · exfalso
+          apply hx
+          refine ⟨j, ?_⟩
+          show ((compBeta m N j : ℝ) : ℂ) = (OCS.multBary m j : ℂ) + 1 / 2
+          rw [compBeta_of_not_lt hj]; push_cast; ring
+      · rintro x ⟨j, rfl⟩ hx
+        by_cases hj : j ∈ Finset.Ioo (-(N : ℤ)) N
+        · rw [dist_eq_norm]; exact (hSig j hj).1
+        · exfalso
+          apply hx
+          refine ⟨(OCS.multBary m j : ℂ), ⟨_, ⟨j, rfl⟩, rfl⟩, ?_⟩
+          show (OCS.multBary m j : ℂ) + 1 / 2 = ((compBeta m N j : ℝ) : ℂ)
+          rw [compBeta_of_not_lt hj]; push_cast; ring
+    obtain ⟨hc1, hc2⟩ := hc (z - 1 / 2)
+    rw [← infDist_compZ₁, hmin] at hc1 hc2
+    constructor
+    · calc min (c₁ / 2) (e₁ / u₂) * E * wB ≤ (c₁ / 2) * E * wB := by gcongr; exact min_le_left _ _
+        _ = (1 / 2) * (c₁ * E * wB) := by ring
+        _ ≤ (1 / 2) * ‖genA m (z - 1 / 2)‖ := by linarith
+        _ ≤ ‖genA m (z - 1 / 2)‖ * ‖P / Q‖ := by
+            rw [mul_comm]; exact mul_le_mul_of_nonneg_left hR1 (norm_nonneg _)
+        _ = _ := hn.symm
+    · calc ‖compB m N z‖ = ‖genA m (z - 1 / 2)‖ * ‖P / Q‖ := hn
+        _ ≤ ‖genA m (z - 1 / 2)‖ * (3 / 2) := mul_le_mul_of_nonneg_left hR2 (norm_nonneg _)
+        _ ≤ (c₂ * E * wB) * (3 / 2) := by gcongr
+        _ = (3 * c₂ / 2) * E * wB := by ring
+        _ ≤ max (3 * c₂ / 2) (e₂ / u₁) * E * wB := by gcongr; exact le_max_left _ _
+  · -- compact region
+    push Not at hz
+    have hzK : z ∈ closedBall (0 : ℂ) ρ₀ := by
+      rw [mem_closedBall, dist_zero_right]; exact hz.le
+    obtain ⟨hb1, hb2⟩ := he z hzK
+    obtain ⟨hU1, hU2⟩ := hu z hzK
+    rw [← hwB] at hb1 hb2
+    constructor
+    · calc min (c₁ / 2) (e₁ / u₂) * E * wB ≤ (e₁ / u₂) * E * wB := by
+            gcongr; exact min_le_right _ _
+        _ ≤ (e₁ / u₂) * u₂ * wB := by gcongr
+        _ = e₁ * wB := by field_simp
+        _ ≤ _ := hb1
+    · calc ‖compB m N z‖ ≤ e₂ * wB := hb2
+        _ = (e₂ / u₁) * u₁ * wB := by field_simp
+        _ ≤ (e₂ / u₁) * E * wB := by gcongr
+        _ ≤ max (3 * c₂ / 2) (e₂ / u₁) * E * wB := by gcongr; exact le_max_right _ _
 
 /-- A real point where `A ≠ 0` and `B = 0`. -/
 theorem exists_real_genA_ne_zero_compB_eq_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
