@@ -4,6 +4,7 @@ import FourierFrames.Construction.Gaps
 import FourierFrames.Construction.Comparable
 import FourierFrames.Construction.PolyHB
 import FourierFrames.Construction.Limits
+import FourierFrames.Construction.Rigidity
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -1491,6 +1492,125 @@ theorem genA_translate_limit (hw : OCS.IsMultWeight m a b)
         (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
   sorry
 
+theorem tendsto_compR (m : ℝ → ℝ) (N : ℕ) :
+    Tendsto (fun z : ℂ ↦ (∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))) /
+      (∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))))
+      (cocompact ℂ) (𝓝 1) := by
+  have := tendsto_finsetProd (Finset.Ioo (-(N : ℤ)) N)
+    (fun j _ ↦ Comparable.tendsto_sub_div_sub (compBeta m N j : ℂ)
+      ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
+  simpa [Finset.prod_div_distrib] using this
+
+theorem sin_add_I_cos (w : ℂ) :
+    Complex.sin w + Complex.I * Complex.cos w = Complex.I * Complex.exp (-(Complex.I * w)) := by
+  have : Complex.exp (-(Complex.I * w)) = Complex.cos w - Complex.sin w * Complex.I := by
+    rw [show -(Complex.I * w) = (-w) * Complex.I by ring, Complex.exp_mul_I, Complex.cos_neg,
+      Complex.sin_neg]
+    ring
+  rw [this]
+  have := Complex.I_mul_I
+  linear_combination (Complex.sin w) * this
+
+/-- The translates of `B` along a sequence `|s_k| → ∞` along which the translates of `A`
+converge. -/
+theorem tendsto_compB_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {κ : ℝ}
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {Finf : ℂ → ℂ} (hFinf : Continuous Finf)
+    (hA : TendstoLocallyUniformly
+      (fun k z ↦ genA m (z + s k) * Complex.exp (-((κ * s k : ℝ) : ℂ))) Finf atTop) :
+    TendstoLocallyUniformly
+      (fun k z ↦ compB m N (z + s k) * Complex.exp (-((κ * s k : ℝ) : ℂ)))
+      (fun z ↦ Finf (z - 1 / 2)) atTop := by
+  have hA' := hA.comp (fun z : ℂ ↦ z - 1 / 2) (by fun_prop)
+  have hR := Limits.tendstoLU_comp_add_real (tendsto_compR m N) hs
+  have hcont1 : Continuous (Finf ∘ fun z : ℂ ↦ z - 1 / 2) := hFinf.comp (by fun_prop)
+  have hprod := hA'.mul₀ hR hcont1 (continuous_const)
+  rw [show (Finf ∘ fun z : ℂ ↦ z - 1 / 2) * (fun _ : ℂ ↦ (1 : ℂ)) = fun z ↦ Finf (z - 1 / 2) by
+    funext z; simp] at hprod
+  refine Limits.tendstoLU_congr_on_compacts hprod fun K hK ↦ ?_
+  obtain ⟨ρ₀, hfar⟩ := exists_far m N
+  obtain ⟨r, hr⟩ := hK.isBounded.subset_closedBall 0
+  filter_upwards [hs.eventually_ge_atTop (r + ρ₀)] with k hk z hz
+  have hzn : ρ₀ ≤ ‖z + (s k : ℂ)‖ := by
+    have h1 := hr hz
+    rw [mem_closedBall, dist_zero_right] at h1
+    have h3 : ‖(s k : ℂ)‖ ≤ ‖z + (s k : ℂ)‖ + ‖z‖ := by
+      have := norm_sub_le (z + (s k : ℂ)) z
+      simpa using this
+    rw [Complex.norm_real, Real.norm_eq_abs] at h3
+    linarith
+  obtain ⟨hSig, -⟩ := hfar _ hzn
+  set y : ℂ := z + (s k : ℂ) with hy
+  have hQ : ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (y - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) ≠ 0 := by
+    rw [Finset.prod_ne_zero_iff]
+    intro j hj h
+    have := (hSig j hj).2
+    rw [sub_eq_zero.1 h, sub_self, norm_zero] at this
+    linarith
+  have hBQ := compB_mul_Q hw hN y
+  have hBeq : compB m N y = genA m (y - 1 / 2) *
+      ((∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (y - (compBeta m N j : ℂ))) /
+        ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (y - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))) := by
+    rw [mul_div_assoc', eq_div_iff hQ]
+    exact hBQ
+  simp only [Pi.mul_apply, Function.comp]
+  rw [hBeq, show y - 1 / 2 = z - 1 / 2 + s k by rw [hy]; ring]
+  ring
+
+/-- Translates of `E_κ` converge to `i c e^{-iπ(z - θ)}`. -/
+theorem tendsto_compEκ_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {κ : ℝ}
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {c θ : ℝ}
+    (hA : TendstoLocallyUniformly
+      (fun k z ↦ genA m (z + s k) * Complex.exp (-((κ * s k : ℝ) : ℂ)))
+      (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop) :
+    TendstoLocallyUniformly (fun k z ↦ compEκ m κ N (z + s k))
+      (fun z ↦ Complex.I * c * Complex.exp (-(Complex.I * (Real.pi * (z - θ))))) atTop := by
+  set Finf : ℂ → ℂ := fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))
+    with hFinf
+  have hFc : Continuous Finf := by rw [hFinf]; fun_prop
+  have hB := tendsto_compB_translate hw hN hs hFc hA
+  have hBc : Continuous (fun z ↦ Finf (z - 1 / 2)) := hFc.comp (by fun_prop)
+  have h1 := Limits.tendstoLU_const_mul (e := fun _ : ℂ ↦ Complex.I * ((Real.exp (κ / 2) : ℝ) : ℂ))
+    (by fun_prop) hB hBc
+  have h2 := hA.sub h1
+  have h3 := Limits.tendstoLU_const_mul (e := fun z : ℂ ↦ Complex.exp (-((κ : ℂ) * z)))
+    (by fun_prop) h2 (by
+      have : Continuous (Finf - fun z ↦ Complex.I * ((Real.exp (κ / 2) : ℝ) : ℂ) * Finf (z - 1 / 2)) :=
+        hFc.sub (continuous_const.mul hBc)
+      exact this)
+  refine (h3.congr ?_).congr_right ?_
+  · intro k z
+    simp only [Pi.sub_apply, compEκ]
+    have : Complex.exp (-((κ : ℂ) * (z + s k))) =
+        Complex.exp (-((κ : ℂ) * z)) * Complex.exp (-((κ * s k : ℝ) : ℂ)) := by
+      rw [← Complex.exp_add]; congr 1; push_cast; ring
+    rw [this]
+    ring
+  · intro z
+    simp only [Pi.sub_apply, hFinf]
+    have hl : ((Real.exp (κ / 2) : ℝ) : ℂ) = Complex.exp ((κ : ℂ) / 2) := by
+      rw [Complex.ofReal_exp]; push_cast; ring_nf
+    have e1 : Complex.exp ((κ : ℂ) * (z - 1 / 2)) =
+        Complex.exp ((κ : ℂ) * z) * Complex.exp (-((κ : ℂ) / 2)) := by
+      rw [← Complex.exp_add]; congr 1; ring
+    have e2 : Complex.sin (Real.pi * (z - 1 / 2 - θ)) = -Complex.cos (Real.pi * (z - θ)) := by
+      rw [show (Real.pi : ℂ) * (z - 1 / 2 - θ) = Real.pi * (z - θ) - Real.pi / 2 by ring,
+        Complex.sin_sub_pi_div_two]
+    have e3 : Complex.exp (-((κ : ℂ) * z)) * Complex.exp ((κ : ℂ) * z) = 1 := by
+      rw [← Complex.exp_add]; simp
+    have e4 : Complex.exp ((κ : ℂ) / 2) * Complex.exp (-((κ : ℂ) / 2)) = 1 := by
+      rw [← Complex.exp_add]; simp
+    rw [hl, e1, e2]
+    have := sin_add_I_cos ((Real.pi : ℂ) * (z - θ))
+    calc _ = (Complex.exp (-((κ : ℂ) * z)) * Complex.exp ((κ : ℂ) * z)) * (c * Complex.sin (Real.pi * (z - θ))) +
+          (Complex.exp (-((κ : ℂ) * z)) * Complex.exp ((κ : ℂ) * z)) *
+            (Complex.exp ((κ : ℂ) / 2) * Complex.exp (-((κ : ℂ) / 2))) *
+            (Complex.I * (c * Complex.cos (Real.pi * (z - θ)))) := by ring
+      _ = c * (Complex.sin (Real.pi * (z - θ)) + Complex.I * Complex.cos (Real.pi * (z - θ))) := by
+          rw [e3, e4]; ring
+      _ = _ := by rw [this]; ring
+
 /-- **Local phase rigidity**: for a phase function `φ` of `E_κ = compEκ m κ N`,
 `φ(s + τ) - φ(s) - π τ → 0` uniformly in `|τ| ≤ 2` as `|s| → ∞`. -/
 theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
@@ -1500,7 +1620,50 @@ theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
-  sorry
+  intro ε hε
+  by_contra hcon
+  push Not at hcon
+  choose s hs1 τ hτ1 hτ2 using hcon
+  have hs : Tendsto (fun k : ℕ ↦ |s (k : ℝ)|) atTop atTop :=
+    tendsto_atTop_mono (fun k ↦ hs1 (k : ℝ)) tendsto_natCast_atTop_atTop
+  obtain ⟨ψ, hψ, c, θ, hc, hT⟩ := genA_translate_limit hw hlim hU hs
+  set s' : ℕ → ℝ := fun k ↦ s ((ψ k : ℕ) : ℝ) with hs'
+  have hs'' : Tendsto (fun k ↦ |s' k|) atTop atTop := hs.comp hψ.tendsto_atTop
+  have hE := tendsto_compEκ_translate hw hN hs'' hT
+  -- restrict to the real segment `[-2, 2]`
+  have hKc : IsCompact (Complex.ofReal '' Icc (-2 : ℝ) 2) :=
+    isCompact_Icc.image Complex.continuous_ofReal
+  have hu := ((tendstoLocallyUniformly_iff_forall_isCompact.1 hE) _ hKc).comp Complex.ofReal
+  set w : ℂ := Complex.I * c * Complex.exp (Complex.I * (Real.pi * θ)) with hw0
+  have hwne : w ≠ 0 := by
+    rw [hw0]
+    exact mul_ne_zero (mul_ne_zero Complex.I_ne_zero (by exact_mod_cast hc)) (Complex.exp_ne_zero _)
+  have hu2 : TendstoUniformlyOn (fun k (x : ℝ) ↦ compEκ m κ N ((s' k : ℝ) + x : ℝ))
+      (fun x : ℝ ↦ w * Complex.exp (-(Complex.I * (Real.pi * x)))) atTop (Icc (-2) 2) := by
+    have hf : (fun x : ℝ ↦ w * Complex.exp (-(Complex.I * (Real.pi * x)))) =
+        ((fun z : ℂ ↦ Complex.I * c * Complex.exp (-(Complex.I * (Real.pi * (z - θ))))) ∘
+          Complex.ofReal) := by
+      funext x
+      simp only [Function.comp, hw0]
+      rw [mul_assoc, ← Complex.exp_add]
+      congr 2
+      ring
+    rw [hf]
+    refine (hu.mono (fun x hx ↦ ⟨x, hx, rfl⟩)).congr (Eventually.of_forall fun k x hx ↦ ?_)
+    simp only [Function.comp]
+    push_cast
+    rw [add_comm]
+  have hphase : ∀ k x, compEκ m κ N (((s' k : ℝ) + x : ℝ) : ℂ) =
+      (‖compEκ m κ N (((s' k : ℝ) + x : ℝ) : ℂ)‖ : ℂ) *
+        Complex.exp (-(Complex.I * ((φ (s' k + x) : ℝ) : ℂ))) := fun k x ↦ hφ.2 _
+  have hdrift := Rigidity.phase_drift_small (E := fun k (x : ℝ) ↦ compEκ m κ N (((s' k : ℝ) + x : ℝ) : ℂ))
+    (φ := fun k x ↦ φ (s' k + x)) (fun k ↦ hφ.1.comp (continuous_const.add continuous_id))
+    hphase hwne hu2 ε hε
+  obtain ⟨k, hk⟩ := hdrift.exists
+  have := hk (τ ((ψ k : ℕ) : ℝ)) (abs_le.1 (hτ1 _))
+  have h2 := hτ2 ((ψ k : ℕ) : ℝ)
+  simp only [hs', add_zero] at this
+  linarith
 
 /-- A strictly monotone surjection `ℤ → ℤ` is a translation. -/
 theorem strictMono_int_surj_eq_add {ν : ℤ → ℤ} (hν : StrictMono ν) (hs : Function.Surjective ν) :

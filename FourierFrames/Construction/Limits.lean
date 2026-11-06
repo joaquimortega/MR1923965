@@ -97,6 +97,40 @@ theorem tendstoLU_const_mul {ι : Type*} {p : Filter ι} {e : ℂ → ℂ} (he :
     ⟨univ, univ_mem, Eventually.of_forall fun _ y _ ↦ refl_mem_uniformity hu⟩
   exact h0.mul₀ h he hf
 
+/-- Eventually-equality on every compact set preserves locally uniform convergence. -/
+theorem tendstoLU_congr_on_compacts {ι : Type*} {p : Filter ι} {F G : ι → ℂ → ℂ} {f : ℂ → ℂ}
+    (h : TendstoLocallyUniformly F f p)
+    (hE : ∀ K : Set ℂ, IsCompact K → ∀ᶠ i in p, ∀ z ∈ K, F i z = G i z) :
+    TendstoLocallyUniformly G f p := by
+  rw [tendstoLocallyUniformly_iff_forall_isCompact] at h ⊢
+  intro K hK
+  exact (h K hK).congr (by filter_upwards [hE K hK] with i hi using hi)
+
+/-- If `g → l` at infinity and `|s_k| → ∞` then `g(· + s_k) → l` locally uniformly. -/
+theorem tendstoLU_comp_add_real {g : ℂ → ℂ} {l : ℂ} (hg : Tendsto g (cocompact ℂ) (𝓝 l))
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
+    TendstoLocallyUniformly (fun k z ↦ g (z + s k)) (fun _ ↦ l) atTop := by
+  rw [tendstoLocallyUniformly_iff_forall_isCompact]
+  intro K hK
+  rw [Metric.tendstoUniformlyOn_iff]
+  intro ε hε
+  obtain ⟨K', hK', hK's⟩ := mem_cocompact.1 ((Metric.tendsto_nhds.1 hg) ε hε)
+  obtain ⟨r, hr⟩ := hK.isBounded.subset_closedBall 0
+  obtain ⟨r', hr'⟩ := hK'.isBounded.subset_closedBall 0
+  filter_upwards [hs.eventually_ge_atTop (r + r' + 1)] with k hk z hz
+  have hz' : z + (s k : ℂ) ∉ K' := fun hmem ↦ by
+    have h1 := hr hz
+    have h2 := hr' hmem
+    rw [mem_closedBall, dist_zero_right] at h1 h2
+    have h3 : ‖(s k : ℂ)‖ ≤ ‖z + (s k : ℂ)‖ + ‖z‖ := by
+      have := norm_sub_le (z + (s k : ℂ)) z
+      simpa using this
+    rw [Complex.norm_real, Real.norm_eq_abs] at h3
+    linarith
+  have := hK's hz'
+  rw [Set.mem_ofPred_eq, dist_comm] at this
+  exact this
+
 variable {m : ℝ → ℝ} {a b : ℝ}
 
 /-- The symmetric partial products of the canonical product of `Γ` converge locally uniformly. -/
