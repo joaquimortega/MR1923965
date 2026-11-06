@@ -1,5 +1,6 @@
 import FourierFrames.Theorem1.Necessity
 import FourierFrames.Theorem1.Sufficiency
+import FourierFrames.Corollary1.Rotate
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -135,14 +136,23 @@ theorem isSampling_of_isCompleteInterpolating (hPW : PaleyWienerThm) {Λ : Set �
   sorry
 
 theorem HEEqPW.rotate {E : ℂ → ℂ} (h : HEEqPW E) (θ : ℝ) :
-    HEEqPW (fun z ↦ Complex.exp (I * θ) * E z) := by
-  sorry
+    HEEqPW (fun z ↦ Complex.exp (I * θ) * E z) :=
+  HEEqPW.rotate_aux h θ
 
 /-- The zero set of `E + E^*` for `E` strict without real zeros. -/
 theorem zero_set_single {E : ℂ → ℂ} (hE : IsStrictHB E) (hE0 : ∀ x : ℝ, E x ≠ 0)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) (z : ℂ) :
     E z + fstar E z = 0 ↔ ∃ x ∈ phaseLevel φ (Real.pi / 2), z = (x : ℂ) := by
-  sorry
+  have h1 : IsPhaseFunction (fun _ : ℂ ↦ (1 : ℂ)) (fun _ ↦ (0 : ℝ)) :=
+    ⟨continuous_const, fun x ↦ by simp⟩
+  have := zero_set_eq_phaseLevel hE isHB_one hE0 (fun x ↦ one_ne_zero) hφ h1 z
+  simp only [fstar, map_one, mul_one] at this
+  show E z + conj (E (conj z)) = 0 ↔ _
+  rw [this]
+  simp only [add_zero, Set.mem_image]
+  constructor
+  · rintro ⟨x, hx, rfl⟩; exact ⟨x, hx, rfl⟩
+  · rintro ⟨x, hx, rfl⟩; exact ⟨x, hx, rfl⟩
 
 /-- Formula (1) of p. 793 on the real axis: `K_E(x, y) = |E(x)E(y)| sin(φ(y) - φ(x)) /
 (π (y - x))` for real `x ≠ y`. -/
