@@ -103,7 +103,8 @@ theorem abs_logGap_sub_one_le (k : ℤ) : |logGap k - 1| ≤ 3 / (1 + |(k : ℝ)
     refine le_trans (by linarith) ?_
     rw [div_le_div_iff₀ (by linarith) (by linarith)]; linarith
 
-theorem logLam_sub_ge {a b : ℤ} (hab : a < b) : 3 / 10 * ((b : ℝ) - a) ≤ logLam b - logLam a := by
+theorem logLam_sub_ge_of_le {a b : ℤ} (hab : a ≤ b) :
+    3 / 10 * ((b : ℝ) - a) ≤ logLam b - logLam a := by
   obtain ⟨n, rfl⟩ : ∃ n : ℕ, b = a + n := ⟨(b - a).toNat, by omega⟩
   clear hab
   induction n with
@@ -113,6 +114,9 @@ theorem logLam_sub_ge {a b : ℤ} (hab : a < b) : 3 / 10 * ((b : ℝ) - a) ≤ l
     have := (logGap_bounds (a + n)).1
     have e : a + ((n + 1 : ℕ) : ℤ) = a + n + 1 := by push_cast; ring
     rw [e]; push_cast at ih ⊢; linarith
+
+theorem logLam_sub_ge {a b : ℤ} (hab : a < b) : 3 / 10 * ((b : ℝ) - a) ≤ logLam b - logLam a :=
+  logLam_sub_ge_of_le hab.le
 
 theorem strictMono_logLam : StrictMono logLam := by
   intro a b hab
@@ -378,27 +382,146 @@ def logWeightR (j : ℤ) : ℝ := 2 * logGap (j - 1) / (logGap j * (logGap (j - 
 def logDensity (t : ℝ) : ℝ :=
   if t < logBary (logIdx t) then logWeightL (logIdx t) else logWeightR (logIdx t)
 
+theorem logLam_sub_logLam_pred (j : ℤ) : logLam j = logLam (j - 1) + logGap (j - 1) := by
+  have : j - 1 + 1 = j := by ring
+  simp [logGap, this]
+
+theorem logPt_eq (j : ℤ) : logPt j = logBary j - logGap (j - 1) / 2 := by
+  have := logLam_sub_logLam_pred j
+  unfold logPt logBary; linarith
+
+theorem logPt_succ_eq (j : ℤ) : logPt (j + 1) = logBary j + logGap j / 2 := by
+  have h := logLam_sub_logLam_pred (j + 1)
+  have e : j + 1 - 1 = j := by ring
+  rw [e] at h
+  unfold logPt logBary
+  rw [e]; linarith
+
 theorem logPt_zero : logPt 0 = 0 := by
-  sorry
+  have h : logLam (-1) = -1 := by
+    rw [logLam_of_le_zero (by norm_num)]; simp
+  unfold logPt
+  norm_num [h, logLam_zero]
+
+theorem logPt_succ_sub (j : ℤ) : logPt (j + 1) - logPt j = (logGap (j - 1) + logGap j) / 2 := by
+  rw [logPt_succ_eq, logPt_eq]; ring
 
 theorem strictMono_logPt : StrictMono logPt := by
-  sorry
+  apply strictMono_int_of_lt_succ
+  intro j
+  have := logPt_succ_sub j
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  linarith
 
 theorem logPt_lt_logBary (j : ℤ) : logPt j < logBary j ∧ logBary j < logPt (j + 1) := by
-  sorry
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  rw [logPt_succ_eq, logPt_eq]
+  constructor <;> linarith
+
+theorem logPt_le_half (j : ℤ) (hj : j ≤ 0) : logPt j ≤ (j : ℝ) / 2 + 1 / 2 := by
+  have h := (logPt_lt_logBary j).1.le
+  have h2 : logLam j ≤ (j : ℝ) / 2 := by
+    rw [logLam_of_le_zero hj]
+    have hj' : (0:ℝ) ≤ -(j:ℝ) := by have : (j:ℝ) ≤ 0 := by exact_mod_cast hj
+                                    linarith
+    rcases hj'.eq_or_lt with h0 | h0
+    · have : (j:ℝ) = 0 := by linarith
+      rw [this]; simp
+    · have := LogEx.log_le_half h0; linarith
+  unfold logBary at h; linarith
+
+theorem logPt_ge (j : ℤ) (hj : 1 ≤ j) : 3 / 10 * ((j : ℝ) - 1) ≤ logPt j := by
+  have h := logLam_sub_ge_of_le (a := 0) (b := j - 1) (by omega)
+  rw [logLam_zero] at h
+  have h1 := (logGap_bounds (j - 1)).1
+  rw [logPt_eq, logBary]
+  have := logLam_sub_logLam_pred j
+  push_cast at h
+  simp at h
+  linarith
 
 theorem logIdx_spec (t : ℝ) : logPt (logIdx t) ≤ t ∧ t < logPt (logIdx t + 1) := by
-  sorry
+  have hne : {j : ℤ | logPt j ≤ t}.Nonempty := by
+    refine ⟨min 0 ⌊2 * t - 1⌋, ?_⟩
+    have h1 : min 0 ⌊2 * t - 1⌋ ≤ 0 := min_le_left _ _
+    have h2 : ((min 0 ⌊2 * t - 1⌋ : ℤ) : ℝ) ≤ 2 * t - 1 :=
+      (Int.cast_le.2 (min_le_right _ _)).trans (Int.floor_le _)
+    have := logPt_le_half _ h1
+    show logPt _ ≤ t
+    linarith
+  have hbdd : BddAbove {j : ℤ | logPt j ≤ t} := by
+    refine ⟨max 0 ⌈1 + 10 * t / 3⌉, fun j hj => ?_⟩
+    rcases le_or_gt j 0 with h | h
+    · exact h.trans (le_max_left _ _)
+    · refine le_trans ?_ (le_max_right _ _)
+      have := logPt_ge j (by omega)
+      have h3 : (j : ℝ) ≤ 1 + 10 * t / 3 := by
+        have : logPt j ≤ t := hj
+        linarith
+      exact_mod_cast h3.trans (Int.le_ceil _)
+  have hmem : logIdx t ∈ {j : ℤ | logPt j ≤ t} := Int.csSup_mem hne hbdd
+  refine ⟨hmem, ?_⟩
+  by_contra hcon
+  have hcon : logPt (logIdx t + 1) ≤ t := not_lt.1 hcon
+  have : logIdx t + 1 ≤ logIdx t := le_csSup hbdd (show logIdx t + 1 ∈ {j : ℤ | logPt j ≤ t} from hcon)
+  omega
 
 theorem logIdx_eq_iff {t : ℝ} {j : ℤ} : logIdx t = j ↔ t ∈ Ico (logPt j) (logPt (j + 1)) := by
-  sorry
+  obtain ⟨h1, h2⟩ := logIdx_spec t
+  constructor
+  · rintro rfl; exact ⟨h1, h2⟩
+  · rintro ⟨h3, h4⟩
+    rcases lt_trichotomy (logIdx t) j with h | h | h
+    · have : logPt (logIdx t + 1) ≤ logPt j := strictMono_logPt.monotone (by omega)
+      linarith
+    · exact h
+    · have : logPt (j + 1) ≤ logPt (logIdx t) := strictMono_logPt.monotone (by omega)
+      linarith
+
+theorem measurable_logIdx : Measurable logIdx := by
+  apply measurable_to_countable'
+  intro j
+  have : logIdx ⁻¹' {j} = Ico (logPt j) (logPt (j + 1)) := by
+    ext t; simp [logIdx_eq_iff]
+  rw [this]; exact measurableSet_Ico
 
 theorem measurable_logDensity : Measurable logDensity := by
-  sorry
+  unfold logDensity
+  apply Measurable.ite
+  · exact measurableSet_lt measurable_id ((measurable_from_top (f := logBary)).comp measurable_logIdx)
+  · exact (measurable_from_top (f := logWeightL)).comp measurable_logIdx
+  · exact (measurable_from_top (f := logWeightR)).comp measurable_logIdx
+
+theorem logDensity_of_Ico_left {j : ℤ} {t : ℝ} (h1 : logPt j ≤ t) (h2 : t < logBary j) :
+    logDensity t = logWeightL j := by
+  have : logIdx t = j := logIdx_eq_iff.2 ⟨h1, h2.trans (logPt_lt_logBary j).2⟩
+  simp [logDensity, this, h2]
+
+theorem logDensity_of_Ico_right {j : ℤ} {t : ℝ} (h1 : logBary j ≤ t) (h2 : t < logPt (j + 1)) :
+    logDensity t = logWeightR j := by
+  have : logIdx t = j := logIdx_eq_iff.2 ⟨(logPt_lt_logBary j).1.le.trans h1, h2⟩
+  simp [logDensity, this, not_lt.2 h1]
+
+theorem logWeight_bounds {a b : ℝ} (ha : 3 / 10 ≤ a) (ha' : a ≤ 17 / 10) (hb : 3 / 10 ≤ b)
+    (hb' : b ≤ 17 / 10) : 1 / 10 ≤ 2 * b / (a * (a + b)) ∧ 2 * b / (a * (a + b)) ≤ 20 := by
+  have hpos : 0 < a * (a + b) := by positivity
+  constructor
+  · rw [le_div_iff₀ hpos]; nlinarith
+  · rw [div_le_iff₀ hpos]; nlinarith
 
 /-- `1/10 ≤ m ≤ 20`. -/
 theorem logDensity_bounds (t : ℝ) : 1 / 10 ≤ logDensity t ∧ logDensity t ≤ 20 := by
-  sorry
+  have ha := logGap_bounds (logIdx t - 1)
+  have hb := logGap_bounds (logIdx t)
+  unfold logDensity
+  split_ifs
+  · exact logWeight_bounds ha.1 ha.2 hb.1 hb.2
+  · have := logWeight_bounds hb.1 hb.2 ha.1 ha.2
+    unfold logWeightR
+    rw [add_comm (logGap (logIdx t - 1))]
+    exact this
 
 theorem isMultWeight_logDensity : OCS.IsMultWeight logDensity (1 / 10) 20 :=
   ⟨measurable_logDensity, by norm_num, fun t ↦ (logDensity_bounds t).1,
