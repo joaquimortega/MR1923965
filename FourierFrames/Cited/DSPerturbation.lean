@@ -275,22 +275,128 @@ theorem tsum_sub_le (hPW : PaleyWienerThm) {d : ℝ} (hd : 0 < d) {Γ : Set ℝ}
     {L : ℝ} (hL : 0 ≤ L) {δ : ℝ → ℝ} (hδ : ∀ x ∈ Γ, |δ x| ≤ L) {f : ℂ → ℂ} (hf : MemPW f) :
     ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ) - f ((γ : ℝ) : ℂ)‖ₑ ^ 2 ≤
       ENNReal.ofReal (Real.pi ^ 2 * L * (2 * L / d + 1)) * pwNormSq f := by
-  sorry
+  have hcont : Continuous fun x : ℝ ↦ deriv f (x : ℂ) :=
+    ((hf.1.contDiff (n := 1)).continuous_deriv le_rfl).comp Complex.continuous_ofReal
+  have hφ : Measurable fun x : ℝ ↦ ‖deriv f (x : ℂ)‖ₑ ^ 2 := hcont.measurable.enorm.pow_const 2
+  have h1 : ∀ γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ) - f ((γ : ℝ) : ℂ)‖ₑ ^ 2 ≤
+      ENNReal.ofReal L * ∫⁻ x in Icc ((γ : ℝ) - L) ((γ : ℝ) + L), ‖deriv f (x : ℂ)‖ₑ ^ 2 := by
+    intro γ
+    refine (enorm_sq_sub_le hf γ (δ γ)).trans ?_
+    have hle := hδ γ γ.2
+    gcongr
+  calc ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ) - f ((γ : ℝ) : ℂ)‖ₑ ^ 2
+      ≤ ∑' γ : Γ, ENNReal.ofReal L *
+          ∫⁻ x in Icc ((γ : ℝ) - L) ((γ : ℝ) + L), ‖deriv f (x : ℂ)‖ₑ ^ 2 :=
+        ENNReal.tsum_le_tsum h1
+    _ = ENNReal.ofReal L * ∑' γ : Γ,
+          ∫⁻ x in Icc ((γ : ℝ) - L) ((γ : ℝ) + L), ‖deriv f (x : ℂ)‖ₑ ^ 2 := ENNReal.tsum_mul_left
+    _ ≤ ENNReal.ofReal L * (ENNReal.ofReal (2 * L / d + 1) * pwNormSq (deriv f)) := by
+        gcongr
+        exact tsum_lintegral_Icc_le hd hΓ hL hφ
+    _ ≤ ENNReal.ofReal L * (ENNReal.ofReal (2 * L / d + 1) *
+          (ENNReal.ofReal (Real.pi ^ 2) * pwNormSq f)) := by
+        gcongr
+        exact (pw_bernstein hPW hf).2
+    _ = _ := by
+        rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_mul (by positivity), mul_assoc,
+          mul_assoc]
+        ring_nf
 
 /-! ## Sampling sums over an injective image -/
 
 theorem sampleSum_image {φ : ℝ → ℝ} {Γ : Set ℝ} (hφ : InjOn φ Γ) (f : ℂ → ℂ) :
     sampleSum (φ '' Γ) f = ∑' γ : Γ, ‖f ((φ γ : ℝ) : ℂ)‖ₑ ^ 2 := by
-  sorry
+  unfold sampleSum
+  exact (Equiv.tsum_eq (Equiv.Set.imageOfInjOn φ Γ hφ) (fun y : φ '' Γ ↦ ‖f ((y : ℝ) : ℂ)‖ₑ ^ 2)).symm
 
 /-- `(a+b)² ≤ 2a² + 2b²` in `ℝ≥0∞`, summed. -/
 theorem tsum_enorm_sq_add_le {ι : Type*} (a b : ι → ℂ) :
     ∑' i, ‖a i + b i‖ₑ ^ 2 ≤ 2 * ∑' i, ‖a i‖ₑ ^ 2 + 2 * ∑' i, ‖b i‖ₑ ^ 2 := by
-  sorry
+  have h : ∀ i, ‖a i + b i‖ₑ ^ 2 ≤ 2 * ‖a i‖ₑ ^ 2 + 2 * ‖b i‖ₑ ^ 2 := by
+    intro i
+    have hr : ‖a i + b i‖ ^ 2 ≤ 2 * ‖a i‖ ^ 2 + 2 * ‖b i‖ ^ 2 := by
+      nlinarith [norm_add_le (a i) (b i), sq_nonneg (‖a i‖ - ‖b i‖), norm_nonneg (a i),
+        norm_nonneg (b i), norm_nonneg (a i + b i)]
+    have := ENNReal.ofReal_le_ofReal hr
+    rwa [ENNReal.ofReal_add (by positivity) (by positivity), ENNReal.ofReal_mul (by positivity),
+      ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_pow (norm_nonneg _),
+      ENNReal.ofReal_pow (norm_nonneg _), ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm,
+      ofReal_norm, ofReal_norm, ENNReal.ofReal_ofNat] at this
+  calc ∑' i, ‖a i + b i‖ₑ ^ 2 ≤ ∑' i, (2 * ‖a i‖ₑ ^ 2 + 2 * ‖b i‖ₑ ^ 2) := ENNReal.tsum_le_tsum h
+    _ = _ := by rw [ENNReal.tsum_add, ENNReal.tsum_mul_left, ENNReal.tsum_mul_left]
 
 /-! ## Main result -/
 
 theorem dsPerturbation_of_paleyWiener (hPW : PaleyWienerThm) : DSPerturbation := by
-  sorry
+  intro Γ ⟨d, hd, hsep⟩ ⟨A, B, hA, hS⟩
+  have hπ := Real.pi_pos
+  have hA' : (0 : ℝ) < A := by exact_mod_cast hA
+  set L : ℝ := min d ((A : ℝ) / (12 * Real.pi ^ 2)) with hLdef
+  have hL0 : 0 < L := lt_min hd (by positivity)
+  have hLd : L ≤ d := min_le_left _ _
+  have hLA : L ≤ (A : ℝ) / (12 * Real.pi ^ 2) := min_le_right _ _
+  have hε : Real.pi ^ 2 * L * (2 * L / d + 1) ≤ (A : ℝ) / 4 := by
+    have h1 : 2 * L / d ≤ 2 := by
+      rw [div_le_iff₀ hd]; linarith
+    have h2 : L * (12 * Real.pi ^ 2) ≤ A := by
+      rwa [le_div_iff₀ (by positivity)] at hLA
+    have h3 : 0 ≤ Real.pi ^ 2 * L := by positivity
+    calc Real.pi ^ 2 * L * (2 * L / d + 1) ≤ Real.pi ^ 2 * L * 3 := by gcongr; linarith
+      _ ≤ (A : ℝ) / 4 := by nlinarith
+  refine ⟨L, hL0, fun δ hδ hinj ↦ ?_⟩
+  set a4 : ℝ≥0 := A / 4 with ha4
+  have ha4pos : 0 < a4 := by positivity
+  have hAa4 : (A : ℝ≥0∞) = 4 * a4 := by
+    rw [ha4, ← ENNReal.coe_ofNat, ← ENNReal.coe_mul]
+    congr 1
+    rw [mul_div_cancel₀ _ (by norm_num : (4 : ℝ≥0) ≠ 0)]
+  refine ⟨a4, 2 * B + 2 * a4, ha4pos, fun f hf ↦ ?_⟩
+  set N := pwNormSq f with hN
+  have hNtop : N ≠ ⊤ := pwNormSq_ne_top hf
+  have hdel : ∀ x ∈ Γ, |δ x| ≤ L := hδ
+  set D := ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ) - f ((γ : ℝ) : ℂ)‖ₑ ^ 2 with hD
+  have hDle : D ≤ (a4 : ℝ≥0∞) * N := by
+    refine (tsum_sub_le hPW hd hsep hL0.le hdel hf).trans ?_
+    gcongr
+    rw [ha4, ← ENNReal.ofReal_coe_nnreal]
+    exact ENNReal.ofReal_le_ofReal (by rw [NNReal.coe_div]; simpa using hε)
+  have hS' : sampleSum ((fun x ↦ x + δ x) '' Γ) f = ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ)‖ₑ ^ 2 :=
+    sampleSum_image hinj f
+  obtain ⟨hlow, hup⟩ := hS f hf
+  have hK : (a4 : ℝ≥0∞) * N ≠ ⊤ := ENNReal.mul_ne_top ENNReal.coe_ne_top hNtop
+  rw [hS']
+  have hSdef : sampleSum Γ f = ∑' γ : Γ, ‖f ((γ : ℝ) : ℂ)‖ₑ ^ 2 := rfl
+  constructor
+  · -- lower bound
+    have h1 := tsum_enorm_sq_add_le (fun γ : Γ ↦ f (((γ : ℝ) + δ γ : ℝ) : ℂ))
+      (fun γ : Γ ↦ f ((γ : ℝ) : ℂ) - f (((γ : ℝ) + δ γ : ℝ) : ℂ))
+    simp only [add_sub_cancel] at h1
+    have h2 : ∑' γ : Γ, ‖f ((γ : ℝ) : ℂ) - f (((γ : ℝ) + δ γ : ℝ) : ℂ)‖ₑ ^ 2 = D := by
+      rw [hD]
+      refine tsum_congr fun γ ↦ ?_
+      rw [enorm_sub_rev]
+    rw [h2, ← hSdef] at h1
+    have h3 : 4 * ((a4 : ℝ≥0∞) * N) ≤ 2 * ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ)‖ₑ ^ 2 +
+        2 * ((a4 : ℝ≥0∞) * N) := by
+      calc 4 * ((a4 : ℝ≥0∞) * N) = (A : ℝ≥0∞) * N := by rw [hAa4, mul_assoc]
+        _ ≤ sampleSum Γ f := hlow
+        _ ≤ _ := h1
+        _ ≤ _ := by gcongr
+    have h4 : 2 * ((a4 : ℝ≥0∞) * N) + 2 * ((a4 : ℝ≥0∞) * N) ≤
+        2 * ∑' γ : Γ, ‖f (((γ : ℝ) + δ γ : ℝ) : ℂ)‖ₑ ^ 2 + 2 * ((a4 : ℝ≥0∞) * N) := by
+      refine le_trans (le_of_eq ?_) h3
+      ring
+    have h5 := (ENNReal.add_le_add_iff_right (ENNReal.mul_ne_top (by simp) hK)).1 h4
+    exact (ENNReal.mul_le_mul_iff_right (by norm_num) (by simp)).1 h5
+  · -- upper bound
+    have h1 := tsum_enorm_sq_add_le (fun γ : Γ ↦ f ((γ : ℝ) : ℂ))
+      (fun γ : Γ ↦ f (((γ : ℝ) + δ γ : ℝ) : ℂ) - f ((γ : ℝ) : ℂ))
+    simp only [add_sub_cancel] at h1
+    rw [← hD, ← hSdef] at h1
+    refine h1.trans ?_
+    have : ((2 * B + 2 * a4 : ℝ≥0) : ℝ≥0∞) * N = 2 * ((B : ℝ≥0∞) * N) + 2 * ((a4 : ℝ≥0∞) * N) := by
+      push_cast; ring
+    rw [this]
+    gcongr
 
 end FF
