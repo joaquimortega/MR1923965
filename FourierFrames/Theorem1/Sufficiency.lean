@@ -87,6 +87,11 @@ theorem eventually_not_exceptional {E : ℂ → ℂ} (hE : IsStrictHB E) :
   rw [← Nat.cofinite_eq_atTop]
   exact hfin.eventually_cofinite_notMem
 
+theorem exists_not_exceptional {E : ℂ → ℂ} (hE : IsStrictHB E) :
+    ∃ α : ℝ, ¬ MemHE E (sAlpha E α) := by
+  obtain ⟨n, hn⟩ := (eventually_not_exceptional hE).exists
+  exact ⟨_, hn⟩
+
 /-- `ψ_G = φ_E + φ_F` is a phase function of `EF`. -/
 theorem isPhaseFunction_mul {E F : ℂ → ℂ} {φ ψ : ℝ → ℝ} (hφ : IsPhaseFunction E φ)
     (hψ : IsPhaseFunction F ψ) :
@@ -173,8 +178,7 @@ theorem HEEqPW.phase_tendsto (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ →
     (hφ' : ∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) :
     Tendsto φ atTop atTop ∧ Tendsto φ atBot atBot :=
   phase_tendsto_aux hPW hE hEHB hEPW hφ hφ'
-    (let ⟨n, hn⟩ := (eventually_not_exceptional (HEEqPW.isStrictHB hEHB hEPW)).exists
-      ⟨_, hn⟩)
+    (exists_not_exceptional (HEEqPW.isStrictHB hEHB hEPW))
 
 /-- The phase `ψ = φ_E + φ_G` of `EG` is a continuous increasing bijection of `ℝ`
 (`G ∈ \overline{HB}` without real zeros, `H(E) = PW`). -/
@@ -184,8 +188,7 @@ theorem HEEqPW.phase_mul_bijective (hPW : PaleyWienerThm) (hE : TheoremE) {E G :
     (hφG : IsPhaseFunction G φG) (hφG' : ∀ x : ℝ, HasDerivAt φG (phaseDeriv G x) x) :
     StrictMono (fun x ↦ φE x + φG x) ∧ Function.Surjective (fun x ↦ φE x + φG x) :=
   phase_mul_bijective_aux hPW hE hEHB hGHB hEPW hG0 hφE hφE' hφG hφG'
-    (let ⟨n, hn⟩ := (eventually_not_exceptional (HEEqPW.isStrictHB hEHB hEPW)).exists
-      ⟨_, hn⟩)
+    (exists_not_exceptional (HEEqPW.isStrictHB hEHB hEPW))
 
 /-! ## Theorem 1, sufficiency (p. 795–797) -/
 
