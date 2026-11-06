@@ -1,0 +1,13 @@
+#!/bin/bash
+# bwrap-pkgs: /usr/bin/bwrap plus a read-only bind of the shared package directory.
+# `.lake/packages` is a symlink to a directory outside the project (shared prebuilt Mathlib); inside
+# the comparator sandbox that symlink would dangle.  This wrapper adds one `--ro-bind` of the
+# symlink target before bwrap's `--`.
+# Usage: COMPARATOR_BWRAP=$PWD/scripts/bwrap-pkgs lake comparator --config comparator/config.json
+PKGS=$(readlink -f "$PWD/.lake/packages")
+args=(); done=0
+for a in "$@"; do
+  if [[ $done == 0 && $a == "--" ]]; then args+=(--ro-bind "$PKGS" "$PKGS"); done=1; fi
+  args+=("$a")
+done
+exec /usr/bin/bwrap "${args[@]}"

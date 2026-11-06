@@ -1,4 +1,4 @@
-import FourierFrames.Defs
+import FourierFrames.HB.Phase
 import OrtegaCerdaSeip.Lemma3.Main
 
 /-!
@@ -13,11 +13,13 @@ that the zeros of `A` and `B` interlace) and `E = A - i B`.
 
 * `exists_hb_of_density` (needs only the "shift" condition `U(z - 1/2) - U(z) = O(1)`): `E` is in
   `\overline{HB}`, has no real zeros, `|E| ≃ e^{U}` on `Im z ≥ 0` and `E + E^* = 2A` has zero set `Γ`.
-* `exists_hb_of_density_phase` (needs `U - π Im z = O(1)`): moreover `|E| ≃ e^{π Im z}` and the phase
-  of `E` satisfies `φ_E - π M → c₀` (`M = OCS.multPrim m`).
+* `exists_hb_of_density_phase` (needs `U - π Im z - κ Re z = O(1)` for some real `κ`): after the
+  normalisation `E ↦ e^{-κ z} E`, `|E| ≃ e^{π Im z}`, and the phase of `E` satisfies
+  `φ_E - π M → c₀` (`M = OCS.multPrim m`).  `κ ≠ 0` is the general case (M06).
 
 **Deviation from `README.md` §4.**  The phase clause of the README's `exists_hb_of_density`
-(for all `m → 1`) is not provable: it requires `U - π Im z` to be bounded (see the blueprint, §0.2).
+(for all `m → 1`) is not provable: it requires `U - π Im z - κ Re z` to be bounded (see the
+blueprint, §0.2).
 -/
 
 open MeasureTheory Metric Set Complex Filter Topology
@@ -26,32 +28,6 @@ open scoped ENNReal NNReal ComplexConjugate
 noncomputable section
 
 namespace FF
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-section Upstream
-
-/-- (M02, `HB/Basic.lean`) Hurwitz-type closure of `\overline{HB}`. -/
-theorem IsHB.of_tendstoLocallyUniformly {ι : Type*} {p : Filter ι} [p.NeBot]
-    {E : ι → ℂ → ℂ} {E₀ : ℂ → ℂ} (hE : ∀ i, IsHB (E i))
-    (hlim : TendstoLocallyUniformly E E₀ p) (hne : ∃ z, E₀ z ≠ 0) : IsHB E₀ := by
-  sorry
-
-/-- (M02, `HB/Basic.lean`) -/
-theorem IsHB.mul {E F : ℂ → ℂ} (hE : IsHB E) (hF : IsHB F) : IsHB (fun z ↦ E z * F z) := by
-  sorry
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem exists_isPhaseFunction {E : ℂ → ℂ} (hE : Differentiable ℂ E) (h0 : ∀ x : ℝ, E x ≠ 0) :
-    ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ ∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x := by
-  sorry
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem IsHB.phaseDeriv_nonneg {F : ℂ → ℂ} (hF : IsHB F) {x : ℝ} (hx : F x ≠ 0) :
-    0 ≤ phaseDeriv F x := by
-  sorry
-
-end Upstream
 
 /-! ## A real exponential factor preserves `\overline{HB}` -/
 
@@ -292,7 +268,8 @@ theorem norm_compE_sq_bounds {N : ℕ} (hE : IsHB (compE m N)) (hw : OCS.IsMultW
 
 /-- **The phase construction of p. 801** (without phase asymptotics; replaces the first four
 clauses of the README's `exists_hb_of_density`).  `hshift` is the condition
-`U(z - 1/2) - U(z) = O(1)` on `Im z ≥ 0`, which is implied by `U - π Im z = O(1)`. -/
+`U(z - 1/2) - U(z) = O(1)` on `Im z ≥ 0`, which is implied by `U - π Im z - κ Re z = O(1)` for some
+real `κ` (with constant `2C + |κ|/2`). -/
 theorem exists_hb_of_density (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a ≤ m t)
     (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
     (hshift : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
@@ -315,29 +292,38 @@ variable {m : ℝ → ℝ} {a b : ℝ}
 theorem multU_conj' (m : ℝ → ℝ) (z : ℂ) : OCS.multU m 0 (conj z) = OCS.multU m 0 z :=
   OCS.multU_conj m 0 z
 
-/-- Under `hU`, `|A(z)| ≃ e^{π |Im z|} min(1, dist(z, Γ))` on all of `ℂ`. -/
-theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b)
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) :
+/-- Under `hU` (with the linear drift `κ`), `|A(z)| ≃ e^{π |Im z| + κ Re z} min(1, dist(z, Γ))` on
+all of `ℂ`.  (`A e^{-κ z}` is the normalised generating function.) -/
+theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ z : ℂ,
-      c₁ * Real.exp (Real.pi * |z.im|) * min 1 (infDist z (OCS.multGammaC m)) ≤ ‖genA m z‖ ∧
-      ‖genA m z‖ ≤ c₂ * Real.exp (Real.pi * |z.im|) * min 1 (infDist z (OCS.multGammaC m)) := by
+      c₁ * Real.exp (Real.pi * |z.im| + κ * z.re) * min 1 (infDist z (OCS.multGammaC m)) ≤
+        ‖genA m z‖ ∧
+      ‖genA m z‖ ≤
+        c₂ * Real.exp (Real.pi * |z.im| + κ * z.re) * min 1 (infDist z (OCS.multGammaC m)) := by
   sorry
 
-/-- **Normal-family limit of the translates of `A`.**  If `|s_k| → ∞`, a subsequence of
-`A(· + s_k)` converges locally uniformly to `c sin π(z - θ)` with `c ≠ 0` real. -/
+/-- **Normal-family limit of the translates of `A`.**  If `|s_k| → ∞`, a subsequence of the
+normalised translates `e^{-κ s_k} A(· + s_k)` converges locally uniformly to
+`c e^{κ z} sin π(z - θ)` with `c ≠ 0` real (equivalently `A e^{-κ z}(· + s_k) → c sin π(· - θ)`;
+the phase of `A` on `ℝ` is unaffected by the positive real factor `e^{κ x}`). -/
 theorem genA_translate_limit (hw : OCS.IsMultWeight m a b)
-    (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C)
+    (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C)
     {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ c θ : ℝ, c ≠ 0 ∧
-      TendstoLocallyUniformly (fun k z ↦ genA m (z + s (φ k)))
-        (fun z ↦ (c : ℂ) * Complex.sin (Real.pi * (z - θ))) atTop := by
+      TendstoLocallyUniformly
+        (fun k z ↦ genA m (z + s (φ k)) * Complex.exp (-((κ * s (φ k) : ℝ) : ℂ)))
+        (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
   sorry
 
 /-- **Local phase rigidity**: for a phase function `φ` of `E = compE m N`,
 `φ(s + τ) - φ(s) - π τ → 0` uniformly in `|τ| ≤ 2` as `|s| → ∞`. -/
-theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) {N : ℕ}
+theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
@@ -346,17 +332,25 @@ theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
 
 /-- The phase function of `E` is strictly increasing and takes the values `π/2 + π ℤ` exactly on
 `Γ`: `φ(γ_j) = π/2 + π (j + k₀)` for a fixed integer `k₀`. -/
-theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) {N : ℕ}
+theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
     StrictMono φ ∧ ∃ k₀ : ℤ, ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀) := by
   sorry
 
-/-- **The phase construction with phase asymptotics.** -/
+/-- **The phase construction with phase asymptotics** (generalised at assembly to a linear drift
+`κ`).  If `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` (`κ ≠ 0` is the generic case, e.g. for the
+example of p. 798), the function `E₀ = A - i B` of `exists_hb_of_density` has `|E₀| ≃ e^{U}`, and
+`E = e^{-κ z} E₀` (real entire factor, so `E ∈ \overline{HB}` and `E + E^* = e^{-κ z} (E₀ + E₀^*)`
+has the same zero set `Γ`) satisfies `|E| ≃ e^{π Im z}`.  The phase of `E` on `ℝ` is that of `E₀`
+(the factor `e^{-κ x}` is positive), and the phase asymptotics are proved from the translates
+`e^{-κ s} A(· + s) → c e^{κ z} sin π(z - θ)` (`genA_translate_limit`). -/
 theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a ≤ m t)
     (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) :
+    (hU : ∃ κ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) :
     ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧

@@ -1,0 +1,25 @@
+{
+  "challenge_module": "FFChallenge",
+  "solution_module": "FFSolution",
+  "theorem_names": [
+    "FF.isFourierFrame_iff_isSampling",
+    "FF.heEqPW_of_comparable",
+    "FF.theorem1_necessity",
+    "FF.theorem1_sufficiency",
+    "FF.theorem1",
+    "FF.completeInterpolating_zero_set",
+    "FF.corollary1",
+    "FF.landau_inequality",
+    "FF.logExample_isCompleteInterpolating",
+    "FF.logExample_count",
+    "FF.landau_sharp",
+    "FF.corollary2",
+    "FF.theorem2_i",
+    "FF.theorem2_ii"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ]
+}

@@ -45,10 +45,32 @@ The proof of Corollary 2 on pp. 800–801 is a sketch with five real gaps. All a
    `B/A ≈ e^{-κ_s/2} tan`, which has the phase `π M + c₀ + o(1)` only if `κ_s → 0`. For `m → 1`
    alone, `∂_x U` (a Hilbert transform of `m - 1`) can be unbounded (take `m - 1 = (log log t)^{-1}`
    on sparse long intervals `[t_k, 2t_k]`; then `∂_x U(t_k + 1) ≈ log t_k / log log t_k`).
-   *Fix:* the phase clause is proved under `hU : |U - π Im z| ≤ C` on `Im z ≥ 0`
-   (`exists_hb_of_density_phase`), which makes `A` bounded on `ℝ`; the first four clauses need
-   only the weaker `hshift : |U(z - 1/2) - U(z)| ≤ C` (`exists_hb_of_density`). M06 needs
-   `|E| ≃ e^{π Im z}`, which is equivalent to `hU` under `|E| ≃ e^U`, so it is unaffected.
+   *Fix:* the phase clause is proved under the drifted hypothesis
+   `hU : ∃ κ C, ∀ z, 0 ≤ Im z → |U - π Im z - κ Re z| ≤ C` (`exists_hb_of_density_phase`; for
+   `κ = 0` this says that `A` is bounded on `ℝ`, for `κ ≠ 0` that `A e^{-κ z}` is, see the
+   paragraph "Generalisation to a linear drift" below); the first four clauses need only the
+   weaker `hshift : |U(z - 1/2) - U(z)| ≤ C` (`exists_hb_of_density`). M06 needs
+   `|E| ≃ e^{π Im z}`, which `exists_hb_of_density_phase` now delivers directly (after the
+   normalisation `E ↦ e^{-κ z} E`), so M06 does not have to multiply by `e^{-κ z}` itself.
+
+   **Generalisation to a linear drift (added at assembly).** The first version assumed
+   `|U - π Im z| ≤ C`. M06 (`LogExample.lean`, §4) proves `U(z) = π Im z + κ Re z + O(1)` with
+   `κ = ∫_{|t|>1} (m - 1)/t dt ≠ 0` in general, so the hypothesis is generalised to
+   `∃ κ C, |U - π Im z - κ Re z| ≤ C`. Nothing else changes, because `κ` is absorbed by the
+   *real entire* zero-free factor `e^{κ z}`: `A_κ := A e^{-κ z}` is real entire with the same simple
+   zeros `Γ` and satisfies all estimates of 2.1 with `U` replaced by `U - κ Re z` (`|e^{-κ z}| =
+   e^{-κ Re z}`). Concretely: (i) 2.1 under `hU` gives `|A| ≃ e^{π|Im z| + κ Re z} min(1, dist(z, Γ))`;
+   (ii) the translates `e^{-κ s_k} A(· + s_k) = A_κ(· + s_k) e^{κ z}` lie in `𝓑_π` with a uniform bound,
+   and the normal-family/Liouville argument of 2.7 (a) yields the limits `c e^{κ z} sin π(z - θ)`
+   (`c ≠ 0` real); (iii) `E₀ = A - iB = e^{κ z}(A_κ - i e^{κ/2}·B_κ)` with `B_κ = A_κ(· - 1/2) P/Q`, so
+   `E₀ e^{-κ z}` is the corresponding `A_κ - i c B_κ` (`c = e^{κ/2} > 0` does not affect interlacing),
+   hence `E := e^{-κ z} E₀` is in `\overline{HB}` (`IsHB.mul`, `isHB_cexp_real_linear`), has no real
+   zeros, `|E| ≃ e^{U - κ Re z} ≃ e^{π Im z}`, and `E + E^* = e^{-κ z}(E₀ + E₀^*) = 2 e^{-κ z} A` has zero
+   set `Γ`. (iv) The factor `e^{-κ x}` is positive on `ℝ`, so `E` and `E₀` have the same phase
+   functions, and the phase rigidity / phase level / asymptotics arguments of 2.7 (b)-(d) run
+   verbatim with the limits `E(x + s_k) e^{-κ s_k} → i c e^{κ x} e^{-iπ(x - θ)}` (a nonvanishing function
+   whose phase is unaffected by `e^{κ x}`). For `exists_hb_of_density` (no phase clause) `hshift`
+   follows from the drifted `hU` with the constant `2C + |κ|/2`.
 3. **"We may assume `ω' ≃ 1`" is the delicate step** (it conceals the potential identity of §3.2 and
    a *moment condition*). `ω' = 1 + ψ' - φ_f'/π` is continuous and `→ 1`, but may be `≤ 0` on a
    compact set. Modifying it there changes `U_ω` by a potential of a compactly supported function `h`,
@@ -228,15 +250,18 @@ theorem norm_genA_comparable (hw : OCS.IsMultWeight m a b) :
 `|I_j| ≤ 1/a` by `multPt_succ_sub_bounds`), hence `min(1, d) ≥ d/(1 + 1/a)` and `≤ d`; combine with (2). ∎
 
 ```lean
-theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b)
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) :
+theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ z : ℂ,
-      c₁ * Real.exp (Real.pi * |z.im|) * min 1 (infDist z (OCS.multGammaC m)) ≤ ‖genA m z‖ ∧
-      ‖genA m z‖ ≤ c₂ * Real.exp (Real.pi * |z.im|) * min 1 (infDist z (OCS.multGammaC m)) := by
+      c₁ * Real.exp (Real.pi * |z.im| + κ * z.re) * min 1 (infDist z (OCS.multGammaC m)) ≤
+        ‖genA m z‖ ∧
+      ‖genA m z‖ ≤
+        c₂ * Real.exp (Real.pi * |z.im| + κ * z.re) * min 1 (infDist z (OCS.multGammaC m)) := by
 ```
 
-*Proof.* `hU` on `Im z ≥ 0` and `U(z̄) = U(z)` give `|U(z) - π|Im z|| ≤ C` on ℂ; use
-`e^{U} ≃ e^{π|y|}` in 2.1. ∎
+*Proof.* `hU` on `Im z ≥ 0` and `U(z̄) = U(z)` (`Re z̄ = Re z`) give `|U(z) - π|Im z| - κ Re z| ≤ C`
+on ℂ; use `e^{U} ≃ e^{π|y| + κ Re z}` in 2.1. ∎
 
 ### 2.2 Gaps of `Γ`, position of the barycentre
 
@@ -561,25 +586,30 @@ for `|j| < N` finitely many positive numbers. So `max(min(1, d_Γ), min(1, d_B))
 
 ### 2.7 Phase asymptotics (under `hU`)
 
-From now on `hU : ∃ C, ∀ z, 0 ≤ Im z → |U z - π Im z| ≤ C` (so `hshift` holds with `2C`), and
+From now on `hU : ∃ C, ∀ z, 0 ≤ Im z → |U z - π Im z - κ Re z| ≤ C` for a fixed real `κ` (so `hshift`
+holds with `2C + |κ|/2`; `κ = 0` is the case of the first version), and
 `E = compE m N`, `B = compB m N`, `R(z) = P(z)/Q(z) = B(z)/A(z - 1/2)`.
 
 **(a) Limits of translates of `A`.**
 
 ```lean
 theorem genA_translate_limit (hw : OCS.IsMultWeight m a b)
-    (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C)
+    (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C)
     {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ c θ : ℝ, c ≠ 0 ∧
-      TendstoLocallyUniformly (fun k z ↦ genA m (z + s (φ k)))
-        (fun z ↦ (c : ℂ) * Complex.sin (Real.pi * (z - θ))) atTop := by
+      TendstoLocallyUniformly
+        (fun k z ↦ genA m (z + s (φ k)) * Complex.exp (-((κ * s (φ k) : ℝ) : ℂ)))
+        (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
 ```
 
 *Proof.* Let `s_k → ±∞` (`|s_k| → ∞`).
 
-*Compactness.* `F_k(z) = A(z + s_k)` is entire, real on `ℝ`, with `|F_k(z)| ≤ c₂ e^{π|Im z|}`
-(2.1 under `hU`, `min(1, ·) ≤ 1`), hence in `𝓑_π` with uniform bound `c₂` on `ℝ`
+*Compactness.* `F_k(z) = A(z + s_k) e^{-κ s_k}` (for `κ = 0`: `A(z + s_k)`) is entire, real on `ℝ`, with
+`|F_k(z)| ≤ c₂ e^{π|Im z| + κ Re z}` (2.1 under `hU`, `min(1, ·) ≤ 1`; the factor `e^{κ (x + s_k)} e^{-κ s_k}
+= e^{κ x}` is locally bounded, and `F_k(z) e^{-κ z}` is bounded by `c₂ e^{π|Im z|}`), hence
+`G_k(z) := F_k(z) e^{-κ z} = A_κ(z + s_k)` is in `𝓑_π` with uniform bound `c₂` on `ℝ`
 (`OCS.memBernstein_of_norm_le`). By `OCS.MemBernstein.exists_subseq_tendstoLocallyUniformly` a
 subsequence converges locally uniformly to an entire `A_∞`, real on `ℝ`.
 
@@ -593,7 +623,9 @@ subsequence converges locally uniformly to an entire `A_∞`, real on `ℝ`.
 
 &nbsp;&nbsp;`c₁ e^{π|y|} min(1, d_θ(z)) ≤ |A_∞(z)| ≤ c₂ e^{π|y|} min(1, d_θ(z))` for all `z`. (★)
 
-*Identification.* `|sin π w| ≥ c₀ e^{π|Im w|} min(1, dist(w, ℤ))` for all `w` with `c₀ > 0` explicit
+*Identification.* (We write the argument for `κ = 0`; for general `κ` apply it to `G_k = A_κ(· + s_k)`,
+whose limit is `c sin π(z - θ)`, and then `F_k = G_k e^{κ z} → c e^{κ z} sin π(z - θ)`; (★) is stated
+for `A_κ`, i.e. with `U - κ Re z`.) `|sin π w| ≥ c₀ e^{π|Im w|} min(1, dist(w, ℤ))` for all `w` with `c₀ > 0` explicit
 (for `|Im w| ≥ 1/2`: `|sin π w| ≥ sinh(π|Im w|) ≥ (1 - e^{-π}) e^{π|Im w|}/2`; for `|Im w| < 1/2`:
 `|sin π w|² = sin²πx + sinh²πy ≥ 4 dist(x,ℤ)² + π²y² ≥ 4 dist(w,ℤ)²`), and `|sin π w| ≤
 e^{π|Im w|}`. Let `Q(z) = A_∞(z)/sin π(z - θ)` off `θ + ℤ`. By (★), `|A_∞(z)| ≤ c₂ e^{π|y|}|z - z₀|`
@@ -606,8 +638,9 @@ real on `ℝ`. ∎
 **(b) Limits of `E` and the rigidity of the phase.**
 
 ```lean
-theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) {N : ℕ}
+theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
@@ -635,8 +668,9 @@ and `e^{-i g_k} → 1` uniformly; so for large `k`, `|e^{-ig_k(x)} - 1| < 1` for
 **(c) The levels of the phase.**
 
 ```lean
-theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) {N : ℕ}
+theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compE m N) φ) :
     StrictMono φ ∧ ∃ k₀ : ℤ, ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀) := by
@@ -666,7 +700,8 @@ Hence `|Δ(x) - πk₀| ≤ |Δ(x) - Δ(γ_j)| + |Δ(γ_j) - πk₀| → 0`: **`
 ```lean
 theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a ≤ m t)
     (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
-    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 z - Real.pi * z.im| ≤ C) :
+    (hU : ∃ κ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) :
     ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
@@ -675,9 +710,11 @@ theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ 
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀) := by
 ```
 
-*Proof.* `exists_hb_of_density` (`hshift` follows from `hU` with the constant `2C`) gives `E = compE m N`
-with `c e^{U} ≤ |E| ≤ C e^{U}`; with `|U - π Im z| ≤ C'` this is `|E| ≃ e^{π Im z}`. A phase function
-exists (`exists_isPhaseFunction`), is strictly increasing by (c), and `φ - πM → c₀` by (d). ∎
+*Proof.* `exists_hb_of_density` (`hshift` follows from `hU` with the constant `2C + |κ|/2`) gives
+`E₀ = compE m N` with `c e^{U} ≤ |E₀| ≤ C e^{U}`. Put `E := e^{-κ z} E₀`: `E ∈ \overline{HB}` (`IsHB.mul` with
+`isHB_cexp_real_linear`), `E(x) ≠ 0`, `E + E^* = e^{-κ z}(E₀ + E₀^*)` has zero set `Γ`, and
+`|E| = e^{-κ Re z}|E₀| ≃ e^{U - κ Re z} ≃ e^{π Im z}` by `hU`. A phase function of `E` is one of `E₀`
+(`e^{-κ x} > 0`), so the phase statements (b)-(d) for `E₀` apply to `E`; it exists (`exists_isPhaseFunction`), is strictly increasing by (c), and `φ - πM → c₀` by (d). ∎
 
 ---------------------------------------------------------------------------------------------------
 
@@ -1105,8 +1142,9 @@ None required. Remarks:
   an integrable function (3.1), so the junk value `0` for non-integrable integrands does not occur.
 * `IsAdmissiblePsi` could drop the clause `Tendsto ψ atTop atTop ∨ Tendsto ψ atBot atBot` for Corollary 2
   (needed only for Theorem 2); no change requested.
-* README §4 (M07 interface): replace `exists_hb_of_density` by `exists_hb_of_density` +
-  `exists_hb_of_density_phase` as in `Construction.lean` (M06 should use the hypotheses `hshift`/`hU`).
+* README §4 (M07 interface): done at assembly: the old `exists_hb_of_density` block was replaced by
+  `exists_hb_of_density` + `exists_hb_of_density_phase` as in `Construction.lean`, the latter with
+  the drifted hypothesis `∃ κ C, |U - π Im z - κ Re z| ≤ C` (M06 uses it with `κ = logKappa`).
 
 ## 6. Implementation notes and risks
 

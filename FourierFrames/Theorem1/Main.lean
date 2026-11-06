@@ -1,4 +1,5 @@
-import FourierFrames.Defs
+import FourierFrames.Theorem1.Necessity
+import FourierFrames.Theorem1.Sufficiency
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -10,22 +11,6 @@ namespace FF
 
 See `blueprint/M04_Sufficiency.md`.
 -/
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-/-- **Theorem 1** (p. 795), necessity (M03). -/
-theorem theorem1_necessity (hPW : PaleyWienerThm) (hC : TheoremC) (hF : TheoremF)
-    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
-    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
-      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
-  sorry
-
-/-- **Theorem 1** (p. 795), sufficiency (M04, `Sufficiency.lean`). -/
-theorem theorem1_sufficiency (hPW : PaleyWienerThm) (hE : TheoremE)
-    {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E F : ℂ → ℂ} (hEHB : IsHB E) (hFHB : IsHB F)
-    (hEPW : HEEqPW E) (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
-    IsSampling Λ := by
-  sorry
 
 /-- **Theorem 1** (p. 795): a separated sequence `Λ` is sampling for `PW` if and only if there are
 `E, F ∈ \overline{HB}` with `H(E) = PW` such that `Λ` is the zero set of `EF + E^*F^*`. -/

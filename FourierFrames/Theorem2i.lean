@@ -1,4 +1,4 @@
-import FourierFrames.Defs
+import FourierFrames.Corollary2
 import OrtegaCerdaSeip.Products.Canonical
 
 /-!
@@ -22,17 +22,6 @@ open scoped ENNReal NNReal ComplexConjugate
 noncomputable section
 
 namespace FF
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-/-- **Corollary 2** (M07), copied from `comparator/statements.lean`. -/
-theorem corollary2 (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
-    {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) {f : ℂ → ℂ} (hf : IsHB f)
-    (hφ : Tendsto (phaseDeriv f) (cocompact ℝ) (𝓝 0))
-    (happ : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
-      Real.exp (UPsi ψ z - C) ≤ ‖f z‖ ∧ ‖f z‖ ≤ Real.exp (UPsi ψ z + C)) :
-    IsSampling (LambdaPsi ψ) := by
-  sorry
 
 /-! ## Data: cells, log-centres, zeros, convergence factors -/
 

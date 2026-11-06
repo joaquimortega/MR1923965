@@ -1,4 +1,4 @@
-import FourierFrames.Defs
+import FourierFrames.Corollary1
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -10,16 +10,6 @@ namespace FF
 
 See `blueprint/M05_Landau.md`.
 -/
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-/-- Corollary 1, strong form (M04, `Corollary1.lean`): the complete interpolating sequence can be
-taken separated. -/
-theorem corollary1_strong (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
-    (hF : TheoremF) {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
-    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsSeparated (Set.range γ) ∧
-      IsCompleteInterpolating (Set.range γ) ∧ ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) := by
-  sorry
 
 /-! ## Counting -/
 

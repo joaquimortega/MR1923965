@@ -119,16 +119,25 @@ not used), the remarks about [Se95] (Lemma 3.11, Theorems 2.3 and 2.7), the
 | # | Doc | Lean | Content | Paper |
 |---|---|---|---|---|
 | M00 | `M00_Defs.md` | `Defs.lean` | definitions, cited `Prop`s, main statements | — |
-| M01 | `M01_PW.md` | `PW/*.lean` | Paley–Wiener space toolkit from `PaleyWienerThm` | §1 |
-| M02 | `M02_HB.md` | `HB/*.lean` | `f^*`, `\overline{HB}`, phase, `H(E)`, "evident fact" | §2, p. 799 |
+| M01 | `M01_PW.md` | `PW/Basic.lean`, `PW/Bounds.lean`, `PW/PlancherelPolya.lean`, `PW/Complete.lean` | Paley–Wiener space toolkit from `PaleyWienerThm` | §1 |
+| M02 | `M02_HB.md` | `HB/Basic.lean`, `HB/Phase.lean`, `HB/H2.lean`, `HB/DeBranges.lean`, `HB/Comparable.lean` | `f^*`, `\overline{HB}`, phase, `H(E)`, "evident fact" | §2, p. 799 |
 | M03 | `M03_Necessity.md` | `Theorem1/Necessity.lean` | Theorem 1 ⇒ | §3 |
-| M04 | `M04_Sufficiency.md` | `Theorem1/Sufficiency.lean`, `Corollary1.lean` | Theorem 1 ⇐, Corollary 1, remark p. 797 | §3–4 |
+| M04 | `M04_Sufficiency.md` | `Theorem1/Sufficiency.lean`, `Theorem1/Main.lean`, `Corollary1.lean` | Theorem 1 ⇐ (`Sufficiency`), `theorem1` (`Main`), Corollary 1 and remark p. 797 (`Corollary1`) | §3–4 |
 | M05 | `M05_Landau.md` | `Landau.lean` | Claim (Landau from John–Nirenberg + Pavlov) | §4 |
 | M06 | `M06_LogExample.md` | `LogExample.lean` | the example `{k + log⁺|k|}` and sharpness | §4 |
 | M07 | `M07_Corollary2.md` | `Construction.lean`, `Perturbation.lean`, `Corollary2.lean` | phase construction `E = A - iB`, perturbation lemma, Corollary 2 | §5 |
 | M08 | `M08_Theorem2i.md` | `Theorem2i.lean` | Theorem 2 (i): the Lyubarskii–Malinnikova approximation | §5 |
-| M09 | `M09_Theorem2ii.md` | `Theorem2ii.lean` | Theorem 2 (ii) | §5 |
+| M09 | `M09_Theorem2ii.md` | `Theorem2ii.lean`, `Lemma3Uniform.lean` | Theorem 2 (ii); the uniform-in-`m` form of [OS99] Lemma 3 (2) | §5 |
 | M10 | `M10_Frames.md` | `Frames.lean` | Fourier frame ⟺ sampling | §1 |
+
+All Lean files are under `FourierFrames/`; `FourierFrames.lean` imports every one of them. The
+file-level import DAG, the interface reconciliation done at assembly (every temporary "Upstream
+interface" block was replaced by imports) and the module graph generated from the actual imports
+are in `IMPORTS.md` (regenerate with `python3 scripts/make_imports.py`). Helper lemmas added or moved
+at assembly: `IsStrictHB.mul_isHB`, `IsHB.rotate` (`HB/Basic.lean`); `IsPhaseFunction.rotate`
+(`HB/Phase.lean`); `IsSeparated.finite_inter_Icc`, `MemPW.eq_zero_of_pwNormSq_eq_zero`
+(`PW/Basic.lean`); `sampleSum_mono`, `sampleSum_eq_tsum_indicator` (`PW/PlancherelPolya.lean`).
+M03's first half is exported as `exists_E` (`Necessity.lean`), not `exists_HB_of_sampling`.
 
 ### Dependency graph
 
@@ -183,24 +192,40 @@ All in namespace `FF`; `hPW : PaleyWienerThm` etc. are explicit hypotheses.
 - `memHE_sAlpha_unique`: `S_α, S_β ∈ H(E)` ⇒ `β - α ∈ πℤ` (`E` strict).
 - `heEqPW_of_comparable` (main result).
 
-**M07 (construction, `Construction.lean`)** — consumed by M06 and M07 (Corollary 2):
+**M07 (construction, `Construction.lean`)** — consumed by M06 and M07 (Corollary 2). The statement
+of the first version (phase asymptotics for every `m → 1`) is not provable (`M07_Corollary2.md` §0.2);
+it is replaced by two theorems. With `U = OCS.multU m 0`, `Γ = OCS.multGamma m`, `M = OCS.multPrim m`:
 ```lean
-/-- The phase construction of p. 801: for a density `m ≃ 1` with `m → 1` at `±∞`, the generating
-function `A` of the [OS99] barycentre sequence `Γ = OCS.multGamma m`, a companion `B` with
-interlacing zeros, and `E = A - iB`. -/
-theorem exists_hb_of_density {m : ℝ → ℝ} (hm : Measurable m) {a b : ℝ} (ha : 0 < a)
-    (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
+/-- Without phase asymptotics: `E = A - iB` of p. 801.  `hshift` is `U(z - 1/2) - U(z) = O(1)`. -/
+theorem exists_hb_of_density {m : ℝ → ℝ} {a b : ℝ} (hm : Measurable m) (ha : 0 < a)
+    (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    (hshift : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im → |OCS.multU m 0 (z - 1 / 2) - OCS.multU m 0 z| ≤ C) :
     ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (OCS.multU m 0 z) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (OCS.multU m 0 z)) ∧
+      (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ))
+
+/-- With phase asymptotics.  `hU`: `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` for some real `κ`
+(`κ ≠ 0` in general, e.g. the example of p. 798).  The linear drift is absorbed by the real
+entire factor `e^{-κ z}` (it preserves `\overline{HB}`, the zero set of `E + E^*` and the phase on
+`ℝ`), so the conclusion is the normalised one: `|E| ≃ e^{π Im z}`. -/
+theorem exists_hb_of_density_phase {m : ℝ → ℝ} {a b : ℝ} (hm : Measurable m) (ha : 0 < a)
+    (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    (hU : ∃ κ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) :
+    ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
+      (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
+        c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
-      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ ∃ c₀ : ℝ,
+      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ StrictMono φ ∧ ∃ c₀ : ℝ,
         Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀)
 ```
-(The M07 writer may strengthen this; any change must keep it usable by M06.) M07 also exports
+M06 uses `exists_hb_of_density_phase` with `κ = logKappa`; M07's Corollary 2 uses it with the density
+`m` of its §3.3 (for which the linear terms are cancelled, `κ = 0`). M07 also exports
 `IsSampling.of_perturbation (hPW) (hDS)`: a separated sampling `Γ` and an injective perturbation
 `γ ↦ γ + δ(γ)` with `δ → 0` along `Γ` (finitely many arbitrary moves allowed) give a sampling
-sequence. M08 consumes the main statement `corollary2`; M09 consumes `OCS.lemma3` directly.
+sequence. M08 consumes the main statement `corollary2`; M09 consumes `OCS.lemma3` directly and
+`lemma3_estimate_uniform` (`Lemma3Uniform.lean`).
 
 ## 4a. Known issues in the source (seeds for `../NOTEBOOK.md`; each to be verified)
 

@@ -1,5 +1,7 @@
 import FourierFrames.Construction
 import FourierFrames.Perturbation
+import FourierFrames.Theorem1.Sufficiency
+import FourierFrames.HB.Comparable
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -20,72 +22,9 @@ noncomputable section
 
 namespace FF
 
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-section Upstream
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem continuous_phaseDeriv {E : ℂ → ℂ} (hE : Differentiable ℂ E) (h0 : ∀ x : ℝ, E x ≠ 0) :
-    Continuous (phaseDeriv E) := by
-  sorry
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem IsStrictHB.phaseDeriv_pos {E : ℂ → ℂ} (hE : IsStrictHB E) {x : ℝ} (hx : E x ≠ 0) :
-    0 < phaseDeriv E x := by
-  sorry
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem IsPhaseFunction.strictMono_of_isStrictHB {E : ℂ → ℂ} (hE : IsStrictHB E)
-    (h0 : ∀ x : ℝ, E x ≠ 0) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) : StrictMono φ := by
-  sorry
-
-/-- (M02, `HB/Phase.lean`) -/
-theorem zero_set_eq_phaseLevel {E F : ℂ → ℂ} (hE : IsStrictHB E) (hF : IsHB F)
-    (hE0 : ∀ x : ℝ, E x ≠ 0) (hF0 : ∀ x : ℝ, F x ≠ 0) {φE φF : ℝ → ℝ}
-    (hφE : IsPhaseFunction E φE) (hφF : IsPhaseFunction F φF) (z : ℂ) :
-    E z * F z + fstar E z * fstar F z = 0 ↔
-      z ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φF t) (Real.pi / 2) := by
-  sorry
-
-/-- (M02, `HB/Comparable.lean`) the "evident fact" (main statement). -/
-theorem heEqPW_of_comparable (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E)
-    (hcomp : ∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
-      c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) :
-    HEEqPW E := by
-  sorry
-
-/-- (M02, `HB/DeBranges.lean`) -/
-theorem HEEqPW.isStrictHB {E : ℂ → ℂ} (hE : IsHB E) (h : HEEqPW E) : IsStrictHB E := by
-  sorry
-
-/-- (M02, `HB/DeBranges.lean`) -/
-theorem HEEqPW.phaseDeriv_mul_sq_le (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
-    (hHB : IsHB E) (h : HEEqPW E) :
-    ∃ C : ℝ, ∀ x : ℝ, phaseDeriv E x * ‖E x‖ ^ 2 ≤ C := by
-  sorry
-
-/-- (M04, main statement `theorem1_sufficiency`). -/
-theorem theorem1_sufficiency (hPW : PaleyWienerThm) (hE : TheoremE)
-    {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E F : ℂ → ℂ} (hEHB : IsHB E) (hFHB : IsHB F)
-    (hEPW : HEEqPW E) (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
-    IsSampling Λ := by
-  sorry
-
-end Upstream
-
 /-! ## Rotating `E` by a unimodular constant -/
 
 section Rotation
-
-/-- `e^{iβ} E ∈ \overline{HB}` for `E ∈ \overline{HB}` and real `β`. -/
-theorem IsHB.rotate {E : ℂ → ℂ} (hE : IsHB E) (β : ℝ) :
-    IsHB (fun z ↦ Complex.exp (Complex.I * β) * E z) := by
-  sorry
-
-/-- A phase function of `e^{iβ} E` is `φ_E - β`. -/
-theorem IsPhaseFunction.rotate {E : ℂ → ℂ} {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) (β : ℝ) :
-    IsPhaseFunction (fun z ↦ Complex.exp (Complex.I * β) * E z) (fun x ↦ φ x - β) := by
-  sorry
 
 theorem phaseDeriv_rotate (E : ℂ → ℂ) (β : ℝ) (x : ℝ) :
     phaseDeriv (fun z ↦ Complex.exp (Complex.I * β) * E z) x = phaseDeriv E x := by

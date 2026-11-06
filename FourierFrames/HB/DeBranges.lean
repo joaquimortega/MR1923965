@@ -1,5 +1,6 @@
 import FourierFrames.HB.Phase
 import FourierFrames.HB.H2
+import FourierFrames.PW.Complete
 
 /-!
 # M02 — de Branges spaces `H(E)`: basic facts
@@ -13,41 +14,6 @@ open scoped ENNReal NNReal ComplexConjugate
 noncomputable section
 
 namespace FF
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly)
-
-All of these are exported by M01 (`FourierFrames/PW/*.lean`, see `blueprint/M01_PW.md`); the
-statements below copy the M01 scaffold at the time of writing. -/
-
-theorem exists_memPW_eval_ne_zero : ∃ g : ℂ → ℂ, MemPW g ∧ g 0 = 1 := by
-  sorry
-
-theorem MemPW.comp_sub_ofReal {f : ℂ → ℂ} (hf : MemPW f) (a : ℝ) :
-    MemPW (fun z ↦ f (z - a)) := by
-  sorry
-
-theorem pwNormSq_comp_sub_ofReal (f : ℂ → ℂ) (a : ℝ) :
-    pwNormSq (fun z ↦ f (z - a)) = pwNormSq f := by
-  sorry
-
-theorem MemPW.fstar {f : ℂ → ℂ} (hf : MemPW f) : MemPW (FF.fstar f) := by
-  sorry
-
-theorem pwNormSq_ne_top {f : ℂ → ℂ} (hf : MemPW f) : pwNormSq f ≠ ⊤ := by
-  sorry
-
-theorem pw_eval_lower : ∃ c : ℝ≥0, 0 < c ∧ ∀ x : ℝ, ∃ f : ℂ → ℂ, MemPW f ∧
-    (c : ℝ≥0∞) * pwNormSq f ≤ ‖f (x : ℂ)‖ₑ ^ 2 ∧ pwNormSq f ≠ 0 ∧ pwNormSq f ≠ ⊤ := by
-  sorry
-
-theorem pw_norm_sq_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (z : ℂ) :
-    ‖f z‖ ^ 2 ≤ Real.exp (2 * Real.pi * |z.im|) * (pwNormSq f).toReal := by
-  sorry
-
-theorem pw_line_integral_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (y : ℝ) :
-    ∫⁻ x : ℝ, ‖f ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤
-      ENNReal.ofReal (Real.exp (2 * Real.pi * |y|)) * pwNormSq f := by
-  sorry
 
 /-! ## Multiplication by `F ∈ \overline{HB}` -/
 

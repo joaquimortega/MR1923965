@@ -1,4 +1,5 @@
-import FourierFrames.Defs
+import FourierFrames.PW.PlancherelPolya
+import FourierFrames.PW.Complete
 
 /-!
 # M07 — The perturbation lemma
@@ -21,50 +22,7 @@ noncomputable section
 
 namespace FF
 
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-section Upstream
-
-/-- (M01, `PW/Basic.lean`) `f ∈ PW`, `f(a) = 0` ⇒ `f(z)(z - b)/(z - a) ∈ PW`. -/
-theorem MemPW.mul_div_sub {f : ℂ → ℂ} (hf : MemPW f) {a : ℂ} (ha : f a = 0) (b : ℂ) :
-    MemPW (fun z ↦ dslope f a z * (z - b)) := by
-  sorry
-
-/-- (M01, `PW/Basic.lean`) -/
-theorem pwNormSq_ne_top {f : ℂ → ℂ} (hf : MemPW f) : pwNormSq f ≠ ⊤ := by
-  sorry
-
-/-- (M01, `PW/Basic.lean`) -/
-def IsSepBy (δ : ℝ) (Λ : Set ℝ) : Prop :=
-  ∀ a ∈ Λ, ∀ b ∈ Λ, a ≠ b → δ ≤ |a - b|
-
-/-- (M01, `PW/PlancherelPolya.lean`) -/
-theorem plancherelPolya (hPW : PaleyWienerThm) {δ : ℝ} (hδ : 0 < δ) :
-    ∃ C : ℝ≥0, ∀ Λ : Set ℝ, IsSepBy δ Λ → ∀ f : ℂ → ℂ, MemPW f →
-      sampleSum Λ f ≤ C * pwNormSq f := by
-  sorry
-
-/-- (M01, `PW/PlancherelPolya.lean`) -/
-theorem sampleSum_union_le (Λ₁ Λ₂ : Set ℝ) (f : ℂ → ℂ) :
-    sampleSum (Λ₁ ∪ Λ₂) f ≤ sampleSum Λ₁ f + sampleSum Λ₂ f := by
-  sorry
-
-/-- (M01, `PW/Complete.lean`) normal families in `PW`. -/
-theorem pw_normal_family (hPW : PaleyWienerThm) {f : ℕ → ℂ → ℂ} (hf : ∀ n, MemPW (f n))
-    {M : ℝ} (hM : ∀ n, pwNormSq (f n) ≤ ENNReal.ofReal M) :
-    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ g : ℂ → ℂ, MemPW g ∧
-      TendstoLocallyUniformly (fun n ↦ f (φ n)) g atTop ∧
-      pwNormSq g ≤ liminf (fun n ↦ pwNormSq (f n)) atTop := by
-  sorry
-
-end Upstream
-
 /-! ## Elementary facts on sampling sums and separated sets -/
-
-/-- `sampleSum` is monotone in the set. -/
-theorem sampleSum_mono {Λ₁ Λ₂ : Set ℝ} (h : Λ₁ ⊆ Λ₂) (f : ℂ → ℂ) :
-    sampleSum Λ₁ f ≤ sampleSum Λ₂ f := by
-  sorry
 
 /-- `sampleSum {a} f = |f(a)|²`. -/
 theorem sampleSum_singleton (a : ℝ) (f : ℂ → ℂ) : sampleSum {a} f = ‖f (a : ℂ)‖ₑ ^ 2 := by
@@ -72,11 +30,6 @@ theorem sampleSum_singleton (a : ℝ) (f : ℂ → ℂ) : sampleSum {a} f = ‖f
 
 /-- A separated set is closed (and discrete). -/
 theorem IsSeparated.isClosed {Λ : Set ℝ} (h : IsSeparated Λ) : IsClosed Λ := by
-  sorry
-
-/-- A separated set meets bounded sets in finite sets. -/
-theorem IsSeparated.finite_inter_Icc {Λ : Set ℝ} (h : IsSeparated Λ) (R : ℝ) :
-    (Λ ∩ Icc (-R) R).Finite := by
   sorry
 
 /-- Adding one point to a separated set keeps it separated. -/

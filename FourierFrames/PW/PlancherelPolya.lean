@@ -29,6 +29,18 @@ theorem lintegral_strip_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW 
 /-- The Plancherel–Pólya constant `C(δ) = 4 (e^{πδ} - 1) / (π² δ²)`; it depends only on `δ`. -/
 def ppConst (δ : ℝ) : ℝ := 4 * (Real.exp (Real.pi * δ) - 1) / (Real.pi ^ 2 * δ ^ 2)
 
+theorem sampleSum_eq_tsum_indicator (Λ : Set ℝ) (f : ℂ → ℂ) :
+    sampleSum Λ f = ∑' x : ℝ, Λ.indicator (fun x : ℝ ↦ ‖f (x : ℂ)‖ₑ ^ 2) x := by
+  unfold sampleSum
+  exact tsum_subtype Λ (fun x : ℝ ↦ ‖f (x : ℂ)‖ₑ ^ 2)
+
+/-- `sampleSum` is monotone in the set (moved here from `Perturbation.lean` / `Suff` at
+assembly). -/
+theorem sampleSum_mono {Λ₁ Λ₂ : Set ℝ} (h : Λ₁ ⊆ Λ₂) (f : ℂ → ℂ) :
+    sampleSum Λ₁ f ≤ sampleSum Λ₂ f := by
+  rw [sampleSum_eq_tsum_indicator, sampleSum_eq_tsum_indicator]
+  exact ENNReal.tsum_le_tsum fun x ↦ Set.indicator_le_indicator_of_subset h (by intro; positivity) x
+
 /-- Subadditivity of the sampling sum (used for `Λ_α = Λ' ∪ Λ''`, p. 796). -/
 theorem sampleSum_union_le (Λ₁ Λ₂ : Set ℝ) (f : ℂ → ℂ) :
     sampleSum (Λ₁ ∪ Λ₂) f ≤ sampleSum Λ₁ f + sampleSum Λ₂ f := by

@@ -88,4 +88,10 @@ theorem zero_set_eq_phaseLevel {E F : ℂ → ℂ} (hE : IsStrictHB E) (hF : IsH
       z ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φF t) (Real.pi / 2) := by
   sorry
 
+/-- Added at assembly (moved from `Corollary1.lean` / `Corollary2.lean`): a phase function of
+`e^{iθ} E` is `φ_E - θ`. -/
+theorem IsPhaseFunction.rotate {E : ℂ → ℂ} {φ : ℝ → ℝ} (h : IsPhaseFunction E φ) (θ : ℝ) :
+    IsPhaseFunction (fun z ↦ Complex.exp (I * θ) * E z) (fun x ↦ φ x - θ) := by
+  sorry
+
 end FF

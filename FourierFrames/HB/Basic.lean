@@ -100,4 +100,16 @@ theorem IsHB.of_tendstoLocallyUniformly {ι : Type*} {p : Filter ι} [p.NeBot]
     (hlim : TendstoLocallyUniformly E E₀ p) (hne : ∃ z, E₀ z ≠ 0) : IsHB E₀ := by
   sorry
 
+/-- Added at assembly (requested by M04): `E` strict, `F ∈ \overline{HB}` ⇒ `E F` strict.
+(`|E F (z̄)| ≤ |E(z̄)| |F(z)| < |E(z)| |F(z)|`, using `F(z) ≠ 0` for `Im z > 0`.) -/
+theorem IsStrictHB.mul_isHB {E F : ℂ → ℂ} (hE : IsStrictHB E) (hF : IsHB F) :
+    IsStrictHB (fun z ↦ E z * F z) := by
+  sorry
+
+/-- Added at assembly (moved from `Corollary1.lean` / `Corollary2.lean`): a unimodular constant
+factor preserves `\overline{HB}`. -/
+theorem IsHB.rotate {E : ℂ → ℂ} (hE : IsHB E) (θ : ℝ) :
+    IsHB (fun z ↦ Complex.exp (I * θ) * E z) := by
+  sorry
+
 end FF

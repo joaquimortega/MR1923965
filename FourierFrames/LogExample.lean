@@ -1,5 +1,6 @@
-import FourierFrames.Defs
-import OrtegaCerdaSeip.Lemma3.Main
+import FourierFrames.Construction
+import FourierFrames.HB.Comparable
+import FourierFrames.Theorem1.Sufficiency
 
 /-!
 # M06 — the example `Λ = {k + log⁺|k|}` of p. 798 and the sharpness of Landau's inequality
@@ -22,63 +23,6 @@ open scoped ENNReal NNReal ComplexConjugate
 noncomputable section
 
 namespace FF
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-/-- M07 (`blueprint/README.md` §4, `Construction.lean`). -/
-theorem exists_hb_of_density {m : ℝ → ℝ} (hm : Measurable m) {a b : ℝ} (ha : 0 < a)
-    (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
-    ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
-      (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
-        c * Real.exp (OCS.multU m 0 z) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (OCS.multU m 0 z)) ∧
-      (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
-      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ ∃ c₀ : ℝ,
-        Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀) := by
-  sorry
-
-/-- M01: translation by a real number preserves `PW` (signature to be matched at assembly). -/
-theorem MemPW.comp_sub_ofReal {f : ℂ → ℂ} (hf : MemPW f) (a : ℝ) :
-    MemPW (fun z ↦ f (z - (a : ℂ))) := by
-  sorry
-
-/-- M01: translation by a real number preserves the `PW` norm. -/
-theorem pwNormSq_comp_sub_ofReal (f : ℂ → ℂ) (a : ℝ) :
-    pwNormSq (fun z ↦ f (z - (a : ℂ))) = pwNormSq f := by
-  sorry
-
-/-- M02: products of `\overline{HB}` functions. -/
-theorem IsHB.mul {E F : ℂ → ℂ} (hE : IsHB E) (hF : IsHB F) : IsHB (fun z ↦ E z * F z) := by
-  sorry
-
-/-- M02: an `E ∈ \overline{HB}` with `H(E) = PW` is in the strict class. -/
-theorem HEEqPW.isStrictHB {E : ℂ → ℂ} (hE : IsHB E) (h : HEEqPW E) : IsStrictHB E := by
-  sorry
-
-/-- M02: main statement `heEqPW_of_comparable` (identical to `comparator/statements.lean`). -/
-theorem heEqPW_of_comparable (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E)
-    (hcomp : ∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
-      c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) :
-    HEEqPW E := by
-  sorry
-
-/-- M02 (new name, not in the README list): a phase function of an entire `E` without real zeros
-is differentiable with derivative `phaseDeriv E x`. -/
-theorem IsPhaseFunction.hasDerivAt {E : ℂ → ℂ} {φ : ℝ → ℝ} (hE : Differentiable ℂ E)
-    (h0 : ∀ x : ℝ, E x ≠ 0) (hφ : IsPhaseFunction E φ) (x : ℝ) :
-    HasDerivAt φ (phaseDeriv E x) x := by
-  sorry
-
-/-- M02: `φ_E' |E|² ≳ 1` when `H(E) = PW` (signature to be matched at assembly). -/
-theorem HEEqPW.phaseDeriv_mul_sq_ge (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
-    (hHB : IsHB E) (hEPW : HEEqPW E) :
-    ∃ c : ℝ, 0 < c ∧ ∀ x : ℝ, c ≤ phaseDeriv E x * ‖E x‖ ^ 2 := by
-  sorry
-
-/-- M02: `φ_E' |E|² ≲ 1` when `H(E) = PW` (signature to be matched at assembly). -/
-theorem HEEqPW.phaseDeriv_mul_sq_le (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
-    (hHB : IsHB E) (hEPW : HEEqPW E) :
-    ∃ C : ℝ, ∀ x : ℝ, phaseDeriv E x * ‖E x‖ ^ 2 ≤ C := by
-  sorry
 
 /-! ## §1  The points `λ_k = k + log⁺|k|` -/
 
@@ -312,9 +256,6 @@ theorem logDensity_U_estimate : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
   sorry
 
 /-! ## §5  The Hermite–Biehler function -/
-
-theorem isHB_exp_neg_mul (κ : ℝ) : IsHB (fun z : ℂ ↦ Complex.exp (-((κ : ℂ) * z))) := by
-  sorry
 
 /-- The function `E` of the example: `H(E) = PW`, no real zeros, zero set of `E + E^*` equal to
 `Λ + 1/2`, with a phase function. -/

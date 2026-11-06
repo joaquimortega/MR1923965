@@ -1,5 +1,5 @@
 import FourierFrames.Defs
-import OrtegaCerdaSeip.Lemma3.Main
+import FourierFrames.Lemma3Uniform
 
 /-!
 # M09 — Theorem 2 (ii)
@@ -22,20 +22,6 @@ open scoped ENNReal NNReal ComplexConjugate
 noncomputable section
 
 namespace FF
-
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-/-- **Lemma 3, estimate (2), with constants depending only on `(a, b)`.**
-The vendored `OCS.multF_estimate_two` states `∃ c₁ c₂` *after* fixing `m`; its proof
-(`OCS.exists_abs_sum_multErr_sub_log_infDist_le`) gives `c₁ = e^{-K}`, `c₂ = e^{K}` with
-`K = K(a, b)` an explicit expression in `a, b` only.  This uniform form is what M09 needs.
-(Request to the owner of the vendored library; trivial change of that proof.) -/
-theorem lemma3_estimate_uniform {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
-    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ (m : ℝ → ℝ), OCS.IsMultWeight m a b → ∀ C : ℝ, ∀ z : ℂ,
-      |z.im| ≤ 1 →
-        c₁ * infDist z (OCS.multGammaC m) ≤ ‖OCS.multF m C z‖ * Real.exp (-OCS.multU m C z) ∧
-        ‖OCS.multF m C z‖ * Real.exp (-OCS.multU m C z) ≤ c₂ * infDist z (OCS.multGammaC m) := by
-  sorry
 
 /-! ## The test density and the test function -/
 

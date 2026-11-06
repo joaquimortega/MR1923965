@@ -10,7 +10,9 @@
   - M02: `IsHB.mul`, `HEEqPW.isStrictHB`, `heEqPW_of_comparable` (main statement),
     `IsPhaseFunction.hasDerivAt` (new name, see below), `HEEqPW.phaseDeriv_mul_sq_ge`,
     `HEEqPW.phaseDeriv_mul_sq_le`, `fstar_mul`, `fstar_ofReal`.
-  - M07: `exists_hb_of_density` (exactly the statement of `README.md` §4; nothing more is used).
+  - M07: `exists_hb_of_density_phase` with the drifted hypothesis `∃ κ C, |U - π Im z - κ Re z| ≤ C`
+    (`Construction.lean`; replaces the old `README.md` §4 statement; the normalisation by `e^{-κ z}` is done
+    inside M07).
   - vendored OCS: `OCS.IsMultWeight`, `OCS.multPrim`, `OCS.multPt`, `OCS.multBary`,
     `OCS.multGamma`, `OCS.multU`, `OCS.multUIntegrand`, `OCS.multPt_eq_of`,
     `OCS.integrable_multUIntegrand`, `OCS.log_norm_one_sub_div`.
@@ -734,14 +736,6 @@ symmetric product `lim ∏_{|λ|<R}(1 - z/λ)` has no such term, and `∫_{1<|t|
 ## 5. The Hermite–Biehler function
 
 ```lean
-theorem isHB_exp_neg_mul (κ : ℝ) : IsHB (fun z : ℂ ↦ Complex.exp (-((κ : ℂ) * z))) := by
-  sorry
-```
-
-**Proof.** Entire, no zeros (`Complex.exp_ne_zero`), and for `Im z > 0`:
-`‖exp(-κ conj z)‖ = exp(-κ Re z) = ‖exp(-κ z)‖` (`Complex.norm_exp`, `Re(conj z) = Re z`; κ real). ∎
-
-```lean
 /-- The function `E` of the example: `H(E) = PW`, no real zeros, zero set of `E + E^*` equal to
 `Λ + 1/2`, with a phase function. -/
 theorem exists_E_logExample (hPW : PaleyWienerThm) :
@@ -753,21 +747,17 @@ theorem exists_E_logExample (hPW : PaleyWienerThm) :
   sorry
 ```
 
-**Proof.** Apply `exists_hb_of_density` to `m = logDensity`, `a = 1/10`, `b = 20`
-(`measurable_logDensity`, `logDensity_bounds`, `tendsto_logDensity`): get `E₀ ∈ \overline{HB}`,
-no real zeros, constants `c₀, C₀`, with `c₀ e^{U} ≤ ‖E₀‖ ≤ C₀ e^{U}` on `Im z ≥ 0`
-(`U = OCS.multU m 0`), `E₀ + E₀^* = 0 ⟺ z ∈ multGamma m`, and a phase function `φ`. Put
-`E(z) = E₀(z) e^{-κ z}`, `κ = logKappa`.
-- `IsHB E`: `IsHB.mul` (M02) and `isHB_exp_neg_mul`.
-- No real zeros: product of non-zeros.
-- Comparability: `‖E(z)‖ = ‖E₀(z)‖ e^{-κ x}`, and by `logDensity_U_estimate`,
-  `|U - πy - κx| ≤ C_U`, so `c₀ e^{-C_U} e^{πy} ≤ ‖E(z)‖ ≤ C₀ e^{C_U} e^{πy}` on `Im z ≥ 0`.
+**Proof.** Apply `exists_hb_of_density_phase` to `m = logDensity`, `a = 1/10`, `b = 20`
+(`measurable_logDensity`, `logDensity_bounds`, `tendsto_logDensity`) with
+`hU := ⟨logKappa, C_U, logDensity_U_estimate⟩`, `|U - πy - κx| ≤ C_U` (§4). It returns an `E` with
+`IsHB E`, no real zeros, `c e^{πy} ≤ ‖E‖ ≤ C e^{πy}` on `Im z ≥ 0` (the normalisation `E = E₀ e^{-κ z}`
+that this section used to perform is now inside M07), `E + E^* = 0 ⟺ z ∈ multGamma m` and a phase
+function `φ`. The remaining items:
 - `HEEqPW E`: `heEqPW_of_comparable hPW (IsHB E) hcomp`.
-- Zero set: `E^*(z) = conj(E₀(conj z)) conj(exp(-κ conj z)) = E₀^*(z) e^{-κ z}` (`κ` real;
-  `fstar_mul`), so `E + E^* = e^{-κ z}(E₀ + E₀^*)` has the same zeros (`Complex.exp_ne_zero`), and
-  `multGamma_logDensity` rewrites `multGamma m` as `(· + 1/2) '' logExample`.
-- Phase: `E(x) = E₀(x) e^{-κ x} = ‖E₀(x)‖ e^{-κ x} e^{-iφ(x)} = ‖E(x)‖ e^{-iφ(x)}`
-  (`e^{-κ x} > 0` real), so `φ` is also a phase function of `E`. ∎
+- Zero set: `multGamma_logDensity` rewrites `multGamma m` as `(· + 1/2) '' logExample`. ∎
+
+(Before the assembly this section constructed `E = E₀ e^{-κ z}` itself with
+`isHB_exp_neg_mul (κ) : IsHB (fun z ↦ exp (-(κ z)))`; that lemma was removed from `LogExample.lean`.)
 
 ---
 
@@ -927,7 +917,7 @@ the real ones (module owners: adjust the file or tell me).
 
 | declaration | owner | statement as used |
 |---|---|---|
-| `exists_hb_of_density` | M07 | verbatim `README.md` §4 |
+| `exists_hb_of_density_phase` | M07 | as in `Construction.lean` (hypothesis `∃ κ C, \|U - π Im z - κ Re z\| ≤ C`) |
 | `MemPW.comp_sub_ofReal` | M01 | `MemPW f → ∀ a : ℝ, MemPW (fun z ↦ f (z - a))` |
 | `pwNormSq_comp_sub_ofReal` | M01 | `pwNormSq (fun z ↦ f (z - a)) = pwNormSq f` |
 | `IsHB.mul` | M02 | `IsHB E → IsHB F → IsHB (fun z ↦ E z * F z)` |
@@ -937,9 +927,10 @@ the real ones (module owners: adjust the file or tell me).
 | `HEEqPW.phaseDeriv_mul_sq_ge/le` | M02 | `∃ c > 0, ∀ x, c ≤ phaseDeriv E x * ‖E x‖^2` and `∃ C, … ≤ C`, for `IsHB E`, `HEEqPW E` (as in `HB/DeBranges.lean`; the no-real-zeros hypothesis is not needed) |
 | `MemPW.sub`, `fstar_mul`, `fstar_ofReal` | M01/M02 | used only in proofs |
 
-Interface note for M07: **nothing beyond the `exists_hb_of_density` of the README is needed.** In
-particular the phase asymptotics `φ - π M → c₀` returned there are not used here (M02's
-`φ' ≃ 1` is used instead).
+Interface note for M07: **`exists_hb_of_density_phase` with the drifted hypothesis is what is used.**
+The phase asymptotics `φ - π M → c₀` returned there are not used here (M02's `φ' ≃ 1` is used
+instead); only `IsHB`, the absence of real zeros, `|E| ≃ e^{π Im z}`, the zero set of `E + E^*` and the
+existence of a phase function.
 
 ## 9. Issues in the source
 

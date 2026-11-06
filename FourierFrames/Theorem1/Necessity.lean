@@ -1,4 +1,5 @@
-import FourierFrames.Defs
+import FourierFrames.HB.DeBranges
+import FourierFrames.PW.Complete
 import OrtegaCerdaSeip.Products.Canonical
 
 /-!
@@ -23,67 +24,6 @@ noncomputable section
 
 namespace FF
 
-/-! ## Upstream interface (temporary, replaced by imports at assembly) -/
-
-section Upstream
-
-/-! ### M01 (Paley–Wiener toolkit) -/
-
-theorem memPW_zero : MemPW (fun _ : ℂ ↦ (0 : ℂ)) := sorry
-
-theorem MemPW.add {f g : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) : MemPW (f + g) := sorry
-
-theorem MemPW.sub {f g : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) : MemPW (f - g) := sorry
-
-theorem MemPW.const_mul {f : ℂ → ℂ} (hf : MemPW f) (c : ℂ) : MemPW (fun z ↦ c * f z) := sorry
-
-theorem MemPW.fstar {f : ℂ → ℂ} (hf : MemPW f) : MemPW (fstar f) := sorry
-
-theorem pwNormSq_fstar (f : ℂ → ℂ) : pwNormSq (fstar f) = pwNormSq f := sorry
-
-/-- `f(z)(z - b)/(z - a)` for `f(a) = 0`, the value at `a` being given by `dslope`. -/
-theorem MemPW.mul_div_sub {f : ℂ → ℂ} (hf : MemPW f) {a : ℂ} (ha : f a = 0) (b : ℂ) :
-    MemPW (fun z ↦ dslope f a z * (z - b)) := sorry
-
-theorem pwNormSq_ne_top {f : ℂ → ℂ} (hf : MemPW f) : pwNormSq f ≠ ∞ := sorry
-
-theorem pw_norm_sq_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (z : ℂ) :
-    ‖f z‖ ^ 2 ≤ Real.exp (2 * Real.pi * |z.im|) * (pwNormSq f).toReal := sorry
-
-theorem exists_memPW_eval_ne_zero : ∃ g : ℂ → ℂ, MemPW g ∧ g 0 = 1 := sorry
-
-/-- NEW NAME (not in the README list; candidate M01 addition): `‖f‖_{PW} = 0` forces `f = 0`. -/
-theorem MemPW.eq_zero_of_pwNormSq_eq_zero {f : ℂ → ℂ} (hf : MemPW f) (h : pwNormSq f = 0) :
-    f = 0 := sorry
-
-/-- Completeness of `PW`: an `L²`-Cauchy sequence in `PW` converges (in `L²` and locally
-uniformly) to some `g ∈ PW`. -/
-theorem pw_complete (hPW : PaleyWienerThm) {f : ℕ → ℂ → ℂ} (hf : ∀ n, MemPW (f n))
-    (hc : ∀ ε : ℝ≥0∞, ε ≠ 0 → ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
-      pwNormSq (fun z ↦ f m z - f n z) < ε) :
-    ∃ g : ℂ → ℂ, MemPW g ∧ TendstoLocallyUniformly f g atTop ∧
-      Tendsto (fun n ↦ pwNormSq (fun z ↦ f n z - g z)) atTop (nhds 0) := sorry
-
-/-! ### M02 (Hermite–Biehler) -/
-
-theorem fstar_fstar (f : ℂ → ℂ) : fstar (fstar f) = f := by
-  funext z; simp [fstar]
-
-theorem Differentiable.fstar {f : ℂ → ℂ} (hf : Differentiable ℂ f) :
-    Differentiable ℂ (fstar f) := sorry
-
-theorem fstar_ofReal (f : ℂ → ℂ) (x : ℝ) : fstar f (x : ℂ) = conj (f (x : ℂ)) := by
-  simp [fstar]
-
-/-- An `E ∈ \overline{HB}` with `H(E) = PW` is in the strict class. -/
-theorem HEEqPW.isStrictHB {E : ℂ → ℂ} (hE : IsHB E) (h : HEEqPW E) : IsStrictHB E := sorry
-
-/-- An `E` with `H(E) = PW` has no real zeros. -/
-theorem HEEqPW.ne_zero_ofReal {E : ℂ → ℂ} (hE : IsHB E) (h : HEEqPW E) (x : ℝ) :
-    E (x : ℂ) ≠ 0 := sorry
-
-end Upstream
-
 /-! ## 0. Elementary generalities -/
 
 /-- If `∑' i, F i` has summable bounds off a finite set of indices, on an open set `U`, it is
@@ -104,9 +44,6 @@ theorem exists_const_of_re_eq_zero {D : ℂ → ℂ} (hD : DifferentiableOn ℂ 
     ∃ a : ℝ, ∀ z : ℂ, 0 < z.im → D z = a * I := sorry
 
 /-! ## 1. Separated sets -/
-
-theorem IsSeparated.finite_inter_Icc {Λ : Set ℝ} (h : IsSeparated Λ) (r : ℝ) :
-    (Λ ∩ Icc (-r) r).Finite := sorry
 
 /-- `∑_{λ ∈ Λ} 1/(1+λ²) < ∞` for a separated `Λ`. -/
 theorem IsSeparated.summable_inv_one_add_sq {Λ : Set ℝ} (h : IsSeparated Λ) :

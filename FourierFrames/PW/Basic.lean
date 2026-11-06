@@ -157,4 +157,15 @@ theorem pwNormSq_mul_div_sub_conj (f : ℂ → ℂ) {a : ℂ} (ha : a.im ≠ 0) 
     pwNormSq (fun z ↦ dslope f a z * (z - conj a)) = pwNormSq f := by
   sorry
 
+/-- A separated set meets bounded sets in finite sets (moved here from `Perturbation.lean` and
+`Theorem1/Necessity.lean` at assembly). -/
+theorem IsSeparated.finite_inter_Icc {Λ : Set ℝ} (h : IsSeparated Λ) (R : ℝ) :
+    (Λ ∩ Icc (-R) R).Finite := by
+  sorry
+
+/-- `‖f‖_{PW} = 0` forces `f = 0` (added at assembly; requested by M03). -/
+theorem MemPW.eq_zero_of_pwNormSq_eq_zero {f : ℂ → ℂ} (hf : MemPW f) (h : pwNormSq f = 0) :
+    f = 0 := by
+  sorry
+
 end FF
