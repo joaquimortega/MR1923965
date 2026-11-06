@@ -550,6 +550,53 @@ theorem identify_limit (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
   congr 1
   exact Complex.ext (by simp) (by simp [hcim])
 
+/-- **Normal-family limit of the translates of `A`.** -/
+theorem translate_limit (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C)
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ ∃ c θ : ℝ, c ≠ 0 ∧
+      TendstoLocallyUniformly
+        (fun k z ↦ OCS.multF m 0 (z + s (φ k)) * Complex.exp (-((κ * s (φ k) : ℝ) : ℂ)))
+        (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
+  have ha := hw.pos
+  -- a subsequence along which `t_k` converges
+  have htb : ∀ k, tt m s k ∈ Icc (-(1 / a)) (1 / a) := fun k ↦ by
+    have := abs_le.1 (tt_bound hw (s k))
+    exact ⟨this.1, this.2⟩
+  obtain ⟨θ, -, ψ, hψ, hθ⟩ := tendsto_subseq_of_bounded (isBounded_Icc _ _) htb
+  have hs' : Tendsto (fun k ↦ |s (ψ k)|) atTop atTop := hs.comp hψ.tendsto_atTop
+  obtain ⟨c₁, c₂, hc₁, hc₂, hc⟩ := Gk_bounds hw hU
+  have hF : ∀ k, OCS.MemBernstein Real.pi (Gk m κ (s (ψ k))) := fun k ↦
+    OCS.memBernstein_of_norm_le (differentiable_Gk hw κ _) Real.pi_pos.le (M := c₂) fun z ↦
+      (hc _ z).2.trans (by
+        have : min 1 (infDist (z + (s (ψ k) : ℂ)) (OCS.multGammaC m)) ≤ 1 := min_le_left _ _
+        have h0 : 0 ≤ c₂ * Real.exp (Real.pi * |z.im|) := by positivity
+        nlinarith)
+  obtain ⟨φ', hφ', f, hf, -, hTLU⟩ := OCS.MemBernstein.exists_subseq_tendstoLocallyUniformly
+    (F := fun k z ↦ Gk m κ (s (ψ k)) z) Real.pi_pos.le hF (M := c₂) (fun k x ↦ by
+      have := (hc (s (ψ k)) x).2
+      have h1 : min 1 (infDist ((x : ℂ) + (s (ψ k) : ℂ)) (OCS.multGammaC m)) ≤ 1 := min_le_left _ _
+      simp only [Complex.ofReal_im, abs_zero, mul_zero, Real.exp_zero, mul_one] at this
+      nlinarith)
+  have hs'' : Tendsto (fun k ↦ |s (ψ (φ' k))|) atTop atTop := hs'.comp hφ'.tendsto_atTop
+  have ht'' : Tendsto (tt m (fun k ↦ s (ψ (φ' k)))) atTop (𝓝 θ) :=
+    hθ.comp hφ'.tendsto_atTop
+  obtain ⟨c, hcne, hcG⟩ := identify_limit hw hlim hU hs'' ht'' hf.1 hTLU
+  refine ⟨fun k ↦ ψ (φ' k), hψ.comp hφ', c, θ, hcne, ?_⟩
+  have hfeq : f = fun z ↦ (c : ℂ) * Complex.sin (Real.pi * (z - θ)) := funext hcG
+  have hfc : Continuous f := hf.1.continuous
+  have h2 := Limits.tendstoLU_const_mul (e := fun z ↦ Complex.exp ((κ : ℂ) * z))
+    (by fun_prop) hTLU hfc
+  refine (h2.congr (fun k ↦ ?_)).congr_right (fun z ↦ ?_)
+  · intro z
+    simp only [Gk]
+    rw [mul_left_comm, ← Complex.exp_add]
+    congr 2
+    push_cast; ring
+  · rw [hfeq]; ring
+
 end Translate
 
 end FF
