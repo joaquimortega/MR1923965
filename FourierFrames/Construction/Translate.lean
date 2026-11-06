@@ -446,6 +446,110 @@ theorem eventually_infDist_ge (hw : OCS.IsMultWeight m a b)
     rw [abs_of_nonpos (by linarith)]
     linarith
 
+theorem differentiable_Gk (hw : OCS.IsMultWeight m a b) (κ s : ℝ) :
+    Differentiable ℂ (Gk m κ s) := by
+  have := OCS.differentiable_multF hw 0
+  unfold Gk
+  fun_prop
+
+theorem Gk_im_real (hw : OCS.IsMultWeight m a b) (κ s x : ℝ) : (Gk m κ s (x : ℂ)).im = 0 := by
+  have h := OCS.multF_conj hw 0 ((x : ℂ) + s)
+  have hc : conj ((x : ℂ) + s) = (x : ℂ) + s := by simp
+  rw [hc] at h
+  have h2 : (OCS.multF m 0 ((x : ℂ) + s)).im = 0 := Complex.conj_eq_iff_im.1 h.symm
+  unfold Gk
+  have h3 : (Complex.exp (-((κ : ℂ) * ((x : ℂ) + s)))).im = 0 := by
+    have : -((κ : ℂ) * ((x : ℂ) + s)) = ((-(κ * (x + s)) : ℝ) : ℂ) := by push_cast; ring
+    rw [this, ← Complex.ofReal_exp]; exact Complex.ofReal_im _
+  rw [Complex.mul_im, h2, h3]; ring
+
+/-- **Identification of the limit.** -/
+theorem identify_limit (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C)
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {θ : ℝ}
+    (ht : Tendsto (tt m s) atTop (𝓝 θ)) {G : ℂ → ℂ} (hd : Differentiable ℂ G)
+    (hG : TendstoLocallyUniformly (fun k z ↦ Gk m κ (s k) z) G atTop) :
+    ∃ c : ℝ, c ≠ 0 ∧ ∀ z, G z = c * Complex.sin (Real.pi * (z - θ)) := by
+  obtain ⟨c₁, c₂, hc₁, hc₂, hc⟩ := Gk_bounds hw hU
+  obtain ⟨c₀, hc₀, hsin⟩ := sin_lower
+  have hpt : ∀ z, Tendsto (fun k ↦ Gk m κ (s k) z) atTop (𝓝 (G z)) := fun z ↦
+    (tendstoLocallyUniformlyOn_univ.2 hG).tendsto_at (mem_univ z)
+  -- upper bound
+  have hup : ∀ (z : ℂ) (n : ℤ), ‖G z‖ ≤
+      c₂ * Real.exp (Real.pi * |z.im|) * min 1 ‖z - θ - n‖ := by
+    intro z n
+    have hp := tendsto_shifted hw hlim hs ht n
+    have h1 : Tendsto (fun k ↦ c₂ * Real.exp (Real.pi * |z.im|) *
+        min 1 ‖z - ((OCS.multBary m (OCS.multIdx m (s k) + n) - s k : ℝ) : ℂ)‖) atTop
+        (𝓝 (c₂ * Real.exp (Real.pi * |z.im|) * min 1 ‖z - ((θ + n : ℝ) : ℂ)‖)) := by
+      refine tendsto_const_nhds.mul ?_
+      refine (tendsto_const_nhds.min ?_)
+      exact ((tendsto_const_nhds.sub ((Complex.continuous_ofReal.tendsto _).comp hp))).norm
+    have h2 : Tendsto (fun k ↦ ‖Gk m κ (s k) z‖) atTop (𝓝 ‖G z‖) := (hpt z).norm
+    have := le_of_tendsto_of_tendsto h2 h1 (Eventually.of_forall fun k ↦ ?_)
+    · refine this.trans (le_of_eq ?_)
+      congr 3
+      push_cast; ring_nf
+    · refine (hc (s k) z).2.trans ?_
+      have hmem : ((OCS.multBary m (OCS.multIdx m (s k) + n) : ℝ) : ℂ) ∈ OCS.multGammaC m :=
+        ⟨_, ⟨_, rfl⟩, rfl⟩
+      have hd1 := infDist_le_dist_of_mem (x := z + (s k : ℂ)) hmem
+      have : dist (z + (s k : ℂ)) ((OCS.multBary m (OCS.multIdx m (s k) + n) : ℝ) : ℂ) =
+          ‖z - ((OCS.multBary m (OCS.multIdx m (s k) + n) - s k : ℝ) : ℂ)‖ := by
+        rw [dist_eq_norm]; congr 1; push_cast; ring
+      rw [this] at hd1
+      have hpos : 0 ≤ c₂ * Real.exp (Real.pi * |z.im|) := by positivity
+      exact mul_le_mul_of_nonneg_left (min_le_min le_rfl hd1) hpos
+  -- comparison with the sine
+  have hK : ∀ z, ‖G z‖ ≤ (c₂ / c₀) * ‖Complex.sin (Real.pi * (z - θ))‖ := by
+    intro z
+    obtain ⟨n, hn⟩ := hsin (z - θ)
+    have him : (z - (θ : ℂ)).im = z.im := by simp
+    rw [him] at hn
+    have := hup z n
+    rw [div_mul_eq_mul_div, le_div_iff₀ hc₀]
+    calc ‖G z‖ * c₀ ≤ c₂ * Real.exp (Real.pi * |z.im|) * min 1 ‖z - θ - n‖ * c₀ := by gcongr
+      _ = c₂ * (c₀ * Real.exp (Real.pi * |z.im|) * min 1 ‖z - θ - n‖) := by ring
+      _ ≤ _ := by gcongr
+  obtain ⟨c, hcG⟩ := eq_const_mul_sin hd θ (c₂ / c₀) hK
+  -- the value at θ + 1/2
+  set z₀ : ℂ := ((θ + 1 / 2 : ℝ) : ℂ) with hz₀
+  have hsin0 : Complex.sin (Real.pi * (z₀ - θ)) = 1 := by
+    rw [hz₀]
+    have : (Real.pi : ℂ) * (((θ + 1 / 2 : ℝ) : ℂ) - θ) = (Real.pi / 2 : ℝ) := by
+      push_cast; ring
+    rw [this, ← Complex.ofReal_sin, Real.sin_pi_div_two]; simp
+  have hGz0 : G z₀ = c := by rw [hcG z₀, hsin0, mul_one]
+  have hlow : c₁ / 4 ≤ ‖G z₀‖ := by
+    have h2 : Tendsto (fun k ↦ ‖Gk m κ (s k) z₀‖) atTop (𝓝 ‖G z₀‖) := (hpt z₀).norm
+    refine ge_of_tendsto h2 ?_
+    filter_upwards [eventually_infDist_ge hw hlim hs ht] with k hk
+    refine (hc (s k) z₀).1.trans' ?_
+    have him : z₀.im = 0 := by rw [hz₀]; exact Complex.ofReal_im _
+    rw [him]
+    simp only [abs_zero, mul_zero, Real.exp_zero, mul_one]
+    have : (1 / 4 : ℝ) ≤ min 1 (infDist (z₀ + (s k : ℂ)) (OCS.multGammaC m)) :=
+      le_min (by norm_num) hk
+    calc c₁ / 4 = c₁ * (1 / 4) := by ring
+      _ ≤ _ := by gcongr
+  have hcim : c.im = 0 := by
+    have h2 : Tendsto (fun k ↦ (Gk m κ (s k) z₀).im) atTop (𝓝 (G z₀).im) :=
+      (Complex.continuous_im.tendsto _).comp (hpt z₀)
+    have h3 : Tendsto (fun k ↦ (Gk m κ (s k) z₀).im) atTop (𝓝 0) := by
+      refine tendsto_const_nhds.congr fun k ↦ ?_
+      exact (Gk_im_real hw κ (s k) (θ + 1 / 2)).symm
+    rw [← hGz0]; exact tendsto_nhds_unique h2 h3
+  have hcne : c ≠ 0 := by
+    intro h0
+    rw [hGz0, h0, norm_zero] at hlow
+    linarith
+  refine ⟨c.re, fun h ↦ hcne (Complex.ext (by simpa using h) (by simpa using hcim)), fun z ↦ ?_⟩
+  rw [hcG z]
+  congr 1
+  exact Complex.ext (by simp) (by simp [hcim])
+
 end Translate
 
 end FF
