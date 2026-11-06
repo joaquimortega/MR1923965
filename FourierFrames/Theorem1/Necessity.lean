@@ -953,14 +953,95 @@ theorem exists_F {E A P Q : ℂ → ℂ} (hE : IsHB E) (hE0 : ∀ x : ℝ, E (x 
     (hrel : ∀ z : ℂ, 0 < z.im → P z * E z = Q z * (fstar E z * A z)) :
     ∃ F : ℂ → ℂ, Differentiable ℂ F ∧ (∀ z : ℂ, E z * F z = Q z) ∧
       (∀ z : ℂ, fstar E z * fstar F z = -P z) ∧
-      ∀ z : ℂ, 0 < z.im → fstar F z = -(A z * F z) := sorry
+      ∀ z : ℂ, 0 < z.im → fstar F z = -(A z * F z) := by
+  classical
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hEd : Differentiable ℂ E := hE.1
+  have hEne : ∀ z : ℂ, 0 < z.im → E z ≠ 0 := hE.2.1
+  have hEsne : ∀ z : ℂ, z.im ≤ 0 → fstar E z ≠ 0 := by
+    intro z hz
+    unfold fstar
+    rw [map_ne_zero]
+    have him : 0 ≤ (conj z).im := by simp; linarith
+    rcases him.lt_or_eq with h | h
+    · exact hEne _ h
+    · have : conj z = (((conj z).re : ℝ) : ℂ) :=
+        Complex.ext (by simp) (by simpa using h.symm)
+      rw [this]; exact hE0 _
+  let Φ : ℂ → ℂ := fun z ↦ if 0 < z.im then Q z * A z / E z else P z / fstar E z
+  have hΦeq : ∀ z : ℂ, 0 < z.im → fstar E z ≠ 0 → Q z * A z / E z = P z / fstar E z := by
+    intro z hz hne
+    rw [div_eq_div_iff (hEne z hz) hne]
+    linear_combination -(hrel z hz)
+  have hΦd : Differentiable ℂ Φ := by
+    intro z0
+    by_cases h0 : 0 < z0.im
+    · have hev : Φ =ᶠ[𝓝 z0] fun z ↦ Q z * A z / E z :=
+        Filter.eventuallyEq_of_mem (hU.mem_nhds h0) (fun z hz ↦ if_pos hz)
+      have hd : DifferentiableAt ℂ (fun z ↦ Q z * A z / E z) z0 :=
+        ((hQ z0).mul (hA.differentiableAt (hU.mem_nhds h0))).div (hEd z0) (hEne z0 h0)
+      exact hd.congr_of_eventuallyEq hev
+    · have hz0 : fstar E z0 ≠ 0 := hEsne z0 (not_lt.1 h0)
+      have hV : IsOpen {z : ℂ | fstar E z ≠ 0} :=
+        isOpen_ne_fun (Differentiable.fstar hEd).continuous continuous_const
+      have hev : Φ =ᶠ[𝓝 z0] fun z ↦ P z / fstar E z := by
+        refine Filter.eventuallyEq_of_mem (hV.mem_nhds hz0) (fun z hz ↦ ?_)
+        by_cases h : 0 < z.im
+        · simp only [Φ, if_pos h]
+          exact hΦeq z h hz
+        · simp only [Φ, if_neg h]
+      have hd : DifferentiableAt ℂ (fun z ↦ P z / fstar E z) z0 :=
+        (hP z0).div ((Differentiable.fstar hEd) z0) hz0
+      exact hd.congr_of_eventuallyEq hev
+  have hkey : ∀ z : ℂ, fstar E z * Φ z = P z := by
+    intro z
+    by_cases h : 0 < z.im
+    · have hne := hEne z h
+      simp only [Φ, h, if_true]
+      field_simp
+      linear_combination -(hrel z h)
+    · simp only [Φ, h, if_false]
+      exact mul_div_cancel₀ _ (hEsne z (not_lt.1 h))
+  have hFstar : fstar (fstar (fun z ↦ -Φ z)) = fun z ↦ -Φ z := fstar_fstar _
+  have hEF : ∀ z : ℂ, E z * fstar (fun z ↦ -Φ z) z = Q z := by
+    intro z
+    have h1 := congrArg conj (hkey (conj z))
+    rw [map_mul] at h1
+    have h2 : conj (fstar E (conj z)) = E z := by simp [fstar]
+    have h3 : conj (P (conj z)) = -Q z := congrFun hPQ z
+    rw [h2, h3] at h1
+    show E z * conj (-Φ (conj z)) = Q z
+    rw [map_neg]
+    linear_combination -h1
+  refine ⟨fstar (fun z ↦ -Φ z), Differentiable.fstar hΦd.neg, hEF, ?_, ?_⟩
+  · intro z
+    rw [congrFun hFstar z]
+    linear_combination -(hkey z)
+  · intro z hz
+    rw [congrFun hFstar z]
+    have hFz : fstar (fun z ↦ -Φ z) z = Q z / E z := by
+      rw [eq_div_iff (hEne z hz)]
+      linear_combination hEF z
+    rw [hFz]
+    simp only [Φ, hz, if_true]
+    ring
 
 /-- `F ∈ \overline{HB}`. -/
 theorem isHB_F {E A F G Q : ℂ → ℂ} (hE : IsStrictHB E) (hF : Differentiable ℂ F)
     (hA1 : ∀ z : ℂ, 0 < z.im → ‖A z‖ ≤ 1) (hEF : ∀ z : ℂ, E z * F z = Q z)
     (hFA : ∀ z : ℂ, 0 < z.im → fstar F z = -(A z * F z))
     (hQ : ∀ z : ℂ, 0 < z.im → Q z * (E z - fstar E z * A z) = 2 * G z * E z)
-    (hG : ∀ z : ℂ, 0 < z.im → G z ≠ 0) : IsHB F := sorry
+    (hG : ∀ z : ℂ, 0 < z.im → G z ≠ 0) : IsHB F := by
+  refine ⟨hF, fun z hz h0 ↦ ?_, fun z hz ↦ ?_⟩
+  · have hEz : E z ≠ 0 := hE.1.2.1 z hz
+    have h1 := hQ z hz
+    rw [← hEF z, h0] at h1
+    have h2 : E z * (2 * G z) = 0 := by linear_combination -h1
+    rcases mul_eq_zero.1 h2 with h | h
+    · exact hEz h
+    · exact hG z hz (by linear_combination h / 2)
+  · rw [← norm_fstar, hFA z hz, norm_neg, norm_mul]
+    exact mul_le_of_le_one_left (norm_nonneg _) (hA1 z hz)
 
 end StepFunctionF
 
