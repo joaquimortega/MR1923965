@@ -1,6 +1,7 @@
 import FourierFrames.HB.DeBranges
 import FourierFrames.PW.PlancherelPolya
 import FourierFrames.Theorem1.Sufficiency.Interlace
+import FourierFrames.Theorem1.Sufficiency.Limit
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -52,7 +53,37 @@ theorem phaseLevel_sepBy_two {φ : ℝ → ℝ} (hc : Continuous φ) (hφ : Stri
 /-- At most one `n` has `π/2 + π/(n+2)` exceptional, so eventually none has. -/
 theorem eventually_not_exceptional {E : ℂ → ℂ} (hE : IsStrictHB E) :
     ∀ᶠ n : ℕ in atTop, ¬ Exceptional E (Real.pi / 2 + Real.pi / (n + 2)) := by
-  sorry
+  have hπ := Real.pi_pos
+  have hsub : {n : ℕ | Exceptional E (Real.pi / 2 + Real.pi / (n + 2))}.Subsingleton := by
+    intro n hn m hm
+    obtain ⟨k, hk⟩ := memHE_sAlpha_unique hE.1 hn hm
+    have hn2 : (0 : ℝ) < n + 2 := by positivity
+    have hm2 : (0 : ℝ) < m + 2 := by positivity
+    have h1 : 1 / ((m : ℝ) + 2) - 1 / ((n : ℝ) + 2) = k := by
+      have : Real.pi * (1 / ((m : ℝ) + 2) - 1 / ((n : ℝ) + 2)) = Real.pi * k := by
+        rw [mul_comm Real.pi (k : ℝ), ← hk]; field_simp; ring
+      exact mul_left_cancel₀ hπ.ne' this
+    have hb1 : (0 : ℝ) < 1 / ((m : ℝ) + 2) := by positivity
+    have hb2 : 1 / ((m : ℝ) + 2) ≤ 1 / 2 := by
+      apply one_div_le_one_div_of_le (by norm_num); linarith [(Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
+    have hb3 : (0 : ℝ) < 1 / ((n : ℝ) + 2) := by positivity
+    have hb4 : 1 / ((n : ℝ) + 2) ≤ 1 / 2 := by
+      apply one_div_le_one_div_of_le (by norm_num); linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
+    have hk0 : k = 0 := by
+      have h5 : (k : ℝ) < 1 := by linarith
+      have h6 : (-1 : ℝ) < k := by linarith
+      have h5' : k < 1 := by exact_mod_cast h5
+      have h6' : -1 < k := by exact_mod_cast h6
+      omega
+    rw [hk0] at h1
+    simp only [Int.cast_zero] at h1
+    have : (n : ℝ) + 2 = m + 2 := by
+      have := sub_eq_zero.mp h1
+      field_simp at this; linarith
+    exact_mod_cast (by linarith : (n : ℝ) = m)
+  have hfin := hsub.finite
+  rw [← Nat.cofinite_eq_atTop]
+  exact hfin.eventually_cofinite_notMem
 
 /-- `ψ_G = φ_E + φ_F` is a phase function of `EF`. -/
 theorem isPhaseFunction_mul {E F : ℂ → ℂ} {φ ψ : ℝ → ℝ} (hφ : IsPhaseFunction E φ)
@@ -82,8 +113,8 @@ theorem levelSet_limit (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψc : Continu
     (hεlim : Tendsto ε atTop (𝓝 0))
     (hlev : ∀ᶠ n in atTop, ∀ f : ℂ → ℂ, MemPW f →
       pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ (Real.pi / 2 + ε n)) f) :
-    ∀ f : ℂ → ℂ, MemPW f → pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ (Real.pi / 2)) f := by
-  sorry
+    ∀ f : ℂ → ℂ, MemPW f → pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ (Real.pi / 2)) f :=
+  levelSet_limit_aux hPW hψc hψm hψs hδ hsep hC₀ hε0 hεπ hεlim hlev
 
 /-! ## Removing the real zeros of `F` (p. 795) -/
 
