@@ -1051,7 +1051,52 @@ theorem integrable_logKappa :
 /-- The model computation: for `m ≡ 1`, `U(z) = π |Im z|`. -/
 theorem multU_model {z : ℂ} (hz : 0 < z.im) :
     ∫ t : ℝ, OCS.multUIntegrand (fun _ ↦ 1) z t = Real.pi * z.im := by
-  sorry
+  set f := OCS.multUIntegrand (fun _ ↦ (1 : ℝ)) z with hf
+  have hint : Integrable f :=
+    OCS.integrable_multUIntegrand (a := 1) (b := 1)
+      ⟨measurable_const, one_pos, fun _ ↦ le_rfl, fun _ ↦ le_rfl⟩ z
+  have hlim := intervalIntegral_tendsto_integral hint (tendsto_neg_atTop_atBot (G := ℝ)) tendsto_id
+  have hlim2 : Tendsto (fun R : ℝ ↦ ∫ t in (-R)..R, f t) atTop (𝓝 (Real.pi * z.im)) := by
+    refine (LogEx.tendsto_integral_log_norm_sub (x := z.re) hz).congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with R hR
+    have hφ1 : ∀ t : ℝ, Real.log ‖(t : ℂ) - z‖ = Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2 := by
+      intro t
+      have h := OCS.norm_ofReal_sub_sq z t
+      rw [norm_sub_rev] at h
+      rw [← h, Real.log_pow]; push_cast; ring
+    have hD : ∀ t : ℝ, 0 < (t - z.re) ^ 2 + z.im ^ 2 := fun t ↦ by positivity
+    have i1 : IntervalIntegrable (fun t : ℝ ↦ Real.log ‖(t : ℂ) - z‖) volume (-R) R :=
+      OCS.intervalIntegrable_log_norm_sub z (-R) R
+    have i2 : IntervalIntegrable (fun t : ℝ ↦ Real.log ‖(t : ℂ) - 0‖) volume (-R) R :=
+      OCS.intervalIntegrable_log_norm_sub 0 (-R) R
+    have i3 : IntervalIntegrable (fun t : ℝ ↦ (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * t⁻¹) volume
+        (-R) R := OCS.intervalIntegrable_one_sub_indicator_mul_inv (-R) R
+    have h1 : ∫ t in (-R)..R, f t = ∫ t in (-R)..R, ((Real.log ‖(t : ℂ) - z‖ -
+        Real.log ‖(t : ℂ) - 0‖) + z.re * ((1 - (Icc (-1 : ℝ) 1).indicator 1 t) * t⁻¹)) := by
+      apply intervalIntegral.integral_congr_ae
+      filter_upwards [OCS.multUIntegrand_ae_eq (m := fun _ ↦ (1 : ℝ)) z] with t ht _
+      rw [hf]; refine ht.trans ?_; ring
+    rw [h1, intervalIntegral.integral_add (i1.sub i2) (i3.const_mul _),
+      intervalIntegral.integral_sub i1 i2, intervalIntegral.integral_const_mul,
+      LogEx.integral_oddpart, mul_zero, add_zero]
+    have h2 : ∫ t in (-R)..R, Real.log ‖(t : ℂ) - z‖ =
+        (LogEx.logPrimD z.re z.im R - LogEx.logPrimD z.re z.im (-R)) / 2 := by
+      have : ∫ t in (-R)..R, Real.log ‖(t : ℂ) - z‖ =
+          ∫ t in (-R)..R, (Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2) :=
+        intervalIntegral.integral_congr fun t _ ↦ hφ1 t
+      have hcont : Continuous (fun t : ℝ ↦ Real.log ((t - z.re) ^ 2 + z.im ^ 2)) :=
+        Continuous.log (by fun_prop) (fun t ↦ (hD t).ne')
+      rw [this, intervalIntegral.integral_div,
+        intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t _ ↦ LogEx.hasDerivAt_logPrimD hz t)
+          (hcont.intervalIntegrable _ _)]
+    have h3 : ∫ t in (-R)..R, Real.log ‖(t : ℂ) - 0‖ = 2 * R * Real.log R - 2 * R := by
+      have : ∫ t in (-R)..R, Real.log ‖(t : ℂ) - 0‖ = ∫ t in (-R)..R, Real.log t := by
+        apply intervalIntegral.integral_congr
+        intro t _
+        simp [Real.log_abs]
+      rw [this, integral_log, Real.log_neg_eq_log]; ring
+    rw [h2, h3]
+  exact tendsto_nhds_unique hlim hlim2
 
 theorem integrable_log_mul_sub_one {z : ℂ} (hz : 0 < z.im) :
     Integrable (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * (logDensity t - 1)) := by
