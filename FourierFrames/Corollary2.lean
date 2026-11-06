@@ -5,6 +5,7 @@ import FourierFrames.HB.Comparable
 import FourierFrames.Corollary2.Affine
 import FourierFrames.Corollary2.Kernel
 import FourierFrames.Corollary2.Density
+import FourierFrames.Corollary2.LogInt
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -77,7 +78,11 @@ theorem multU_one (z : ℂ) : OCS.multU (fun _ ↦ (1 : ℝ)) 0 z = Real.pi * |z
 /-- Growth of potentials of bounded densities. -/
 theorem abs_multU_le_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     ∃ K : ℝ, ∀ z : ℂ, |OCS.multU g 0 z| ≤ K * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by
-  sorry
+  refine ⟨45 * M, fun z ↦ ?_⟩
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
+  calc |OCS.multU g 0 z| ≤ M * potBound z := abs_multU_le_potBound hg hM z
+    _ ≤ M * (45 * (1 + ‖z‖) ^ (3 / 2 : ℝ)) := by gcongr; exact potBound_le z
+    _ = 45 * M * (1 + ‖z‖) ^ (3 / 2 : ℝ) := by ring
 
 /-- Potential of a compactly supported bounded density of total mass `0`: bounded up to the linear
 term `(∫_{|t| > 1} h(t)/t dt) Re z` coming from the `Re(z/t)` normalisation. -/
