@@ -1,5 +1,6 @@
 import FourierFrames.Defs
 import FourierFrames.Lemma3Uniform
+import FourierFrames.Theorem2ii.Window
 
 /-!
 # M09 — Theorem 2 (ii)
@@ -181,8 +182,8 @@ theorem exists_window {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x 
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) {η s : ℝ} (hη : 0 < η) (hs : 0 < s)
     (A₀ : ℝ) :
     ∃ a₁ a₂ : ℝ, A₀ ≤ a₁ ∧ 8 ≤ a₁ ∧ 16 * a₁ ≤ a₂ ∧ s ≤ Real.log (a₂ / (4 * a₁)) ∧
-      ∀ l ∈ LambdaPsi ψ, l ∈ Icc (2 * a₁ + 3) (a₂ - 3) → ∃ k : ℤ, |l - (k + 1 / 2)| ≤ η := by
-  sorry
+      ∀ l ∈ LambdaPsi ψ, l ∈ Icc (2 * a₁ + 3) (a₂ - 3) → ∃ k : ℤ, |l - (k + 1 / 2)| ≤ η :=
+  T2ii.exists_window hψ h0 hsmall hη hs A₀
 
 /-! ## Main theorem -/
 
