@@ -204,9 +204,7 @@ theorem tendsto_integral_log_norm_sub {x y : ℝ} (hy : 0 < y) :
   field_simp
   ring
 
-end FF.LogEx
 
-namespace FF.LogEx
 
 theorem integral_oddpart (R : ℝ) :
     ∫ t in (-R)..R, (1 - (Set.Icc (-1 : ℝ) 1).indicator 1 t) * t⁻¹ = 0 := by
@@ -223,5 +221,142 @@ theorem integral_oddpart (R : ℝ) :
   simp_rw [hodd] at h
   rw [intervalIntegral.integral_neg, neg_neg] at h
   linarith
+
+
+/-- The kernel `K_z(t) = (t - x)/((t - x)² + y²) - 1/t` (same expression as `logKernel`). -/
+noncomputable def kern (z : ℂ) (t : ℝ) : ℝ :=
+  (t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2) - 1 / t
+
+theorem hasDerivAt_phi {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    HasDerivAt (fun s : ℝ ↦ Real.log ((s - z.re) ^ 2 + z.im ^ 2) / 2 - Real.log s) (kern z t) t := by
+  have hD0 : 0 < (t - z.re) ^ 2 + z.im ^ 2 := by positivity
+  have h1 : HasDerivAt (fun s : ℝ ↦ s - z.re) 1 t := (hasDerivAt_id' t).sub_const z.re
+  have hD : HasDerivAt (fun s : ℝ ↦ (s - z.re) ^ 2 + z.im ^ 2) (2 * (t - z.re) * 1) t := by
+    simpa using (h1.pow 2).add_const (z.im ^ 2)
+  have h2 := (hD.log hD0.ne').div_const 2
+  have h3 := h2.sub (Real.hasDerivAt_log ht)
+  refine h3.congr_deriv ?_
+  unfold kern
+  field_simp
+
+theorem kern_continuousOn {z : ℂ} (hy : 0 < z.im) : ContinuousOn (kern z) {t : ℝ | t ≠ 0} := by
+  intro t ht
+  unfold kern
+  have : ∀ s : ℝ, (s - z.re) ^ 2 + z.im ^ 2 ≠ 0 := fun s ↦ by positivity
+  exact (((continuous_id.sub continuous_const).div
+    ((continuous_id.sub continuous_const).pow 2 |>.add continuous_const) this).continuousAt.sub
+    ((continuous_const.continuousAt).div continuousAt_id ht)).continuousWithinAt
+
+theorem measurable_kern (z : ℂ) : Measurable (kern z) := by
+  unfold kern
+  fun_prop
+
+theorem norm_sub_ge_im {z : ℂ} (t : ℝ) : z.im ≤ ‖(t : ℂ) - z‖ := by
+  have := Complex.abs_im_le_norm ((t : ℂ) - z)
+  simp at this
+  exact (le_abs_self _).trans this
+
+theorem abs_kern_le_aux {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    |kern z t| ≤ ‖z‖ / (|t| * ‖(t : ℂ) - z‖) := by
+  have htz : (t : ℂ) - z ≠ 0 := by
+    intro h
+    have := congrArg Complex.im h
+    simp at this; linarith
+  have ht' : (t : ℂ) ≠ 0 := by exact_mod_cast ht
+  have e1 : (1 / ((t : ℂ) - z)).re = (t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2) := by
+    rw [one_div, Complex.inv_re, Complex.normSq_apply]; simp; ring_nf
+  have e2 : (1 / (t : ℂ)).re = 1 / t := by simp
+  have e3 : kern z t = (z / ((t : ℂ) * ((t : ℂ) - z))).re := by
+    have : z / ((t : ℂ) * ((t : ℂ) - z)) = 1 / ((t : ℂ) - z) - 1 / (t : ℂ) := by
+      field_simp; ring
+    rw [this, Complex.sub_re, e1, e2]; rfl
+  rw [e3]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  rw [norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+
+theorem abs_kern_le_near {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    |kern z t| ≤ ‖z‖ / (z.im * |t|) := by
+  refine (abs_kern_le_aux hy ht).trans ?_
+  have h1 := norm_sub_ge_im (z := z) t
+  have h2 : 0 < |t| := abs_pos.2 ht
+  have h3 : 0 < ‖(t : ℂ) - z‖ := lt_of_lt_of_le hy h1
+  rw [div_le_div_iff₀ (by positivity) (by positivity)]
+  have : 0 ≤ ‖z‖ := norm_nonneg _
+  nlinarith [mul_le_mul_of_nonneg_left h1 (abs_nonneg t)]
+
+theorem abs_kern_le_far {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : 2 * ‖z‖ ≤ |t|) (h0 : 0 < ‖z‖) :
+    |kern z t| ≤ 2 * ‖z‖ / t ^ 2 := by
+  have ht0 : t ≠ 0 := by
+    intro h; rw [h, abs_zero] at ht; linarith
+  refine (abs_kern_le_aux hy ht0).trans ?_
+  have h1 : |t| ≤ 2 * ‖(t : ℂ) - z‖ := by
+    have := norm_sub_norm_le (t : ℂ) z
+    rw [Complex.norm_real, Real.norm_eq_abs] at this
+    linarith
+  have h2 : 0 < |t| := abs_pos.2 ht0
+  have h3 : 0 < ‖(t : ℂ) - z‖ := by linarith
+  rw [div_le_div_iff₀ (by positivity) (by positivity), ← sq_abs t]
+  nlinarith [mul_le_mul_of_nonneg_left h1 (abs_nonneg t), norm_nonneg z]
+
+/-- `|f · K_z|` is integrable if `|f(t)| ≤ c |t|` and `|f(t)| ≤ c (1 + |t|)^{1/2}`. -/
+theorem integrable_mul_kern {z : ℂ} (hy : 0 < z.im) {f : ℝ → ℝ} (hf : AEStronglyMeasurable f volume)
+    {c : ℝ} (hc : 0 ≤ c) (h1 : ∀ t, |f t| ≤ c * |t|)
+    (h2 : ∀ t, |f t| ≤ c * (1 + |t|) ^ (1 / 2 : ℝ)) :
+    Integrable (fun t ↦ f t * kern z t) := by
+  set a : ℝ := ‖z‖ with ha
+  have ha0 : 0 < a := lt_of_lt_of_le hy (Complex.im_le_norm z)
+  set T : ℝ := max 1 (2 * a) with hT
+  have hT1 : 1 ≤ T := le_max_left _ _
+  set M : ℝ := max (c * a / z.im * (1 + T) ^ (3 / 2 : ℝ)) (8 * a * c) with hM
+  have hint : Integrable (fun t : ℝ ↦ M * (1 + ‖t‖) ^ (-(3 / 2 : ℝ))) :=
+    (integrable_one_add_norm (E := ℝ) (by simp; norm_num)).const_mul M
+  refine Integrable.mono' hint (hf.mul (measurable_kern z).aestronglyMeasurable) ?_
+  refine Filter.Eventually.of_forall fun t ↦ ?_
+  rw [Real.norm_eq_abs, abs_mul, Real.norm_eq_abs]
+  have hp : 0 < (1 + |t|) ^ (-(3 / 2 : ℝ)) := by positivity
+  by_cases ht0 : t = 0
+  · subst ht0
+    have := h1 0
+    simp at this
+    simp [this]
+    positivity
+  rcases le_or_gt |t| T with hnear | hfar
+  · -- near
+    have hk := abs_kern_le_near hy ht0
+    have ht1 : 0 < |t| := abs_pos.2 ht0
+    have : |f t| * |kern z t| ≤ c * a / z.im := by
+      calc |f t| * |kern z t| ≤ (c * |t|) * (a / (z.im * |t|)) :=
+            mul_le_mul (h1 t) hk (abs_nonneg _) (by positivity)
+        _ = c * a / z.im := by field_simp
+    have h3 : (1 + T) ^ (3 / 2 : ℝ) * (1 + |t|) ^ (-(3 / 2 : ℝ)) ≥ 1 := by
+      rw [Real.rpow_neg (by positivity), ← div_eq_mul_inv, ge_iff_le, le_div_iff₀ (by positivity), one_mul]
+      exact Real.rpow_le_rpow (by positivity) (by linarith) (by norm_num)
+    calc |f t| * |kern z t| ≤ c * a / z.im := this
+      _ ≤ (c * a / z.im * (1 + T) ^ (3 / 2 : ℝ)) * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by
+          have : 0 ≤ c * a / z.im := by positivity
+          nlinarith
+      _ ≤ M * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by
+          gcongr; exact le_max_left _ _
+  · -- far
+    have hk := abs_kern_le_far hy (le_trans (le_max_right _ _) hfar.le) ha0
+    have ht1 : 1 ≤ |t| := le_trans hT1 hfar.le
+    have hsq : (1 + |t|) ^ 2 ≤ 4 * t ^ 2 := by
+      rw [← sq_abs t]; nlinarith
+    have hu : 0 < 1 + |t| := by positivity
+    have key : (1 + |t|) ^ (1 / 2 : ℝ) * ((1 + |t|) ^ 2)⁻¹ = (1 + |t|) ^ (-(3 / 2 : ℝ)) := by
+      rw [← Real.rpow_natCast (1 + |t|) 2, ← Real.rpow_neg hu.le, ← Real.rpow_add hu]
+      norm_num
+    have hk2 : 2 * a / t ^ 2 ≤ 8 * a * ((1 + |t|) ^ 2)⁻¹ := by
+      have e : 8 * a * ((1 + |t|) ^ 2)⁻¹ = 8 * a / (1 + |t|) ^ 2 := by rw [div_eq_mul_inv]
+      have : 0 < (1 + |t|) ^ 2 := by positivity
+      have ht2 : 0 < t ^ 2 := by positivity
+      rw [e, div_le_div_iff₀ ht2 this]
+      nlinarith [ha0, hsq]
+    calc |f t| * |kern z t| ≤ (c * (1 + |t|) ^ (1 / 2 : ℝ)) * (2 * a / t ^ 2) :=
+          mul_le_mul (h2 t) hk (abs_nonneg _) (by positivity)
+      _ ≤ (c * (1 + |t|) ^ (1 / 2 : ℝ)) * (8 * a * ((1 + |t|) ^ 2)⁻¹) := by gcongr
+      _ = (8 * a * c) * ((1 + |t|) ^ (1 / 2 : ℝ) * ((1 + |t|) ^ 2)⁻¹) := by ring
+      _ = (8 * a * c) * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by rw [key]
+      _ ≤ M * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by gcongr; exact le_max_right _ _
 
 end FF.LogEx
