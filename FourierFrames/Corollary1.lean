@@ -198,7 +198,71 @@ theorem levelSet_eq_of_cis (hPW : PaleyWienerThm) (hD : TheoremD) {E : ℂ → �
     (hcis : IsCompleteInterpolating Λ)
     (hnorm : ∀ f : ℂ → ℂ, MemPW f → heNormSq E f = sampleSum Λ f)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) : ∃ β : ℝ, Λ = phaseLevel φ β := by
-  sorry
+  have hπ := Real.pi_pos
+  have hstrict := HEEqPW.isStrictHB hEHB hEPW
+  have hE0 := HEEqPW.ne_zero_ofReal hEHB hEPW
+  obtain ⟨g, hgPW, hg0⟩ := exists_memPW_eval_ne_zero
+  -- `Λ` is nonempty
+  have hne : Λ.Nonempty := by
+    by_contra hemp
+    rw [Set.not_nonempty_iff_eq_empty] at hemp
+    obtain ⟨f, -, hfu⟩ := hcis (fun _ ↦ 0) (by simp [hemp])
+    have h1 := hfu g ⟨hgPW, by simp [hemp]⟩
+    have h2 := hfu (fun _ ↦ 0) ⟨memPW_zero, by simp [hemp]⟩
+    have := congrFun (h1.trans h2.symm) 0
+    simp [hg0] at this
+  obtain ⟨a₀, ha₀⟩ := hne
+  -- every point of `Λ` lies on the level set of `φ(a₀)`
+  have hsub : ∀ b ∈ Λ, b ∈ phaseLevel φ (φ a₀) := by
+    intro b hb
+    by_cases hba : b = a₀
+    · exact ⟨0, by simp [hba]⟩
+    · have h0 := kernel_orthogonal hPW hD hEHB hEPW hΛ hcis hnorm ha₀ hb (Ne.symm hba)
+      rw [deBrangesKernel_real hφ (Ne.symm hba)] at h0
+      have h1 : ‖E a₀‖ * ‖E b‖ * Real.sin (φ b - φ a₀) / (Real.pi * (b - a₀)) = 0 := by
+        exact_mod_cast h0
+      have hna : 0 < ‖E a₀‖ := norm_pos_iff.mpr (hE0 a₀)
+      have hnb : 0 < ‖E b‖ := norm_pos_iff.mpr (hE0 b)
+      have hba' : b - a₀ ≠ 0 := sub_ne_zero.mpr hba
+      have h2 : Real.sin (φ b - φ a₀) = 0 := by
+        rw [div_eq_zero_iff] at h1
+        rcases h1 with h1 | h1
+        · rcases mul_eq_zero.mp h1 with h1 | h1
+          · exact absurd h1 (mul_pos hna hnb).ne'
+          · exact h1
+        · exact absurd h1 (mul_ne_zero hπ.ne' hba')
+      obtain ⟨n, hn⟩ := Real.sin_eq_zero_iff.mp h2
+      exact ⟨n, by linarith⟩
+  refine ⟨φ a₀, Set.Subset.antisymm hsub ?_⟩
+  intro x hx
+  by_contra hxΛ
+  obtain ⟨hKHE, hrep⟩ := hD E hstrict hE0 (x : ℂ)
+  set K : ℂ → ℂ := deBrangesKernel E (x : ℂ) with hKdef
+  have hKPW : MemPW K := (hEPW.1 K).mp hKHE
+  have hK0 : ∀ b ∈ Λ, K b = 0 := by
+    intro b hb
+    have hxb : x ≠ b := fun h ↦ hxΛ (h ▸ hb)
+    simp only [hKdef]
+    rw [deBrangesKernel_real hφ hxb]
+    obtain ⟨n, hn⟩ := hsub b hb
+    obtain ⟨m, hm⟩ := hx
+    have : Real.sin (φ b - φ x) = 0 := by
+      rw [Real.sin_eq_zero_iff]
+      exact ⟨n - m, by push_cast; linarith⟩
+    rw [this]; simp
+  have hKz : K = fun _ ↦ 0 := by
+    obtain ⟨f, -, hfu⟩ := hcis (fun _ ↦ 0) (by simp)
+    have h1 := hfu K ⟨hKPW, fun b hb ↦ hK0 b hb⟩
+    have h2 := hfu (fun _ ↦ 0) ⟨memPW_zero, fun b hb ↦ rfl⟩
+    exact h1.trans h2.symm
+  have hgx : MemPW (fun z ↦ g (z - x)) := hgPW.comp_sub_ofReal x
+  have h1 := hrep _ ((hEPW.1 _).mpr hgx)
+  have h2 : ∫ t : ℝ, g ((t : ℂ) - x) * conj (deBrangesKernel E (x : ℂ) t) /
+      ((‖E t‖ ^ 2 : ℝ) : ℂ) = 0 := by
+    have : ∀ t : ℝ, deBrangesKernel E (x : ℂ) t = 0 := fun t ↦ congrFun hKz t
+    simp [this]
+  rw [h2] at h1
+  simp [hg0] at h1
 
 /-- **Remark** (p. 797): a separated complete interpolating sequence is the zero set of `E + E^*`
 for some `E ∈ \overline{HB}` with `H(E) = PW`. -/
