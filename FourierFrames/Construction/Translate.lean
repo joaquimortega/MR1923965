@@ -203,13 +203,18 @@ theorem sin_lower : ∃ c₀ : ℝ, 0 < c₀ ∧ ∀ w : ℂ, ∃ n : ℤ,
           nlinarith [abs_nonneg w.im, Real.pi_pos, abs_nonneg (Real.sinh (Real.pi * w.im))]
         have := sq_le_sq' hh hs3
         nlinarith [sq_abs w.im, sq_abs (Real.sinh (Real.pi * w.im))]
-      nlinarith [Real.pi_gt_three, sq_nonneg w.im]
+      have hpi : 4 ≤ Real.pi ^ 2 := by nlinarith [Real.pi_gt_three]
+      have := mul_le_mul_of_nonneg_right hpi (sq_nonneg w.im)
+      linarith
     have hmin2 : (min 1 ‖w - n‖) ^ 2 ≤ δ ^ 2 + w.im ^ 2 := by
       rw [← hnorm]
       exact pow_le_pow_left₀ hm0 (min_le_right _ _) 2
     have hsn : 2 * min 1 ‖w - n‖ ≤ ‖Complex.sin (Real.pi * w)‖ := by
-      by_contra hc; push Not at hc
-      nlinarith [norm_nonneg (Complex.sin (Real.pi * w))]
+      have h4 : (2 * min 1 ‖w - n‖) ^ 2 ≤ ‖Complex.sin (Real.pi * w)‖ ^ 2 := by
+        calc (2 * min 1 ‖w - n‖) ^ 2 = 4 * (min 1 ‖w - n‖) ^ 2 := by ring
+          _ ≤ 4 * (δ ^ 2 + w.im ^ 2) := by linarith only [hmin2]
+          _ ≤ _ := hlow
+      exact (pow_le_pow_iff_left₀ (by positivity) (norm_nonneg _) two_ne_zero).1 h4
     have hexp : Real.exp (Real.pi * |w.im|) ≤ Real.exp 2 := by
       apply Real.exp_le_exp.2
       nlinarith [Real.pi_lt_four, abs_nonneg w.im]
