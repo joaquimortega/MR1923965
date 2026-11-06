@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Locally uniformly convergent infinite products of entire functions

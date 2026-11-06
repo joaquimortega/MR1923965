@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Zeros of a non-trivial entire function: orders, discreteness and countability of the real zeros

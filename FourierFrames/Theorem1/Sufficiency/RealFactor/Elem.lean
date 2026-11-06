@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # Weierstrass elementary factors of variable genus
