@@ -759,18 +759,73 @@ def genProd (Λ : Set ℝ) (z : ℂ) : ℂ :=
   (if (0 : ℝ) ∈ Λ then z else 1) * OCS.canonicalProd (zeroSet Λ) (fun a ↦ a⁻¹) z
 
 theorem isGenusOneData_zeroSet {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
-    OCS.IsGenusOneData (zeroSet Λ) (fun a ↦ a⁻¹) := sorry
+    OCS.IsGenusOneData (zeroSet Λ) (fun a ↦ a⁻¹) := by
+  refine ⟨?_, ?_, by simpa using summable_zero⟩
+  · rintro ⟨y, hy, hy0⟩
+    exact hy.2 (by simpa using hy0)
+  · have hg : Summable fun x : Λ ↦ (‖(((x : ℝ)) : ℂ)‖⁻¹) ^ 2 := by
+      refine Summable.of_norm_bounded_eventually (hΛ.summable_inv_one_add_sq.mul_left 2) ?_
+      filter_upwards [hΛ.eventually_le_abs 1] with x hx
+      rw [Real.norm_of_nonneg (by positivity), Complex.norm_real, Real.norm_eq_abs]
+      have hx2 : 1 ≤ (x : ℝ) ^ 2 := by nlinarith [abs_nonneg (x : ℝ), sq_abs (x : ℝ)]
+      have hpos : 0 < |(x : ℝ)| := by linarith
+      rw [inv_pow, sq_abs, mul_one_div, inv_eq_one_div, div_le_div_iff₀ (by positivity)
+        (by positivity)]
+      linarith
+    have hh := hg.comp_injective (Set.inclusion_injective (Set.sdiff_subset (s := Λ) (t := {0})))
+    let e : (Λ \ {0} : Set ℝ) ≃ zeroSet Λ :=
+      Equiv.Set.image Complex.ofReal _ Complex.ofReal_injective
+    exact e.summable_iff.1 (by exact hh)
 
 theorem differentiable_genProd {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
-    Differentiable ℂ (genProd Λ) := sorry
+    Differentiable ℂ (genProd Λ) := by
+  have h := OCS.differentiable_canonicalProd (isGenusOneData_zeroSet hΛ)
+  unfold genProd
+  by_cases h0 : (0 : ℝ) ∈ Λ
+  · simp only [h0, ite_true]
+    exact differentiable_id.mul h
+  · simp only [h0, ite_false]
+    exact (differentiable_const _).mul h
 
 theorem genProd_eq_zero_iff {Λ : Set ℝ} (hΛ : IsSeparated Λ) (z : ℂ) :
-    genProd Λ z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := sorry
+    genProd Λ z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  unfold genProd
+  rw [mul_eq_zero, OCS.canonicalProd_eq_zero_iff (isGenusOneData_zeroSet hΛ)]
+  unfold zeroSet
+  by_cases h0 : (0 : ℝ) ∈ Λ
+  · simp only [h0, ite_true]
+    constructor
+    · rintro (rfl | ⟨y, hy, rfl⟩)
+      · exact ⟨0, h0, by simp⟩
+      · exact ⟨y, hy.1, rfl⟩
+    · rintro ⟨x, hx, rfl⟩
+      by_cases hx0 : x = 0
+      · left; simp [hx0]
+      · right; exact ⟨x, ⟨hx, hx0⟩, rfl⟩
+  · simp only [h0, ite_false, one_ne_zero, false_or]
+    constructor
+    · rintro ⟨y, hy, rfl⟩
+      exact ⟨y, hy.1, rfl⟩
+    · rintro ⟨x, hx, rfl⟩
+      exact ⟨x, ⟨hx, fun h ↦ h0 (h ▸ hx)⟩, rfl⟩
 
-theorem fstar_genProd {Λ : Set ℝ} (hΛ : IsSeparated Λ) : fstar (genProd Λ) = genProd Λ := sorry
+theorem fstar_genProd {Λ : Set ℝ} (hΛ : IsSeparated Λ) : fstar (genProd Λ) = genProd Λ := by
+  have h := isGenusOneData_zeroSet hΛ
+  have hZ : ∀ a ∈ zeroSet Λ, conj a ∈ zeroSet Λ := by
+    rintro a ⟨y, hy, rfl⟩
+    exact ⟨y, hy, by simp⟩
+  have hc : ∀ a ∈ zeroSet Λ, (fun a : ℂ ↦ a⁻¹) (conj a) = conj ((fun a : ℂ ↦ a⁻¹) a) :=
+    fun a _ ↦ (map_inv₀ _ a).symm
+  funext z
+  unfold fstar genProd
+  rw [OCS.canonicalProd_conj h hZ hc z]
+  split_ifs <;> simp
 
 theorem genProd_ne_zero_of_im_ne_zero {Λ : Set ℝ} (hΛ : IsSeparated Λ) {z : ℂ} (hz : z.im ≠ 0) :
-    genProd Λ z ≠ 0 := sorry
+    genProd Λ z ≠ 0 := by
+  intro h
+  obtain ⟨x, _, rfl⟩ := (genProd_eq_zero_iff hΛ z).1 h
+  simp at hz
 
 end Product
 
@@ -785,13 +840,25 @@ def herglotzEnt (Λ : Set ℝ) (c : ℝ → ℝ) (G : ℂ → ℂ) (p a : ℝ) (
 theorem differentiable_herglotzEnt {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
     (hG : Differentiable ℂ G) (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) (p a : ℝ) :
-    Differentiable ℂ (herglotzEnt Λ c G p a) := sorry
+    Differentiable ℂ (herglotzEnt Λ c G p a) := by
+  have h1 := differentiable_entSum hΛ hcs hG hG0
+  unfold herglotzEnt
+  exact ((h1.const_mul _).sub (((differentiable_const _).mul differentiable_id).mul hG)).add
+    (hG.const_mul _)
 
 /-- `W^* = -W`. -/
 theorem fstar_herglotzEnt {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
     (hG : Differentiable ℂ G) (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) (hGs : fstar G = G) (p a : ℝ) :
-    fstar (herglotzEnt Λ c G p a) = fun z ↦ -herglotzEnt Λ c G p a z := sorry
+    fstar (herglotzEnt Λ c G p a) = fun z ↦ -herglotzEnt Λ c G p a z := by
+  funext z
+  have h1 : conj (entSum Λ c G (conj z)) = entSum Λ c G z :=
+    congrFun (fstar_entSum hΛ hcs hG hG0 hGs) z
+  have h2 : conj (G (conj z)) = G z := congrFun hGs z
+  unfold fstar herglotzEnt
+  simp only [map_add, map_sub, map_mul, map_div₀, map_neg, Complex.conj_I, Complex.conj_ofReal,
+    Complex.conj_conj, h1, h2]
+  ring
 
 /-- Herglotz normalisation: for a suitable real `a`, on `ℂ₊`,
 `(E + E^*A)/(E - E^*A) = (-i/π) ∑ c_λ hk λ z - i p z + i a`.  (Two holomorphic functions on `ℂ₊`
@@ -807,7 +874,39 @@ theorem exists_herglotz_const {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ
     (hG : Differentiable ℂ G) (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) (hGne : ∀ z : ℂ, 0 < z.im → G z ≠ 0) :
     ∃ a : ℝ, ∀ z : ℂ, 0 < z.im →
       hbQuot E A z = (-I / Real.pi) * herglotzSum Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) z
-        - I * p * z + I * a := sorry
+        - I * p * z + I * a := by
+  set c : ℝ → ℝ := fun x ↦ ‖E (x : ℂ)‖ ^ 2 with hc
+  have hcs' : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2) := by
+    refine hcs.congr fun x ↦ ?_
+    simp only [hc]
+    rw [abs_of_nonneg (by positivity)]
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hW₀ : Differentiable ℂ (fun z ↦ (-I / Real.pi) * entSum Λ c G z - I * p * z * G z) :=
+    ((differentiable_entSum hΛ hcs' hG hG0).const_mul _).sub
+      (((differentiable_const _).mul differentiable_id).mul hG)
+  have hM₀ : DifferentiableOn ℂ (fun z ↦ (-I / Real.pi) * herglotzSum Λ c z - I * p * z)
+      {z : ℂ | 0 < z.im} := by
+    refine (hW₀.differentiableOn.div hG.differentiableOn fun z hz ↦ hGne z hz).congr fun z hz ↦ ?_
+    have hz' : 0 < z.im := hz
+    have := hGne z hz'
+    simp only [Pi.div_apply]
+    rw [entSum_eq hΛ hcs' hG0 hz'.ne']
+    field_simp
+  have hD := (differentiableOn_hbQuot hE hA hA1).sub hM₀
+  obtain ⟨a, ha⟩ := exists_const_of_re_eq_zero hD (fun z hz ↦ by
+    have h1 : ((-I / Real.pi) * herglotzSum Λ c z).re =
+        ∑' x : Λ, ‖E ((x : ℝ) : ℂ)‖ ^ 2 *
+          (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := re_herglotzSum hΛ hcs' hz
+    have h2 := hre z hz
+    simp only [Pi.sub_apply, Complex.sub_re]
+    have h3 : (I * (p : ℂ) * z).re = -(p * z.im) := by
+      simp [Complex.mul_re, Complex.mul_im]
+    rw [h3, h1]
+    linarith)
+  refine ⟨a, fun z hz ↦ ?_⟩
+  have := ha z hz
+  simp only [Pi.sub_apply] at this
+  linear_combination this
 
 /-- On `ℂ₊`: `W = G · (E + E^*A)/(E - E^*A)`. -/
 theorem herglotzEnt_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ → ℂ} {p a : ℝ}
@@ -816,7 +915,13 @@ theorem herglotzEnt_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ → �
     (ha : ∀ z : ℂ, 0 < z.im → hbQuot E A z =
       (-I / Real.pi) * herglotzSum Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) z - I * p * z + I * a)
     {z : ℂ} (hz : 0 < z.im) :
-    herglotzEnt Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) G p a z = G z * hbQuot E A z := sorry
+    herglotzEnt Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) G p a z = G z * hbQuot E A z := by
+  have hcs' : Summable fun x : Λ ↦ |(fun x : ℝ ↦ ‖E (x : ℂ)‖ ^ 2) x| / (1 + (x : ℝ) ^ 2) := by
+    refine hcs.congr fun x ↦ ?_
+    rw [abs_of_nonneg (by positivity)]
+  unfold herglotzEnt
+  rw [entSum_eq (c := fun x : ℝ ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hG0 hz.ne', ha z hz]
+  ring
 
 /-- Algebra on `ℂ₊`: from `W = G H`, `H = (E + E^*A)/(E - E^*A)`, `P = W - G`, `Q = W + G`:
 `P E = Q E^* A` and `Q (E - E^*A) = 2 G E`. -/
@@ -824,7 +929,15 @@ theorem PQ_relations {E A G W : ℂ → ℂ} (hE : IsStrictHB E)
     (hA1 : ∀ z : ℂ, 0 < z.im → ‖A z‖ ≤ 1) (hW : ∀ z : ℂ, 0 < z.im → W z = G z * hbQuot E A z)
     {z : ℂ} (hz : 0 < z.im) :
     (W z - G z) * E z = (W z + G z) * (fstar E z * A z) ∧
-      (W z + G z) * (E z - fstar E z * A z) = 2 * G z * E z := sorry
+      (W z + G z) * (E z - fstar E z * A z) = 2 * G z * E z := by
+  have hD := denom_ne_zero hE hz (hA1 z hz)
+  rw [hW z hz]
+  unfold hbQuot
+  constructor
+  · field_simp
+    ring
+  · field_simp
+    ring
 
 end Entire
 
