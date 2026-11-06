@@ -3,6 +3,7 @@ import OrtegaCerdaSeip.Lemma3.Main
 import FourierFrames.Construction.Gaps
 import FourierFrames.Construction.Comparable
 import FourierFrames.Construction.PolyHB
+import FourierFrames.Construction.Limits
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -595,13 +596,47 @@ theorem isHB_polyA_sub_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
       push_cast; ring
   exact isHB_of_im_div_pos hAd hBd (polyA_conj hw R) (polyB_conj hw hNR) hA0 him hlam
 
+theorem exp_mul_polyA (R : ℕ) (z : ℂ) :
+    Complex.exp (OCS.multBeta m 0 + polyExp m R * z) * polyA m R z =
+      Complex.exp (-(OCS.multKappa m : ℂ) * z + OCS.multBeta m 0) *
+        ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+          OCS.genusOneFactor (OCS.multBary m j : ℂ) ((OCS.multBary m j : ℂ)⁻¹) z := by
+  unfold OCS.genusOneFactor polyA
+  rw [Finset.prod_mul_distrib, ← Complex.exp_sum]
+  have : (OCS.multBeta m 0 : ℂ) + polyExp m R * z =
+      (-(OCS.multKappa m : ℂ) * z + OCS.multBeta m 0) +
+        ∑ j ∈ Finset.Icc (-(R : ℤ)) R, z * (OCS.multBary m j : ℂ)⁻¹ := by
+    unfold polyExp
+    push_cast
+    rw [← Finset.mul_sum]
+    simp only [one_div]
+    ring
+  rw [this, Complex.exp_add]
+  ring
+
 /-- `e^{β + c_R z} A_R(z) → A(z)` locally uniformly (symmetric partial products of the genus-one
 product `OCS.multF`). -/
 theorem tendsto_polyA (hw : OCS.IsMultWeight m a b) :
     TendstoLocallyUniformly
       (fun (R : ℕ) (z : ℂ) ↦ Complex.exp (OCS.multBeta m 0 + polyExp m R * z) * polyA m R z)
       (genA m) atTop := by
-  sorry
+  have h := Limits.tendstoLU_partial_prod hw
+  have hc : Continuous (OCS.canonicalProd (OCS.multGammaC m) (fun w ↦ w⁻¹)) :=
+    (OCS.differentiable_canonicalProd (OCS.isGenusOneData_multGammaC hw)).continuous
+  have h2 := Limits.tendstoLU_const_mul (e := fun z ↦ Complex.exp (-(OCS.multKappa m : ℂ) * z +
+    OCS.multBeta m 0)) (by fun_prop) h hc
+  have e : (fun (R : ℕ) (z : ℂ) ↦
+      Complex.exp (OCS.multBeta m 0 + polyExp m R * z) * polyA m R z) = fun (R : ℕ) (z : ℂ) ↦
+      Complex.exp (-(OCS.multKappa m : ℂ) * z + OCS.multBeta m 0) *
+        ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+          OCS.genusOneFactor (OCS.multBary m j : ℂ) ((OCS.multBary m j : ℂ)⁻¹) z :=
+    funext fun R ↦ funext fun z ↦ exp_mul_polyA R z
+  rw [e]
+  exact h2
+
+theorem differentiable_polyB (m : ℝ → ℝ) (N R : ℕ) : Differentiable ℂ (polyB m N R) := by
+  unfold polyB
+  fun_prop
 
 /-- `e^{β + c_R z} e^{-c_R/2} B_R(z) → B(z)` locally uniformly. -/
 theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
@@ -610,7 +645,46 @@ theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
       (fun (R : ℕ) (z : ℂ) ↦ Complex.exp (OCS.multBeta m 0 + polyExp m R * z) *
         Real.exp (-polyExp m R / 2) * polyB m N R z)
       (compB m N) atTop := by
-  sorry
+  have hA := tendsto_polyA hw
+  have hTr := hA.comp (fun z : ℂ ↦ z - 1 / 2) (by fun_prop)
+  set P : ℂ → ℂ := fun z ↦ ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) with hP
+  have hPc : Continuous P := by rw [hP]; fun_prop
+  have hlim : Continuous ((genA m) ∘ (fun z : ℂ ↦ z - 1 / 2)) :=
+    (differentiable_genA hw).continuous.comp (by fun_prop)
+  have h2 := Limits.tendstoLU_const_mul hPc hTr hlim
+  refine Limits.tendstoLU_of_mul_prod (s := Finset.Ioo (-(N : ℤ)) N)
+    (a := fun j ↦ ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) (fun R ↦ ?_) (differentiable_compB hw N) ?_
+  · have := differentiable_polyB m N R
+    fun_prop
+  · have hlimeq : (fun z : ℂ ↦ compB m N z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N,
+        (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))) =
+        fun z ↦ P z * ((genA m) ∘ (fun z : ℂ ↦ z - 1 / 2)) z := by
+      funext z
+      rw [compB_mul_Q hw hN z]
+      simp only [Function.comp, hP]
+      ring
+    rw [hlimeq]
+    refine Limits.tendstoLU_congr_eventually h2 ?_
+    filter_upwards [eventually_ge_atTop N] with R hR
+    funext z
+    have hq := polyB_mul_Q hw hR z
+    have hexp : Complex.exp (OCS.multBeta m 0 + polyExp m R * (z - 1 / 2)) =
+        Complex.exp (OCS.multBeta m 0 + polyExp m R * z) *
+          ((Real.exp (-polyExp m R / 2) : ℝ) : ℂ) := by
+      rw [Complex.ofReal_exp, ← Complex.exp_add]
+      congr 1
+      push_cast
+      ring
+    simp only [Function.comp, hP]
+    calc P z * (Complex.exp (OCS.multBeta m 0 + polyExp m R * (z - 1 / 2)) *
+          polyA m R (z - 1 / 2))
+        = Complex.exp (OCS.multBeta m 0 + polyExp m R * (z - 1 / 2)) *
+          (polyA m R (z - 1 / 2) * P z) := by ring
+      _ = _ := by
+        rw [hexp]
+        simp only [hP] at hq ⊢
+        rw [← hq]
+        ring
 
 /-- `|B| ≃ e^{U(z - 1/2)} min(1, dist(z, {β_j}))` on `Im z ≥ 0`. -/
 theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
@@ -623,13 +697,56 @@ theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
           min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) := by
   sorry
 
+/-- A real point where `A ≠ 0` and `B = 0`. -/
+theorem exists_real_genA_ne_zero_compB_eq_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+    ∃ x : ℝ, genA m (x : ℂ) ≠ 0 ∧ compB m N (x : ℂ) = 0 := by
+  refine ⟨compBeta m N 0, ?_, (compB_eq_zero_iff hw hN _).2 ⟨0, rfl⟩⟩
+  rw [Ne, genA_eq_zero_iff hw]
+  rintro ⟨j, hj⟩
+  have hj' : compBeta m N 0 = OCS.multBary m j := by exact_mod_cast hj
+  obtain ⟨h1, h2⟩ := compBeta_interlace hw hN 0
+  have hmono := (OCS.strictMono_multBary hw).monotone
+  rcases le_or_gt j 0 with h | h
+  · have := hmono h; linarith
+  · have := hmono (show (1 : ℤ) ≤ j by omega); rw [zero_add] at h2; linarith
+
+/-- `A - i λ B ∈ \overline{HB}` for every `λ > 0`. -/
+theorem isHB_genA_sub_lam_compB (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {lam : ℝ}
+    (hlam : 0 < lam) :
+    IsHB (fun z ↦ genA m z - Complex.I * lam * compB m N z) := by
+  have hA := tendsto_polyA hw
+  have hB := tendsto_polyB hw hN
+  have hBc : Continuous (compB m N) := (differentiable_compB hw N).continuous
+  have h1 := Limits.tendstoLU_const_mul (e := fun _ : ℂ ↦ Complex.I * lam) (by fun_prop) hB hBc
+  have h2 := hA.sub h1
+  have hseq : ∀ k : ℕ, IsHB (fun z ↦ Complex.exp (OCS.multBeta m 0 + polyExp m (k + N) * z) *
+      (polyA m (k + N) z - Complex.I * ((lam * Real.exp (-polyExp m (k + N) / 2) : ℝ) : ℂ) *
+        polyB m N (k + N) z)) := fun k ↦
+    (isHB_cexp_real_linear (OCS.multBeta m 0 : ℂ) (polyExp m (k + N))).mul
+      (isHB_polyA_sub_polyB hw hN (Nat.le_add_left N k) (mul_pos hlam (Real.exp_pos _)))
+  have h3 := Limits.tendstoLU_comp_filter h2 (g := fun k : ℕ ↦ k + N)
+    (tendsto_atTop_mono (fun k ↦ Nat.le_add_right k N) tendsto_id)
+  obtain ⟨x, hx1, hx2⟩ := exists_real_genA_ne_zero_compB_eq_zero hw hN
+  refine IsHB.of_tendstoLocallyUniformly hseq (Limits.tendstoLU_congr_eventually h3
+    (Eventually.of_forall fun k ↦ ?_)) ⟨x, ?_⟩
+  · funext z
+    simp only [Pi.sub_apply]
+    push_cast
+    ring
+  · simpa [hx2] using hx1
+
 /-- **`E = A - iB ∈ \overline{HB}`** (replaces Meĭman's theorem), via the real polynomials
 `A_R = ∏_{|j| ≤ R} (1 - z/γ_j)` and the locally uniform limit
 `e^{β + (S_R - κ) z} (A_R - i e^{-(S_R - κ)/2} B_R) → A - iB`. -/
 theorem isHB_compE (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
     IsHB (compE m N) := by
-  sorry
+  have := isHB_genA_sub_lam_compB hw hN one_pos
+  have e : compE m N = fun z ↦ genA m z - Complex.I * ((1 : ℝ) : ℂ) * compB m N z := by
+    funext z; simp [compE]
+  rw [e]; exact this
 
 /-- `E_κ = e^{-κ z}(A - i e^{κ/2} B) ∈ \overline{HB}`: `A - i λ B ∈ \overline{HB}` for every `λ > 0`
 (the proof of `isHB_compE` gives this, via `isHB_polyA_sub_polyB` for any positive multiplier),
@@ -637,24 +754,51 @@ and `e^{-κ z}` is a real entire factor (`isHB_cexp_real_linear`, `IsHB.mul`). -
 theorem isHB_compEκ (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (κ : ℝ) :
     IsHB (compEκ m κ N) := by
-  sorry
+  have h := (isHB_cexp_real_linear 0 (-κ)).mul
+    (isHB_genA_sub_lam_compB hw hN (Real.exp_pos (κ / 2)))
+  convert h using 2 with z
+  unfold compEκ
+  congr 2
+  push_cast
+  ring
 
 /-- `E_κ + E_κ^* = 2 e^{-κ z} A`. -/
 theorem compEκ_add_fstar (hw : OCS.IsMultWeight m a b) (κ : ℝ) (N : ℕ) (z : ℂ) :
     compEκ m κ N z + fstar (compEκ m κ N) z = 2 * Complex.exp (-((κ : ℂ) * z)) * genA m z := by
-  sorry
+  have hz : conj (Complex.exp (-((κ : ℂ) * conj z))) = Complex.exp (-((κ : ℂ) * z)) := by
+    rw [← Complex.exp_conj]; simp [map_neg, map_mul, Complex.conj_ofReal]
+  simp only [fstar, compEκ, map_mul, map_sub, Complex.conj_I, hz,
+    Complex.conj_ofReal]
+  rw [genA_conj hw, compB_conj hw, Complex.conj_conj, Complex.conj_conj]
+  ring
 
 /-- `|E(z̄)|² - ...`: `E^* = A + i B`, hence `E + E^* = 2A`. -/
 theorem fstar_compE (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     fstar (compE m N) z = genA m z + Complex.I * compB m N z := by
-  sorry
+  simp only [fstar, compE, map_sub, map_mul, Complex.conj_I]
+  rw [genA_conj hw, compB_conj hw]
+  simp only [Complex.conj_conj, neg_mul, sub_neg_eq_add]
 
 /-- `|A|² + |B|² ≤ |E|² ≤ 2 (|A|² + |B|²)` on `Im z ≥ 0` (from `|E^*| ≤ |E|`). -/
 theorem norm_compE_sq_bounds {N : ℕ} (hE : IsHB (compE m N)) (hw : OCS.IsMultWeight m a b)
     {z : ℂ} (hz : 0 ≤ z.im) :
     ‖genA m z‖ ^ 2 + ‖compB m N z‖ ^ 2 ≤ ‖compE m N z‖ ^ 2 ∧
       ‖compE m N z‖ ^ 2 ≤ 2 * (‖genA m z‖ ^ 2 + ‖compB m N z‖ ^ 2) := by
-  sorry
+  have hstar : ‖fstar (compE m N) z‖ ≤ ‖compE m N z‖ := by
+    rcases hz.eq_or_lt with h | h
+    · rw [norm_fstar]
+      have : conj z = z := Complex.conj_eq_iff_im.2 h.symm
+      rw [this]
+    · exact hE.norm_fstar_le h
+  have hpar := parallelogram_law_with_norm ℂ (genA m z) (Complex.I * compB m N z)
+  have h1 : ‖Complex.I * compB m N z‖ = ‖compB m N z‖ := by simp
+  have e1 : genA m z + Complex.I * compB m N z = fstar (compE m N) z := (fstar_compE hw N z).symm
+  have e2 : genA m z - Complex.I * compB m N z = compE m N z := rfl
+  rw [e1, e2, h1] at hpar
+  have hs := sq_nonneg ‖fstar (compE m N) z‖
+  have hs2 : ‖fstar (compE m N) z‖ ^ 2 ≤ ‖compE m N z‖ ^ 2 :=
+    pow_le_pow_left₀ (norm_nonneg _) hstar 2
+  constructor <;> nlinarith
 
 /-- **The phase construction of p. 801** (without phase asymptotics; replaces the first four
 clauses of the README's `exists_hb_of_density`).  `hshift` is the condition
