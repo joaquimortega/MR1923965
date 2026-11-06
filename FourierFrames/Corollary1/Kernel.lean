@@ -135,7 +135,7 @@ theorem kernel_orthogonal_aux (hPW : PaleyWienerThm) (hD : TheoremD) {E : ℂ �
     exact le_antisymm (ENNReal.le_of_add_le_add_left ENNReal.ofReal_ne_top h1) bot_le
   have hz := ENNReal.tsum_eq_zero.mp hR0 (⟨b, hb⟩ : Λ)
   have hne : (⟨b, hb⟩ : Λ) ≠ (⟨a, ha⟩ : Λ) := fun h ↦ hab (by simpa using (congrArg Subtype.val h).symm)
-  rw [if_neg hne] at hz
+  simp only [hne, ↓reduceIte] at hz
   have : K (b : ℂ) = 0 := by
     have := pow_eq_zero_iff (two_ne_zero) |>.mp hz
     exact enorm_eq_zero.mp this

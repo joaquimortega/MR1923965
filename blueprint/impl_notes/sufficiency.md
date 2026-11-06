@@ -22,3 +22,12 @@
   (advisor suggestion), instead of `p_x ≥ m_x + |x|` (which needs a separation hypothesis).
 - Commit trailers: IMPLEMENTING.md asks for `Claude Opus 5.5`; the session reminder says `Claude Sonnet 5.5`. The
   early commits on this branch lack trailers.
+
+## `exists_realFactor` (final design)
+`S(z) = z^{m(0)} ∏_{a ∈ Z_r} E_{p_a}(z/a)^{m(a)}` with `Z_r` the nonzero real zeros (indexed as a subtype of `ℝ`),
+`m(a) = analyticOrderNatAt F a`, `p_a = m(a) + rank(a) + 1`, `rank : Z_r → ℕ` an injection. Bound
+`‖E_p(w)^m - 1‖ ≤ 4 m ‖w‖^{p+1}` (`‖w‖ ≤ 1/2`, `2m‖w‖^{p+1} ≤ 1`) from the log tail series
+(`Complex.hasSum_taylorSeries_neg_log'`), no Rudin coefficient argument. Convergence through the abstract `LUProd`
+(summable bound on discs, as in the vendored `canonicalProd`). `G = F/S` is defined by `limUnder (𝓝[≠] a)` at zeros of `S`
+and shown entire via a local factorisation `S = (z-a)^{m} S₁`, `F = (z-a)^{m} F₁` (Mathlib's `analyticOrderAt_ne_top`).
+No sorries remain in `FourierFrames/Theorem1/Sufficiency*`, `Corollary1*`, `Landau.lean`.

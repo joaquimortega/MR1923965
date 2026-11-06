@@ -4,6 +4,7 @@ import FourierFrames.Theorem1.Sufficiency.Interlace
 import FourierFrames.Theorem1.Sufficiency.Limit
 import FourierFrames.Theorem1.Sufficiency.LevelSet
 import FourierFrames.Theorem1.Sufficiency.Phase
+import FourierFrames.Theorem1.Sufficiency.RealFactor.Main
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -131,8 +132,8 @@ exactly the real zeros of `F` (with multiplicity), and `G ∈ \overline{HB}` wit
 Needs Weierstrass products of non-constant genus (not in Mathlib); see the blueprint. -/
 theorem exists_realFactor {F : ℂ → ℂ} (hF : IsHB F) (hF0 : ∃ z, F z ≠ 0) :
     ∃ S G : ℂ → ℂ, Differentiable ℂ S ∧ IsHB G ∧ (∀ z, F z = S z * G z) ∧
-      (∀ z, fstar S z = S z) ∧ (∀ z, S z = 0 → z.im = 0) ∧ (∀ x : ℝ, G x ≠ 0) := by
-  sorry
+      (∀ z, fstar S z = S z) ∧ (∀ z, S z = 0 → z.im = 0) ∧ (∀ x : ℝ, G x ≠ 0) :=
+  exists_realFactor_aux hF hF0
 
 /-- The reduction of p. 795: `F` can be replaced by `G` without real zeros, at the price of
 shrinking `Λ`. -/
