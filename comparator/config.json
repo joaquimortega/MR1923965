@@ -15,6 +15,7 @@
     "FF.landau_sharp",
     "FF.corollary2",
     "FF.theorem2_i",
+    "FF.theorem2_i_of_densityBound",
     "FF.theorem2_ii"
   ],
   "permitted_axioms": [

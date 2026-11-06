@@ -320,8 +320,9 @@ theorem logExample_isSampling (hPW : PaleyWienerThm) (hE : TheoremE) :
 sequence for which the logarithmic term cannot be removed. -/
 theorem landau_sharp (hPW : PaleyWienerThm) (hE : TheoremE) :
     IsSeparated logExample ∧ IsSampling logExample ∧
-      ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
-        ENNReal.ofReal (b - a - B) ≤ ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
+      ∀ A : ℝ, A < 1 → ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
+        ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤
+          ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
   sorry
 
 end FF

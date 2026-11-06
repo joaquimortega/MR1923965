@@ -48,9 +48,10 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
 | Claim (Landau's inequality = Theorem B) | `landau_inequality` | PW, C, E, F, A, JN |
 | Example p. 798 is CIS | `logExample_isCompleteInterpolating` | PW, E |
 | Example p. 798, counting | `logExample_count` | — |
-| Landau's inequality is sharp | `landau_sharp` | PW, E |
+| Landau's inequality is sharp (no coefficient `A < 1`) | `landau_sharp` | PW, E |
 | Corollary 2 | `corollary2` | PW, E, DS |
-| Theorem 2 (i) | `theorem2_i` | PW, E, DS |
+| Theorem 2 (i), with ψ' eventually nonincreasing (N-22) | `theorem2_i` | PW, E, DS |
+| Theorem 2 (i), with the cell density bound the proof uses | `theorem2_i_of_densityBound` | PW, E, DS |
 | Theorem 2 (ii) | `theorem2_ii` | PW |
 
 Not formalized: the Proposition on p. 798 (norm equivalence via [Or98]; quoted without proof and

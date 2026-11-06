@@ -307,6 +307,12 @@ theorem RegData.exists_approx (h : RegData ψ t C M) (hK : DensBound ψ t K) :
 
 /-! ## §6. Theorem 2 (i) -/
 
+/-- The data of `IsLogRegularPartitionWithDensity`: a partition with `RegData` and `DensBound`. -/
+theorem RegData.of_isLogRegularPartitionWithDensity {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+    (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0) (hreg : IsLogRegularPartitionWithDensity ψ) :
+    ∃ (t : ℕ → ℝ) (C M K : ℝ), RegData ψ t C M ∧ DensBound ψ t K := by
+  sorry
+
 /-- The provable version of Theorem 2 (i), with the extra local regularity `DensBound`
 (`RegData` is produced from the hypotheses of `theorem2_i` by `RegData.of_isLogRegularPartition`). -/
 theorem theorem2_i_of_regular (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
@@ -319,6 +325,15 @@ theorem theorem2_i_of_regular (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPe
 and `ψ' ≥ ψ'(t_{n-1})` on it), and `ψ'` is bounded on the finitely many cells before `X`. -/
 theorem RegData.densBound_of_antitoneOn (h : RegData ψ t C M)
     (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) : ∃ K : ℝ, DensBound ψ t K := by
+  sorry
+
+/-- **Theorem 2 (i)**, in the form its proof gives (p. 802): if `ψ = 0` on `(-∞, 0]` and `ψ` induces
+a logarithmically regular partition on whose cells `ψ' ≲ 1/d_n`, then `Λ(ψ)` is sampling for `PW`.
+The hypothesis `ψ'(x) = 1/O(x)` of the printed statement is not needed (NOTEBOOK N-22, N-26). -/
+theorem theorem2_i_of_densityBound (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
+    {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
+    (hreg : IsLogRegularPartitionWithDensity ψ) :
+    IsSampling (LambdaPsi ψ) := by
   sorry
 
 /-- **Theorem 2 (i)** (p. 801), identical to `comparator/statements.lean`.  The paper's argument

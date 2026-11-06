@@ -307,4 +307,17 @@ def IsLogRegularPartition (ψ : ℝ → ℝ) : Prop :=
           ENNReal.ofReal ((t n - t (n - 1)) ^ 2 / ((x - t n) ^ 2 + (t n - t (n - 1)) ^ 2)) ≤
         ENNReal.ofReal M
 
+/-- `ψ` induces a logarithmically regular partition `(t_n)` (as in `IsLogRegularPartition`) on
+whose cells, moreover, `ψ' ≤ K/d_n` on `[t_{n-1}, t_n]`.  This is the local regularity ("the
+smoothness of `ψ`", p. 802) that the proof of Theorem 2 (i) uses (NOTEBOOK N-22). -/
+def IsLogRegularPartitionWithDensity (ψ : ℝ → ℝ) : Prop :=
+  ∃ t : ℕ → ℝ, t 0 = 0 ∧ StrictMono t ∧ (∀ n : ℕ, 1 ≤ n → ψ (t n) = n) ∧
+    (∃ C : ℝ, ∀ n : ℕ, 1 ≤ n →
+      t (n + 1) - t n ≤ C * (t n - t (n - 1)) ∧ t n - t (n - 1) ≤ C * (t (n + 1) - t n)) ∧
+    (∃ M : ℝ, ∀ x : ℝ, 0 < x →
+      ∑' n : {n : ℕ | 1 ≤ n ∧ x / 2 < t n ∧ t n < 2 * x},
+          ENNReal.ofReal ((t n - t (n - 1)) ^ 2 / ((x - t n) ^ 2 + (t n - t (n - 1)) ^ 2)) ≤
+        ENNReal.ofReal M) ∧
+    ∃ K : ℝ, ∀ n : ℕ, 1 ≤ n → ∀ s ∈ Icc (t (n - 1)) (t n), deriv ψ s ≤ K / (t n - t (n - 1))
+
 end FF

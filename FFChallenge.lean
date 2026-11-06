@@ -309,6 +309,19 @@ def IsLogRegularPartition (ψ : ℝ → ℝ) : Prop :=
           ENNReal.ofReal ((t n - t (n - 1)) ^ 2 / ((x - t n) ^ 2 + (t n - t (n - 1)) ^ 2)) ≤
         ENNReal.ofReal M
 
+/-- `ψ` induces a logarithmically regular partition `(t_n)` (as in `IsLogRegularPartition`) on
+whose cells, moreover, `ψ' ≤ K/d_n` on `[t_{n-1}, t_n]`.  This is the local regularity ("the
+smoothness of `ψ`", p. 802) that the proof of Theorem 2 (i) uses (NOTEBOOK N-22). -/
+def IsLogRegularPartitionWithDensity (ψ : ℝ → ℝ) : Prop :=
+  ∃ t : ℕ → ℝ, t 0 = 0 ∧ StrictMono t ∧ (∀ n : ℕ, 1 ≤ n → ψ (t n) = n) ∧
+    (∃ C : ℝ, ∀ n : ℕ, 1 ≤ n →
+      t (n + 1) - t n ≤ C * (t n - t (n - 1)) ∧ t n - t (n - 1) ≤ C * (t (n + 1) - t n)) ∧
+    (∃ M : ℝ, ∀ x : ℝ, 0 < x →
+      ∑' n : {n : ℕ | 1 ≤ n ∧ x / 2 < t n ∧ t n < 2 * x},
+          ENNReal.ofReal ((t n - t (n - 1)) ^ 2 / ((x - t n) ^ 2 + (t n - t (n - 1)) ^ 2)) ≤
+        ENNReal.ofReal M) ∧
+    ∃ K : ℝ, ∀ n : ℕ, 1 ≤ n → ∀ s ∈ Icc (t (n - 1)) (t n), deriv ψ s ≤ K / (t n - t (n - 1))
+
 
 /-! ## Main results -/
 
@@ -387,11 +400,12 @@ theorem logExample_count : ∃ C : ℝ, ∀ R : ℝ, 1 ≤ R →
   sorry
 
 /-- **Landau's inequality is best possible** (p. 798): `{k + log⁺|k|}` is a separated sampling
-sequence for which the logarithmic term cannot be removed. -/
+sequence for which no coefficient `A < 1` of the logarithmic term works. -/
 theorem landau_sharp (hPW : PaleyWienerThm) (hE : TheoremE) :
     IsSeparated logExample ∧ IsSampling logExample ∧
-      ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
-        ENNReal.ofReal (b - a - B) ≤ ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
+      ∀ A : ℝ, A < 1 → ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
+        ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤
+          ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
   sorry
 
 /-- **Corollary 2** (p. 800): `Λ(ψ)` is sampling for `PW` if there is `f ∈ \overline{HB}` with
@@ -412,6 +426,15 @@ theorem theorem2_i (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hlow : ∃ c : ℝ, 0 < c ∧ ∃ X : ℝ, ∀ x : ℝ, X ≤ x → c / x ≤ deriv ψ x)
     (hreg : IsLogRegularPartition ψ) (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
+    IsSampling (LambdaPsi ψ) := by
+  sorry
+
+/-- **Theorem 2 (i)**, in the form its proof gives (p. 802): if `ψ = 0` on `(-∞, 0]` and `ψ` induces
+a logarithmically regular partition on whose cells `ψ' ≲ 1/d_n`, then `Λ(ψ)` is sampling for `PW`.
+The hypothesis `ψ'(x) = 1/O(x)` of the printed statement is not needed (NOTEBOOK N-22, N-26). -/
+theorem theorem2_i_of_densityBound (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
+    {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
+    (hreg : IsLogRegularPartitionWithDensity ψ) :
     IsSampling (LambdaPsi ψ) := by
   sorry
 
