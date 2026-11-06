@@ -6,6 +6,7 @@ import FourierFrames.Corollary2.Affine
 import FourierFrames.Corollary2.Kernel
 import FourierFrames.Corollary2.Density
 import FourierFrames.Corollary2.LogInt
+import FourierFrames.Corollary2.Reflection
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -145,7 +146,7 @@ theorem exists_entire_reflection {H : ℂ → ℂ} (hc : ContinuousOn H {z : ℂ
     (hd : DifferentiableOn ℂ H {z : ℂ | 0 < z.im}) {c : ℝ} (him : ∀ x : ℝ, (H x).im = c) :
     ∃ Ĥ : ℂ → ℂ, Differentiable ℂ Ĥ ∧ (∀ z : ℂ, 0 ≤ z.im → Ĥ z = H z) ∧
       ∀ z : ℂ, Ĥ (conj z) = conj (Ĥ z) + 2 * Complex.I * c := by
-  sorry
+  exact exists_entire_reflection_aux hc hd him
 
 /-- An entire function whose real part grows like `|z|^{3/2}` is affine
 (Borel–Carathéodory, then Cauchy's estimate for `H''`). -/
