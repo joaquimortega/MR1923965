@@ -1,4 +1,5 @@
 import FourierFrames.Construction
+import FourierFrames.LogExample.Basic
 import FourierFrames.HB.Comparable
 import FourierFrames.Theorem1.Sufficiency
 
@@ -34,51 +35,274 @@ def logGap (k : ℤ) : ℝ := logLam (k + 1) - logLam k
 
 theorem logExample_eq_range : logExample = Set.range logLam := rfl
 
+theorem logLam_of_one_le {k : ℤ} (hk : 1 ≤ k) : logLam k = k + Real.log k := by
+  have : (1:ℝ) ≤ k := by exact_mod_cast hk
+  have h0 : |(k:ℝ)| = k := abs_of_nonneg (by linarith)
+  rw [logLam, h0, Real.posLog_eq_log (by rw [abs_of_nonneg (by linarith)]; exact this)]
+
+theorem logLam_of_le_zero {k : ℤ} (hk : k ≤ 0) : logLam k = k + Real.log (-k) := by
+  rcases hk.lt_or_eq with h | h
+  · have : (k:ℝ) ≤ -1 := by exact_mod_cast (show k ≤ -1 by omega)
+    have h0 : |(k:ℝ)| = -k := abs_of_nonpos (by linarith)
+    rw [logLam, h0, Real.posLog_eq_log (by rw [abs_neg, abs_of_nonpos (by linarith)]; linarith)]
+  · subst h; simp [logLam]
+
+theorem logLam_zero : logLam 0 = 0 := by simp [logLam]
+theorem logLam_one : logLam 1 = 1 := by simp [logLam]
+
+theorem logGap_of_one_le {k : ℤ} (hk : 1 ≤ k) :
+    logGap k = 1 + (Real.log ((k:ℝ) + 1) - Real.log k) := by
+  rw [logGap, logLam_of_one_le (by omega), logLam_of_one_le hk]; push_cast; ring
+
+theorem logGap_of_le_neg_two {k : ℤ} (hk : k ≤ -2) :
+    logGap k = 1 - (Real.log (-(k:ℝ)) - Real.log (-(k:ℝ) - 1)) := by
+  rw [logGap, logLam_of_le_zero (by omega), logLam_of_le_zero (by omega)]; push_cast
+  have : -((k:ℝ) + 1) = -(k:ℝ) - 1 := by ring
+  rw [this]; ring
+
+theorem logGap_zero : logGap 0 = 1 := by simp [logGap, logLam_one, logLam_zero]
+theorem logGap_neg_one : logGap (-1) = 1 := by
+  simp [logGap, logLam]
+
 /-- `1 - log 2 ≤ g_k ≤ 1 + log 2`; in particular `3/10 ≤ g_k ≤ 17/10`. -/
 theorem logGap_bounds (k : ℤ) : 3 / 10 ≤ logGap k ∧ logGap k ≤ 17 / 10 := by
-  sorry
+  have h2 := LogEx.log_two_lt
+  rcases le_or_gt 1 k with h | h
+  · have hk : (1:ℝ) ≤ k := by exact_mod_cast h
+    obtain ⟨a, b, c⟩ := LogEx.log_sub_log_bounds (x := (k:ℝ)+1) (y := k) (by linarith) (by linarith)
+      (by linarith)
+    rw [logGap_of_one_le h]; constructor <;> linarith
+  rcases (show k = 0 ∨ k = -1 ∨ k ≤ -2 by omega) with rfl | rfl | h
+  · rw [logGap_zero]; norm_num
+  · rw [logGap_neg_one]; norm_num
+  · have hk : (k:ℝ) ≤ -2 := by exact_mod_cast h
+    obtain ⟨a, b, c⟩ := LogEx.log_sub_log_bounds (x := -(k:ℝ)) (y := -(k:ℝ) - 1) (by linarith)
+      (by linarith) (by linarith)
+    rw [logGap_of_le_neg_two h]; constructor <;> linarith
 
 /-- `|g_k - 1| ≤ 3/(1 + |k|)`. -/
 theorem abs_logGap_sub_one_le (k : ℤ) : |logGap k - 1| ≤ 3 / (1 + |(k : ℝ)|) := by
-  sorry
+  rcases le_or_gt 1 k with h | h
+  · have hk : (1:ℝ) ≤ k := by exact_mod_cast h
+    obtain ⟨a, b, c⟩ := LogEx.log_sub_log_bounds (x := (k:ℝ)+1) (y := k) (by linarith) (by linarith)
+      (by linarith)
+    rw [logGap_of_one_le h, abs_of_nonneg (by linarith), abs_of_nonneg (by linarith)]
+    have : ((k:ℝ) + 1 - k) / k = 1 / k := by ring_nf
+    rw [this] at c
+    refine le_trans (by linarith) ?_
+    rw [div_le_div_iff₀ (by linarith) (by linarith)]; linarith
+  rcases (show k = 0 ∨ k = -1 ∨ k ≤ -2 by omega) with rfl | rfl | h
+  · rw [logGap_zero]; norm_num
+  · rw [logGap_neg_one]; norm_num
+  · have hk : (k:ℝ) ≤ -2 := by exact_mod_cast h
+    obtain ⟨a, b, c⟩ := LogEx.log_sub_log_bounds (x := -(k:ℝ)) (y := -(k:ℝ) - 1) (by linarith)
+      (by linarith) (by linarith)
+    rw [logGap_of_le_neg_two h, abs_of_nonpos (by linarith), abs_of_nonpos (by linarith)]
+    have : (-(k:ℝ) - (-(k:ℝ) - 1)) / (-(k:ℝ) - 1) = 1 / (-(k:ℝ) - 1) := by ring_nf
+    rw [this] at c
+    refine le_trans (by linarith) ?_
+    rw [div_le_div_iff₀ (by linarith) (by linarith)]; linarith
 
 theorem logLam_sub_ge {a b : ℤ} (hab : a < b) : 3 / 10 * ((b : ℝ) - a) ≤ logLam b - logLam a := by
-  sorry
+  obtain ⟨n, rfl⟩ : ∃ n : ℕ, b = a + n := ⟨(b - a).toNat, by omega⟩
+  clear hab
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have h1 : logLam (a + n + 1) - logLam (a + n) = logGap (a + n) := rfl
+    have := (logGap_bounds (a + n)).1
+    have e : a + ((n + 1 : ℕ) : ℤ) = a + n + 1 := by push_cast; ring
+    rw [e]; push_cast at ih ⊢; linarith
 
 theorem strictMono_logLam : StrictMono logLam := by
-  sorry
+  intro a b hab
+  have := logLam_sub_ge hab
+  have : (0:ℝ) < (b:ℝ) - a := by
+    have : (a:ℝ) < b := by exact_mod_cast hab
+    linarith
+  linarith
 
 theorem logLam_pos_iff (k : ℤ) : 0 < logLam k ↔ 1 ≤ k := by
-  sorry
+  constructor
+  · intro h
+    by_contra hk
+    have : logLam k ≤ logLam 0 := strictMono_logLam.monotone (by omega)
+    rw [logLam_zero] at this; linarith
+  · intro h
+    have : logLam 1 ≤ logLam k := strictMono_logLam.monotone h
+    rw [logLam_one] at this; linarith
 
 theorem logLam_nonpos_iff (k : ℤ) : logLam k ≤ 0 ↔ k ≤ 0 := by
-  sorry
+  rw [← not_lt, logLam_pos_iff]; omega
 
 theorem logExample_isSeparated : IsSeparated logExample := by
-  sorry
+  refine ⟨3 / 10, by norm_num, ?_⟩
+  rintro _ ⟨i, rfl⟩ _ ⟨j, rfl⟩ hij
+  have hne : i ≠ j := fun h => hij (by rw [h])
+  show 3 / 10 ≤ |logLam i - logLam j|
+  rcases lt_or_gt_of_ne hne with h | h
+  · have := logLam_sub_ge h
+    have : (1:ℝ) ≤ (j:ℝ) - i := by exact_mod_cast (show (1:ℤ) ≤ j - i by omega)
+    rw [abs_sub_comm, abs_of_nonneg (by linarith)]; linarith
+  · have := logLam_sub_ge h
+    have : (1:ℝ) ≤ (i:ℝ) - j := by exact_mod_cast (show (1:ℤ) ≤ i - j by omega)
+    rw [abs_of_nonneg (by linarith)]; linarith
 
 theorem ncard_logExample_inter_Ioc_pos (R : ℝ) :
     (logExample ∩ Ioc 0 R).ncard = {k : ℤ | 1 ≤ k ∧ (k : ℝ) + Real.log k ≤ R}.ncard := by
-  sorry
+  have : logExample ∩ Ioc 0 R = logLam '' {k : ℤ | 1 ≤ k ∧ (k : ℝ) + Real.log k ≤ R} := by
+    ext x
+    constructor
+    · rintro ⟨⟨k, rfl⟩, h0, hR⟩
+      have hk := (logLam_pos_iff k).1 h0
+      exact ⟨k, ⟨hk, by rw [← logLam_of_one_le hk]; exact hR⟩, rfl⟩
+    · rintro ⟨k, ⟨hk, hR⟩, rfl⟩
+      rw [← logLam_of_one_le hk] at hR
+      exact ⟨⟨k, rfl⟩, (logLam_pos_iff k).2 hk, hR⟩
+  rw [this, Set.ncard_image_of_injective _ strictMono_logLam.injective]
 
 theorem ncard_logExample_inter_Ioc_neg (R : ℝ) :
     (logExample ∩ Ioc (-R) 0).ncard = {k : ℤ | k ≤ 0 ∧ -R < logLam k}.ncard := by
-  sorry
+  have : logExample ∩ Ioc (-R) 0 = logLam '' {k : ℤ | k ≤ 0 ∧ -R < logLam k} := by
+    ext x
+    constructor
+    · rintro ⟨⟨k, rfl⟩, h0, hR⟩
+      exact ⟨k, ⟨(logLam_nonpos_iff k).1 hR, h0⟩, rfl⟩
+    · rintro ⟨k, ⟨hk, hR⟩, rfl⟩
+      exact ⟨⟨k, rfl⟩, hR, (logLam_nonpos_iff k).2 hk⟩
+  rw [this, Set.ncard_image_of_injective _ strictMono_logLam.injective]
+
+theorem ncard_Icc_int (a b : ℤ) : (Set.Icc a b).ncard = (b + 1 - a).toNat := by
+  rw [← Finset.coe_Icc, Set.ncard_coe_finset, Int.card_Icc]
+
+theorem ncard_sandwich {S : Set ℤ} {a b c d : ℤ} (h1 : Set.Icc a b ⊆ S) (h2 : S ⊆ Set.Icc c d) :
+    ((b + 1 - a).toNat ≤ S.ncard) ∧ S.ncard ≤ (d + 1 - c).toNat := by
+  rw [← ncard_Icc_int, ← ncard_Icc_int]
+  exact ⟨Set.ncard_le_ncard h1 ((Set.finite_Icc _ _).subset h2),
+    Set.ncard_le_ncard h2 (Set.finite_Icc _ _)⟩
 
 theorem card_pos_bounds {R : ℝ} (hR : 1 ≤ R) :
     |(({k : ℤ | 1 ≤ k ∧ (k : ℝ) + Real.log k ≤ R}.ncard : ℕ) : ℝ) - (R - Real.log R)| ≤ 2 := by
-  sorry
+  set S : Set ℤ := {k : ℤ | 1 ≤ k ∧ (k : ℝ) + Real.log k ≤ R} with hS
+  have hlogR : 0 ≤ Real.log R := Real.log_nonneg hR
+  have hlogR2 : Real.log R ≤ R / 2 := LogEx.log_le_half (by linarith)
+  have hlogR1 : Real.log R ≤ R - 1 := Real.log_le_sub_one_of_pos (by linarith)
+  have h2 := LogEx.log_two_lt
+  have h2' : 0 < Real.log 2 := Real.log_pos (by norm_num)
+  set n1 : ℤ := ⌊R - Real.log R⌋ with hn1
+  set n2 : ℤ := ⌊R - Real.log R + Real.log 2⌋ with hn2
+  have hn1a : (n1 : ℝ) ≤ R - Real.log R := Int.floor_le _
+  have hn1b : R - Real.log R - 1 < n1 := Int.sub_one_lt_floor _
+  have hn2a : (n2 : ℝ) ≤ R - Real.log R + Real.log 2 := Int.floor_le _
+  have hn1pos : 1 ≤ n1 := by
+    rw [hn1]; apply Int.le_floor.2; push_cast; linarith
+  have hn2pos : 1 ≤ n2 := by
+    rw [hn2]; apply Int.le_floor.2; push_cast; linarith
+  have hsub : Set.Icc 1 n1 ⊆ S := by
+    intro k hk
+    have hk1 : (1:ℝ) ≤ k := by exact_mod_cast hk.1
+    have hk2 : (k:ℝ) ≤ n1 := by exact_mod_cast hk.2
+    refine ⟨hk.1, ?_⟩
+    have : Real.log k ≤ Real.log R := Real.log_le_log (by linarith) (by linarith)
+    linarith
+  have hsup : S ⊆ Set.Icc 1 n2 := by
+    rintro k ⟨hk, hkR⟩
+    refine ⟨hk, ?_⟩
+    have hk1 : (1:ℝ) ≤ k := by exact_mod_cast hk
+    rw [hn2]; apply Int.le_floor.2
+    rcases le_or_gt (k:ℝ) (R / 2) with h | h
+    · linarith
+    · have : Real.log (R / 2) ≤ Real.log k := Real.log_le_log (by linarith) h.le
+      rw [Real.log_div (by linarith) (by norm_num)] at this
+      linarith
+  obtain ⟨hl, hu⟩ := ncard_sandwich hsub hsup
+  have e1 : (((n1 + 1 - 1).toNat : ℕ) : ℝ) = n1 := by
+    have : ((n1 + 1 - 1).toNat : ℤ) = n1 := by omega
+    exact_mod_cast this
+  have e2 : (((n2 + 1 - 1).toNat : ℕ) : ℝ) = n2 := by
+    have : ((n2 + 1 - 1).toNat : ℤ) = n2 := by omega
+    exact_mod_cast this
+  have hl' : (n1 : ℝ) ≤ S.ncard := by rw [← e1]; exact_mod_cast hl
+  have hu' : (S.ncard : ℝ) ≤ n2 := by rw [← e2]; exact_mod_cast hu
+  rw [abs_le]; constructor <;> linarith
 
 theorem card_neg_bounds {R : ℝ} (hR : 1 ≤ R) :
     |(({k : ℤ | k ≤ 0 ∧ -R < logLam k}.ncard : ℕ) : ℝ) - (R + Real.log R)| ≤ 2 := by
-  sorry
+  set T : Set ℤ := {k : ℤ | k ≤ 0 ∧ -R < logLam k} with hT
+  have hlogR : 0 ≤ Real.log R := Real.log_nonneg hR
+  have h2 := LogEx.log_two_lt
+  have h2' : 0 < Real.log 2 := Real.log_pos (by norm_num)
+  set n1 : ℤ := ⌊R + Real.log R - 1⌋ with hn1
+  set n2 : ℤ := ⌊R + Real.log R + Real.log 2⌋ with hn2
+  have hn1a : (n1 : ℝ) ≤ R + Real.log R - 1 := Int.floor_le _
+  have hn1b : R + Real.log R - 1 - 1 < n1 := Int.sub_one_lt_floor _
+  have hn2a : (n2 : ℝ) ≤ R + Real.log R + Real.log 2 := Int.floor_le _
+  have hn1pos : 0 ≤ n1 := by
+    rw [hn1]; apply Int.le_floor.2; push_cast; linarith
+  have hn2pos : 0 ≤ n2 := by
+    rw [hn2]; apply Int.le_floor.2; push_cast; linarith
+  have hsub : Set.Icc (-n1) 0 ⊆ T := by
+    intro k hk
+    refine ⟨hk.2, ?_⟩
+    rw [logLam_of_le_zero hk.2]
+    rcases (show k = 0 ∨ k ≤ -1 by have := hk.2; omega) with rfl | hk1
+    · simp; linarith
+    · set j : ℝ := -(k:ℝ) with hj
+      have hj1 : (1:ℝ) ≤ j := by
+        rw [hj]; have : (k:ℝ) ≤ -1 := by exact_mod_cast hk1
+        linarith
+      have hj2 : j ≤ n1 := by
+        rw [hj]; have : (-n1 : ℤ) ≤ k := hk.1
+        have : ((-n1 : ℤ) : ℝ) ≤ k := by exact_mod_cast this
+        push_cast at this; linarith
+      have hlj : 0 ≤ Real.log j := Real.log_nonneg hj1
+      have hk' : (k:ℝ) = -j := by rw [hj]; ring
+      rw [hk']
+      rcases le_or_gt (R / 2) j with h | h
+      · have : Real.log (R / 2) ≤ Real.log j := Real.log_le_log (by linarith) h
+        rw [Real.log_div (by linarith) (by norm_num)] at this
+        linarith
+      · linarith
+  have hsup : T ⊆ Set.Icc (-n2) 0 := by
+    rintro k ⟨hk, hkR⟩
+    refine ⟨?_, hk⟩
+    rw [logLam_of_le_zero hk] at hkR
+    rcases (show k = 0 ∨ k ≤ -1 by omega) with rfl | hk1
+    · simpa using hn2pos
+    · set j : ℝ := -(k:ℝ) with hj
+      have hj1 : (1:ℝ) ≤ j := by
+        rw [hj]; have : (k:ℝ) ≤ -1 := by exact_mod_cast hk1
+        linarith
+      have hk' : (k:ℝ) = -j := by rw [hj]; ring
+      rw [hk'] at hkR
+      have hjl := LogEx.log_le_half (show 0 < j by linarith)
+      have hj2 : j < 2 * R := by linarith
+      have : Real.log j ≤ Real.log (2 * R) := Real.log_le_log (by linarith) hj2.le
+      rw [Real.log_mul (by norm_num) (by linarith)] at this
+      have : -k ≤ n2 := by
+        rw [hn2]; apply Int.le_floor.2; push_cast
+        have : (-(k:ℝ)) = j := hj.symm
+        linarith
+      omega
+  obtain ⟨hl, hu⟩ := ncard_sandwich hsub hsup
+  have e1 : (((0 + 1 - -n1).toNat : ℕ) : ℝ) = n1 + 1 := by
+    have : ((0 + 1 - -n1).toNat : ℤ) = n1 + 1 := by omega
+    exact_mod_cast this
+  have e2 : (((0 + 1 - -n2).toNat : ℕ) : ℝ) = n2 + 1 := by
+    have : ((0 + 1 - -n2).toNat : ℤ) = n2 + 1 := by omega
+    exact_mod_cast this
+  have hl' : (n1 : ℝ) + 1 ≤ T.ncard := by rw [← e1]; exact_mod_cast hl
+  have hu' : (T.ncard : ℝ) ≤ n2 + 1 := by rw [← e2]; exact_mod_cast hu
+  rw [abs_le]; constructor <;> linarith
 
 /-- **The example of p. 798**: `n_Λ(R) = R - log R + O(1)` and `-n_Λ(-R) = R + log R + O(1)` for
 `Λ = {k + log⁺|k|}`. -/
 theorem logExample_count : ∃ C : ℝ, ∀ R : ℝ, 1 ≤ R →
     |((logExample ∩ Ioc 0 R).ncard : ℝ) - (R - Real.log R)| ≤ C ∧
       |((logExample ∩ Ioc (-R) 0).ncard : ℝ) - (R + Real.log R)| ≤ C := by
-  sorry
+  refine ⟨2, fun R hR => ⟨?_, ?_⟩⟩
+  · rw [ncard_logExample_inter_Ioc_pos]; exact card_pos_bounds hR
+  · rw [ncard_logExample_inter_Ioc_neg]; exact card_neg_bounds hR
 
 /-! ## §2  Translation invariance -/
 
