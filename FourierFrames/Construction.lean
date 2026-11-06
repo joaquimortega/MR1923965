@@ -1343,6 +1343,99 @@ variable {m : ℝ → ℝ} {a b : ℝ}
 theorem multU_conj' (m : ℝ → ℝ) (z : ℂ) : OCS.multU m 0 (conj z) = OCS.multU m 0 z :=
   OCS.multU_conj m 0 z
 
+theorem genA_real (hw : OCS.IsMultWeight m a b) (x : ℝ) : (genA m (x : ℂ)).im = 0 := by
+  have := genA_conj hw (x : ℂ)
+  rw [Complex.conj_ofReal] at this
+  exact Complex.conj_eq_iff_im.1 this.symm
+
+theorem compB_real (hw : OCS.IsMultWeight m a b) (N : ℕ) (x : ℝ) :
+    (compB m N (x : ℂ)).im = 0 := by
+  have := compB_conj hw N (x : ℂ)
+  rw [Complex.conj_ofReal] at this
+  exact Complex.conj_eq_iff_im.1 this.symm
+
+theorem no_common_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {z : ℂ}
+    (hA : genA m z = 0) (hB : compB m N z = 0) : False := by
+  obtain ⟨j, hj⟩ := (genA_eq_zero_iff hw z).1 hA
+  obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw hN z).1 hB
+  have hjk : (OCS.multBary m j : ℂ) = (compBeta m N k : ℂ) := hj.symm.trans hk
+  have : OCS.multBary m j = compBeta m N k := by exact_mod_cast hjk
+  obtain ⟨h1, h2⟩ := compBeta_interlace hw hN k
+  have hmono := (OCS.strictMono_multBary hw).monotone
+  rcases le_or_gt j k with h | h
+  · have := hmono h; linarith
+  · have := hmono (show k + 1 ≤ j by omega); linarith
+
+/-- `E_κ` has no real zeros. -/
+theorem compEκ_ne_zero_real (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (κ : ℝ)
+    (x : ℝ) : compEκ m κ N (x : ℂ) ≠ 0 := by
+  intro h
+  unfold compEκ at h
+  rcases mul_eq_zero.1 h with h | h
+  · exact Complex.exp_ne_zero _ h
+  have hA := genA_real hw x
+  have hB := compB_real hw N x
+  have hre := congrArg Complex.re h
+  have him := congrArg Complex.im h
+  simp only [Complex.sub_re, Complex.mul_re, Complex.I_re, Complex.I_im, Complex.ofReal_re,
+    Complex.ofReal_im, zero_mul, one_mul, mul_zero, sub_zero, zero_sub, sub_neg_eq_add,
+    Complex.zero_re, Complex.sub_im, Complex.mul_im, zero_add, Complex.zero_im] at hre him
+  have hl := Real.exp_pos (κ / 2)
+  have hA0 : genA m (x : ℂ) = 0 := Complex.ext (by rw [Complex.zero_re]; nlinarith)
+    (by rw [Complex.zero_im]; exact hA)
+  have hB0 : compB m N (x : ℂ) = 0 := Complex.ext (by
+      rw [Complex.zero_re]
+      nlinarith)
+    (by rw [Complex.zero_im]; exact hB)
+  exact no_common_zero hw hN hA0 hB0
+
+/-- `Re E_κ(x) = e^{-κ x} A(x)` on the real line. -/
+theorem compEκ_re (hw : OCS.IsMultWeight m a b) (N : ℕ) (κ : ℝ) (x : ℝ) :
+    (compEκ m κ N (x : ℂ)).re = Real.exp (-(κ * x)) * (genA m (x : ℂ)).re := by
+  have hA := genA_real hw x
+  have hB := compB_real hw N x
+  unfold compEκ
+  rw [Complex.mul_re]
+  have : (Complex.exp (-((κ : ℂ) * x))).im = 0 := by
+    rw [show -((κ : ℂ) * x) = ((-(κ * x) : ℝ) : ℂ) by push_cast; ring, ← Complex.ofReal_exp]
+    exact Complex.ofReal_im _
+  have hre : (Complex.exp (-((κ : ℂ) * x))).re = Real.exp (-(κ * x)) := by
+    rw [show -((κ : ℂ) * x) = ((-(κ * x) : ℝ) : ℂ) by push_cast; ring, ← Complex.ofReal_exp]
+    exact Complex.ofReal_re _
+  rw [this, hre, zero_mul, sub_zero, Complex.sub_re]
+  have h0 : (Complex.I * ((Real.exp (κ / 2) : ℝ) : ℂ) * compB m N (x : ℂ)).re = 0 := by
+    simp only [Complex.mul_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im, hB]
+    ring
+  rw [h0, sub_zero]
+
+theorem isStrictHB_compEκ (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (κ : ℝ) :
+    IsStrictHB (compEκ m κ N) := by
+  have hE := isHB_compEκ hw hN κ
+  rcases hE.isStrictHB_or_fstar_eq with h | ⟨c, hc, hcE⟩
+  · exact h
+  exfalso
+  obtain ⟨x, hx1, hx2⟩ := exists_real_genA_ne_zero_compB_eq_zero hw hN
+  -- at a zero of `A`: `E + E^* = 2 e^{-κ z} A = 0`
+  have hsum := compEκ_add_fstar hw κ N
+  have hγ : genA m (OCS.multBary m 0 : ℂ) = 0 := (genA_eq_zero_iff hw _).2 ⟨0, rfl⟩
+  have h1 := hsum (OCS.multBary m 0 : ℂ)
+  rw [hγ, mul_zero, hcE] at h1
+  have hc1 : (1 + c) * compEκ m κ N (OCS.multBary m 0 : ℂ) = 0 := by linear_combination h1
+  have hne := compEκ_ne_zero_real hw hN κ (OCS.multBary m 0)
+  have : c = -1 := by
+    have := (mul_eq_zero.1 hc1).resolve_right hne
+    linear_combination this
+  -- then `E + E^* = 0` identically, so `A ≡ 0`
+  have h2 := hsum (x : ℂ)
+  rw [hcE, this] at h2
+  have : 2 * Complex.exp (-((κ : ℂ) * x)) * genA m (x : ℂ) = 0 := by rw [← h2]; ring
+  rcases mul_eq_zero.1 this with h | h
+  · exact (mul_ne_zero two_ne_zero (Complex.exp_ne_zero _)) h
+  · exact hx1 h
+
 /-- Under `hU` (with the linear drift `κ`), `|A(z)| ≃ e^{π |Im z| + κ Re z} min(1, dist(z, Γ))` on
 all of `ℂ`.  (`A e^{-κ z}` is the normalised generating function.) -/
 theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b) {κ : ℝ}
@@ -1409,6 +1502,29 @@ theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
   sorry
 
+/-- A strictly monotone surjection `ℤ → ℤ` is a translation. -/
+theorem strictMono_int_surj_eq_add {ν : ℤ → ℤ} (hν : StrictMono ν) (hs : Function.Surjective ν) :
+    ∀ j, ν j = j + ν 0 := by
+  have hstep : ∀ j, ν (j + 1) = ν j + 1 := by
+    intro j
+    have h1 : ν j < ν (j + 1) := hν (lt_add_one j)
+    by_contra hne
+    have h2 : ν j + 1 < ν (j + 1) := by omega
+    obtain ⟨i, hi⟩ := hs (ν j + 1)
+    have h3 : ν j < ν i := by omega
+    have h4 : ν i < ν (j + 1) := by omega
+    have := hν.lt_iff_lt.1 h3
+    have := hν.lt_iff_lt.1 h4
+    omega
+  intro j
+  induction j using Int.induction_on with
+  | zero => simp
+  | succ i ih => rw [hstep, ih]; ring
+  | pred i ih =>
+    have := hstep (-(i : ℤ) - 1)
+    rw [show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring] at this
+    omega
+
 /-- The phase function of `E` is strictly increasing and takes the values `π/2 + π ℤ` exactly on
 `Γ`: `φ(γ_j) = π/2 + π (j + k₀)` for a fixed integer `k₀`. -/
 theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
@@ -1417,7 +1533,105 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     StrictMono φ ∧ ∃ k₀ : ℤ, ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀) := by
-  sorry
+  have hE := isHB_compEκ hw hN κ
+  have h0 := compEκ_ne_zero_real hw hN κ
+  have hstrict := isStrictHB_compEκ hw hN κ
+  have hmono : StrictMono φ := IsPhaseFunction.strictMono_of_isStrictHB hstrict h0 hφ
+  refine ⟨hmono, ?_⟩
+  -- the levels of the phase
+  have hlev : ∀ x : ℝ, genA m (x : ℂ) = 0 ↔ ∃ n : ℤ, φ x = Real.pi / 2 + Real.pi * n := by
+    intro x
+    have hre := IsPhaseFunction.re_eq hφ x
+    rw [compEκ_re hw] at hre
+    have hn : 0 < ‖compEκ m κ N (x : ℂ)‖ := norm_pos_iff.2 (h0 x)
+    have hexp := Real.exp_pos (-(κ * x))
+    have hAre : genA m (x : ℂ) = 0 ↔ (genA m (x : ℂ)).re = 0 := by
+      constructor
+      · intro h; rw [h]; simp
+      · intro h; exact Complex.ext (by rw [h, Complex.zero_re]) (by rw [genA_real hw x, Complex.zero_im])
+    rw [hAre]
+    have : (genA m (x : ℂ)).re = 0 ↔ Real.cos (φ x) = 0 := by
+      constructor
+      · intro h
+        rw [h, mul_zero] at hre
+        exact (mul_eq_zero.1 hre.symm).resolve_left hn.ne'
+      · intro h
+        rw [h, mul_zero] at hre
+        exact (mul_eq_zero.1 hre).resolve_left hexp.ne'
+    rw [this, Real.cos_eq_zero_iff]
+    constructor
+    · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
+    · rintro ⟨n, hn⟩; exact ⟨n, by rw [hn]; ring⟩
+  -- `φ` is onto
+  have hrig := phase_rigidity hw hlim hU hN hφ (Real.pi / 2) (by positivity)
+  obtain ⟨X, hX⟩ := hrig
+  have hstep : ∀ s : ℝ, X ≤ |s| → Real.pi / 2 ≤ φ (s + 1) - φ s := fun s hs ↦ by
+    have := hX s hs 1 (by simp)
+    rw [abs_le] at this
+    linarith [this.1]
+  set X₀ := max X 0 with hX₀
+  have hX₀0 : 0 ≤ X₀ := le_max_right _ _
+  have hX₀X : X ≤ X₀ := le_max_left _ _
+  have hupn : ∀ n : ℕ, φ X₀ + n * (Real.pi / 2) ≤ φ (X₀ + n) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ k ih =>
+      have h := hstep (X₀ + k) (by
+        rw [abs_of_nonneg (by positivity)]; linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])
+      push_cast
+      rw [show X₀ + ((k : ℝ) + 1) = X₀ + k + 1 by ring]
+      linarith
+  have hdownn : ∀ n : ℕ, φ (-X₀ - n) ≤ φ (-X₀) - n * (Real.pi / 2) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ k ih =>
+      have h := hstep (-X₀ - ((k : ℝ) + 1)) (by
+        rw [abs_of_nonpos (by linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])]
+        linarith [(Nat.cast_nonneg k : (0 : ℝ) ≤ k)])
+      push_cast
+      rw [show -X₀ - ((k : ℝ) + 1) + 1 = -X₀ - k by ring] at h
+      linarith
+  have hsurj : Function.Surjective φ := by
+    refine hφ.1.surjective ?_ ?_
+    · refine tendsto_atTop_atTop_of_monotone hmono.monotone fun B ↦ ?_
+      obtain ⟨n, hn⟩ := exists_nat_gt ((B - φ X₀) / (Real.pi / 2))
+      refine ⟨X₀ + n, ?_⟩
+      have := hupn n
+      rw [div_lt_iff₀ (by positivity)] at hn
+      linarith
+    · refine tendsto_atBot_atBot_of_monotone hmono.monotone fun B ↦ ?_
+      obtain ⟨n, hn⟩ := exists_nat_gt ((φ (-X₀) - B) / (Real.pi / 2))
+      refine ⟨-X₀ - n, ?_⟩
+      have := hdownn n
+      rw [div_lt_iff₀ (by positivity)] at hn
+      linarith
+  -- the integers attached to the points of `Γ`
+  have hex : ∀ j : ℤ, ∃ n : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * n := fun j ↦
+    (hlev _).1 ((genA_eq_zero_iff hw _).2 ⟨j, rfl⟩)
+  choose ν hν using hex
+  have hνmono : StrictMono ν := by
+    intro j k hjk
+    have h1 := hmono (OCS.strictMono_multBary hw hjk)
+    rw [hν j, hν k] at h1
+    have : (ν j : ℝ) < ν k := by nlinarith [Real.pi_pos]
+    exact_mod_cast this
+  have hνsurj : Function.Surjective ν := by
+    intro n
+    obtain ⟨x, hx⟩ := hsurj (Real.pi / 2 + Real.pi * n)
+    obtain ⟨j, hj⟩ := (genA_eq_zero_iff hw (x : ℂ)).1 ((hlev x).2 ⟨n, hx⟩)
+    have hxj : x = OCS.multBary m j := by exact_mod_cast hj
+    refine ⟨j, ?_⟩
+    have := hν j
+    rw [← hxj, hx] at this
+    have : (n : ℝ) = ν j := by nlinarith [Real.pi_pos]
+    exact_mod_cast this.symm
+  have hlin := strictMono_int_surj_eq_add hνmono hνsurj
+  refine ⟨ν 0, fun j ↦ ?_⟩
+  rw [hν j, hlin j]
+  push_cast
+  ring
 
 /-- **The phase construction with phase asymptotics** (generalised at assembly to a linear drift
 `κ`).  If `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` (`κ ≠ 0` is the generic case, e.g. for the
