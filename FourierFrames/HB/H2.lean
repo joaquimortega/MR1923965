@@ -236,6 +236,98 @@ the real point `x₀`, and `f` is entire with `f(x₀) ≠ 0`, then `f/E` is *no
 theorem not_isH2Upper_div_of_zero {E f : ℂ → ℂ} (hE : Differentiable ℂ E)
     (hf : Differentiable ℂ f) (hE0 : ∀ z : ℂ, 0 < z.im → E z ≠ 0) {x₀ : ℝ} (hx₀ : E x₀ = 0)
     (hfx : f x₀ ≠ 0) : ¬ IsH2Upper (fun z ↦ f z / E z) := by
-  sorry
+  intro ⟨hd, C, hC⟩
+  set a : ℝ := ‖f x₀‖ with ha
+  have hapos : 0 < a := norm_pos_iff.mpr hfx
+  -- Lipschitz bound for `E` near `x₀`
+  obtain ⟨L, hLpos, hL⟩ : ∃ L : ℝ, 0 < L ∧ ∀ w : ℂ, ‖w - x₀‖ ≤ 1 → ‖E w‖ ≤ L * ‖w - x₀‖ := by
+    obtain ⟨L₀, hL₀⟩ := (isCompact_closedBall (x₀ : ℂ) 1).exists_bound_of_continuousOn
+      (hE.contDiff.continuous_deriv le_rfl).continuousOn
+    refine ⟨max L₀ 1, lt_of_lt_of_le one_pos (le_max_right _ _), fun w hw ↦ ?_⟩
+    have hw' : w ∈ closedBall (x₀ : ℂ) 1 := by rwa [mem_closedBall, dist_eq_norm]
+    have := Convex.norm_image_sub_le_of_norm_deriv_le (f := E) (s := closedBall (x₀ : ℂ) 1) (C := max L₀ 1)
+      (fun x _ ↦ hE.differentiableAt) (fun x hx ↦ (hL₀ x hx).trans (le_max_left L₀ 1))
+      (convex_closedBall _ _) (mem_closedBall_self zero_le_one) hw'
+    rwa [hx₀, sub_zero] at this
+  -- lower bound for `f` near `x₀`
+  obtain ⟨δ₂, hδ₂, hf⟩ : ∃ δ₂ : ℝ, 0 < δ₂ ∧ ∀ w : ℂ, ‖w - x₀‖ < δ₂ → a / 2 ≤ ‖f w‖ := by
+    obtain ⟨δ, hδ, h⟩ := Metric.continuousAt_iff.mp hf.continuous.continuousAt (a / 2) (by linarith)
+    refine ⟨δ, hδ, fun w hw ↦ ?_⟩
+    have := h (by rwa [dist_eq_norm])
+    rw [dist_eq_norm] at this
+    have h2 := norm_sub_norm_le (f x₀) (f w)
+    rw [norm_sub_rev] at h2
+    linarith
+  set δ : ℝ := min 1 δ₂ / 4 with hδ
+  have hδpos : 0 < δ := by positivity
+  set y : ℝ := min δ (a ^ 2 / (8 * L ^ 2 * (C + 1))) with hy
+  have hypos : 0 < y := lt_min hδpos (by positivity)
+  have hyδ : y ≤ δ := min_le_left _ _
+  have hCy := hC y hypos
+  -- pointwise lower bound on the segment
+  have hpt : ∀ x ∈ Icc ((x₀ : ℝ) - y) (x₀ + y),
+      ENNReal.ofReal ((a / (4 * L * y)) ^ 2) ≤ ‖f ((x : ℂ) + (y : ℂ) * I) / E ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 := by
+    intro x hx
+    set w : ℂ := (x : ℂ) + (y : ℂ) * I with hw
+    have hwx : ‖w - x₀‖ ≤ 2 * y := by
+      have h1 : w - x₀ = ((x - x₀ : ℝ) : ℂ) + (y : ℂ) * I := by rw [hw]; push_cast; ring
+      rw [h1]
+      refine (Complex.norm_le_abs_re_add_abs_im _).trans ?_
+      simp only [Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, mul_zero,
+        Complex.ofReal_im, Complex.I_im, mul_one, sub_self, add_zero, Complex.add_im, Complex.mul_im,
+        zero_add]
+      have : |x - x₀| ≤ y := abs_le.mpr ⟨by linarith [hx.1], by linarith [hx.2]⟩
+      rw [abs_of_pos hypos]
+      linarith
+    have hmin1 : min 1 δ₂ ≤ 1 := min_le_left _ _
+    have hmin2 : min 1 δ₂ ≤ δ₂ := min_le_right _ _
+    have hwle : 2 * y ≤ min 1 δ₂ / 2 := by rw [hδ] at hyδ; linarith
+    have hEw : ‖E w‖ ≤ L * (2 * y) :=
+      (hL w (by linarith)).trans (mul_le_mul_of_nonneg_left hwx hLpos.le)
+    have hfw : a / 2 ≤ ‖f w‖ := hf w (by
+      have : 0 < δ₂ := hδ₂
+      have : 0 < min 1 δ₂ := lt_min one_pos hδ₂
+      linarith)
+    have hEne : E w ≠ 0 := hE0 w (by simp [hw, hypos])
+    have hEpos : 0 < ‖E w‖ := norm_pos_iff.mpr hEne
+    have h1 : a / (4 * L * y) ≤ ‖f w / E w‖ := by
+      rw [norm_div, div_le_div_iff₀ (by positivity) hEpos]
+      calc a * ‖E w‖ ≤ a * (L * (2 * y)) := by gcongr
+        _ = 2 * a * (L * y) := by ring
+        _ ≤ ‖f w‖ * (4 * L * y) := by nlinarith [mul_pos hLpos hypos]
+    rw [enorm_sq_eq_ofReal]
+    exact ENNReal.ofReal_le_ofReal (pow_le_pow_left₀ (by positivity) h1 2)
+  have hint : ENNReal.ofReal (2 * y) * ENNReal.ofReal ((a / (4 * L * y)) ^ 2) ≤ C := by
+    calc ENNReal.ofReal (2 * y) * ENNReal.ofReal ((a / (4 * L * y)) ^ 2)
+        = ∫⁻ x in Icc ((x₀ : ℝ) - y) (x₀ + y), ENNReal.ofReal ((a / (4 * L * y)) ^ 2) := by
+          rw [setLIntegral_const, Real.volume_Icc, mul_comm]
+          congr 2; ring
+      _ ≤ ∫⁻ x in Icc ((x₀ : ℝ) - y) (x₀ + y),
+          ‖f ((x : ℂ) + (y : ℂ) * I) / E ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 :=
+          setLIntegral_mono (measurable_line_sq hd hypos) hpt
+      _ ≤ ∫⁻ x : ℝ, ‖f ((x : ℂ) + (y : ℂ) * I) / E ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 :=
+          setLIntegral_le_lintegral _ _
+      _ ≤ C := hCy
+  rw [← ENNReal.ofReal_mul (by positivity)] at hint
+  have h1 : (2 * y * (a / (4 * L * y)) ^ 2) ≤ C := by
+    have := (ENNReal.ofReal_le_iff_le_toReal ENNReal.coe_ne_top).mp hint
+    simpa using this
+  have h2 : 2 * y * (a / (4 * L * y)) ^ 2 = a ^ 2 / (8 * L ^ 2 * y) := by
+    field_simp; ring
+  rw [h2] at h1
+  have hy2 : y ≤ a ^ 2 / (8 * L ^ 2 * (C + 1)) := min_le_right _ _
+  have hC0 : (0:ℝ) ≤ C := C.coe_nonneg
+  have h3 : (C + 1) * y ≤ a ^ 2 / (8 * L ^ 2) := by
+    have : y * (8 * L ^ 2 * (C + 1)) ≤ a ^ 2 := by
+      rwa [le_div_iff₀ (by positivity)] at hy2
+    rw [le_div_iff₀ (by positivity)]
+    nlinarith
+  rw [div_le_iff₀ (by positivity)] at h1
+  have : (C + 1) * y ≤ C * y := by
+    calc (C + 1) * y ≤ a ^ 2 / (8 * L ^ 2) := h3
+      _ ≤ C * y := by
+        rw [div_le_iff₀ (by positivity)]; nlinarith
+  nlinarith
+
 
 end FF
