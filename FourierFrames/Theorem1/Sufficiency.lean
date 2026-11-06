@@ -140,7 +140,24 @@ theorem exists_noRealZero_hb {E F : ℂ → ℂ} {Λ : Set ℝ} (hEHB : IsHB E) 
     (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
     ∃ G : ℂ → ℂ, IsHB G ∧ (∀ x : ℝ, G x ≠ 0) ∧
       ∀ z : ℂ, E z * G z + fstar E z * fstar G z = 0 → ∃ x ∈ Λ, z = (x : ℂ) := by
-  sorry
+  have _ := hEHB -- (not needed: `S` and `G` come from `F` alone)
+  have hF0 : ∃ z, F z ≠ 0 := by
+    by_contra h
+    push Not at h
+    have h0 : E I * F I + fstar E I * fstar F I = 0 := by
+      have : fstar F I = 0 := by simp [fstar, h]
+      simp [h]
+    obtain ⟨x, -, hx⟩ := (hzero I).mp h0
+    have := congrArg Complex.im hx
+    simp at this
+  obtain ⟨S, G, -, hGHB, hFSG, hS, -, hG0⟩ := exists_realFactor hFHB hF0
+  refine ⟨G, hGHB, hG0, fun z hz ↦ (hzero z).mp ?_⟩
+  have h1 : fstar F z = S z * fstar G z := by
+    have : fstar F = fun z ↦ fstar S z * fstar G z := by
+      rw [← fstar_mul]; congr 1; funext w; exact hFSG w
+    rw [this]; simp only [hS z]
+  rw [hFSG z, h1]
+  linear_combination S z * hz
 
 end Suff
 
@@ -197,6 +214,49 @@ theorem theorem1_sufficiency (hPW : PaleyWienerThm) (hE : TheoremE)
     {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E F : ℂ → ℂ} (hEHB : IsHB E) (hFHB : IsHB F)
     (hEPW : HEEqPW E) (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
     IsSampling Λ := by
-  sorry
+  have hπ := Real.pi_pos
+  have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
+  have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
+  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hEHB hFHB hzero
+  obtain ⟨φE, hφE, hφE'⟩ := exists_isPhaseFunction hEHB.1 hE0
+  obtain ⟨φG, hφG, hφG'⟩ := exists_isPhaseFunction hGHB.1 hG0
+  have hψ : IsPhaseFunction (fun z ↦ E z * G z) (fun x ↦ φE x + φG x) :=
+    isPhaseFunction_mul hφE hφG
+  obtain ⟨hψm, hψs⟩ := HEEqPW.phase_mul_bijective hPW hE hEHB hGHB hEPW hG0 hφE hφE' hφG hφG'
+  obtain ⟨δ, hδ, hsep⟩ := hΛ
+  have hsub : phaseLevel (fun x ↦ φE x + φG x) (Real.pi / 2) ⊆ Λ := by
+    intro x hx
+    have h1 : (x : ℂ) ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φG t) (Real.pi / 2) :=
+      ⟨x, hx, rfl⟩
+    have h2 := (zero_set_eq_phaseLevel hstrict hGHB hE0 hG0 hφE hφG (x : ℂ)).mpr h1
+    obtain ⟨y, hy, hxy⟩ := hGΛ _ h2
+    have : x = y := by exact_mod_cast hxy
+    rwa [this]
+  have hsep1 : IsSepBy δ (phaseLevel (fun x ↦ φE x + φG x) (Real.pi / 2)) :=
+    IsSepBy.mono hsep le_rfl hsub
+  obtain ⟨C₀, hC₀pos, hC₀⟩ := HEEqPW.levelSet_ineq hPW hE hEHB hEPW
+  have hstrict' : IsStrictHB (fun z ↦ E z * G z) := hstrict.mul_isHB hGHB
+  have hlev := eventually_not_exceptional hstrict'
+  have hlim := levelSet_limit hPW hψ.1 hψm hψs hδ hsep1 (C₀ := (C₀ : ℝ≥0∞)) ENNReal.coe_ne_top
+    (ε := fun n : ℕ ↦ Real.pi / (n + 2))
+    (fun n ↦ by positivity)
+    (fun n ↦ by
+      rw [div_lt_iff₀ (by positivity)]
+      have : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+      nlinarith)
+    (tendsto_const_nhds.div_atTop
+      (tendsto_atTop_add_const_right _ _ tendsto_natCast_atTop_atTop))
+    (hlev.mono fun n hn f hf ↦ hC₀ G hGHB hG0 _ hψ _ hn f hf)
+  obtain ⟨B, hB⟩ := plancherelPolya hPW hδ
+  refine ⟨C₀⁻¹, B, inv_pos.mpr hC₀pos, fun f hf ↦ ⟨?_, hB Λ hsep f hf⟩⟩
+  have hC0 : (C₀ : ℝ≥0∞) ≠ 0 := by exact_mod_cast hC₀pos.ne'
+  calc ((C₀⁻¹ : ℝ≥0) : ℝ≥0∞) * pwNormSq f
+      ≤ ((C₀⁻¹ : ℝ≥0) : ℝ≥0∞) * ((C₀ : ℝ≥0∞) *
+          sampleSum (phaseLevel (fun x ↦ φE x + φG x) (Real.pi / 2)) f) :=
+        mul_le_mul' le_rfl (hlim f hf)
+    _ = sampleSum (phaseLevel (fun x ↦ φE x + φG x) (Real.pi / 2)) f := by
+        rw [← mul_assoc, ← ENNReal.coe_mul, inv_mul_cancel₀ hC₀pos.ne']
+        simp
+    _ ≤ sampleSum Λ f := sampleSum_mono hsub f
 
 end FF
