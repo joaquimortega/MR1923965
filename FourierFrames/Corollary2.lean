@@ -102,6 +102,9 @@ section LogPotential
 /-- Continuity of the potential of a bounded density. -/
 theorem continuous_multU_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     Continuous (OCS.multU g 0) := by
+  -- TODO(corollary2): for merely measurable `g` this needs uniform integrability of the kernels
+  -- `log |t - z|` (Vitali); proved for continuous `g` as `continuous_multU_of_cont_bdd`
+  -- (`Corollary2/UCont.lean`), which is all that `log_norm_eq_multU_add_affine` uses.
   sorry
 
 /-- The boundary-continuous argument: for `t < 0` the number `1 - z/t` has `Im ≥ 0` when
@@ -129,6 +132,9 @@ theorem differentiableOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (h
 
 theorem continuousOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     ContinuousOn (potC g) {z : ℂ | 0 ≤ z.im} := by
+  -- TODO(corollary2): needs `continuous_multU_of_bdd` for measurable `g`; proved for continuous
+  -- `g` as `continuousOn_potC'` (`Corollary2/PotCCont.lean`), which is what the proof of
+  -- `log_norm_eq_multU_add_affine` uses.
   sorry
 
 /-- On the real axis `Im Q_g(x) = -π (φ(x) - φ(0))` when `φ' = g`
