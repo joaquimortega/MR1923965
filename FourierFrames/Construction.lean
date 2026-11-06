@@ -5,6 +5,7 @@ import FourierFrames.Construction.Comparable
 import FourierFrames.Construction.PolyHB
 import FourierFrames.Construction.Limits
 import FourierFrames.Construction.Rigidity
+import FourierFrames.Construction.Translate
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -1490,7 +1491,7 @@ theorem genA_translate_limit (hw : OCS.IsMultWeight m a b)
       TendstoLocallyUniformly
         (fun k z ↦ genA m (z + s (φ k)) * Complex.exp (-((κ * s (φ k) : ℝ) : ℂ)))
         (fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))) atTop := by
-  sorry
+  exact Translate.translate_limit hw hlim hU hs
 
 theorem tendsto_compR (m : ℝ → ℝ) (N : ℕ) :
     Tendsto (fun z : ℂ ↦ (∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))) /
@@ -1688,6 +1689,41 @@ theorem strictMono_int_surj_eq_add {ν : ℤ → ℤ} (hν : StrictMono ν) (hs 
     rw [show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring] at this
     omega
 
+theorem exists_abs_idx_ge (hw : OCS.IsMultWeight m a b) (J : ℕ) :
+    ∃ X : ℝ, ∀ x : ℝ, X ≤ |x| → (J : ℤ) ≤ |OCS.multIdx m x| := by
+  have ha := hw.pos
+  refine ⟨(J + 1) / a, fun x hx ↦ ?_⟩
+  have hfl := Int.floor_le (OCS.multPrim m x)
+  have hfl2 := Int.lt_floor_add_one (OCS.multPrim m x)
+  unfold OCS.multIdx
+  rcases le_or_gt 0 x with hx0 | hx0
+  · have := (OCS.multPrim_sub_bounds hw hx0).1
+    rw [OCS.multPrim_zero, sub_zero, sub_zero] at this
+    rw [abs_of_nonneg hx0] at hx
+    have h1 : ((J : ℝ) + 1) ≤ a * x := by rwa [div_le_iff₀ ha, mul_comm] at hx
+    have h2 : (J : ℝ) < ⌊OCS.multPrim m x⌋ := by linarith
+    have h3 : (J : ℤ) < ⌊OCS.multPrim m x⌋ := by exact_mod_cast h2
+    exact (by omega : (J : ℤ) ≤ ⌊OCS.multPrim m x⌋).trans (le_abs_self _)
+  · have := (OCS.multPrim_sub_bounds hw hx0.le).1
+    rw [OCS.multPrim_zero, zero_sub] at this
+    rw [abs_of_neg hx0] at hx
+    have h1 : ((J : ℝ) + 1) ≤ a * (-x) := by rwa [div_le_iff₀ ha, mul_comm] at hx
+    have h2 : (⌊OCS.multPrim m x⌋ : ℝ) ≤ -(J : ℝ) := by nlinarith
+    have h3 : ⌊OCS.multPrim m x⌋ ≤ -(J : ℤ) := by exact_mod_cast h2
+    exact (by omega : (J : ℤ) ≤ -⌊OCS.multPrim m x⌋).trans (neg_le_abs _)
+
+theorem eventually_le_abs_multBary (hw : OCS.IsMultWeight m a b) (B : ℝ) :
+    ∀ᶠ j in cofinite, B ≤ |OCS.multBary m j| := by
+  have hfin := (OCS.isGenusOneData_multGammaC hw).finite_inter_ball B
+  have hinj : Function.Injective fun j : ℤ ↦ ((OCS.multBary m j : ℝ) : ℂ) :=
+    OCS.injective_multBaryC hw
+  have := hfin.preimage (f := fun j : ℤ ↦ ((OCS.multBary m j : ℝ) : ℂ)) hinj.injOn
+  rw [eventually_cofinite]
+  refine this.subset fun j hj ↦ ?_
+  simp only [mem_ofPred_eq, not_le] at hj
+  refine ⟨⟨_, ⟨j, rfl⟩, rfl⟩, ?_⟩
+  simpa [mem_ball_zero_iff] using hj
+
 /-- The phase function of `E` is strictly increasing and takes the values `π/2 + π ℤ` exactly on
 `Γ`: `φ(γ_j) = π/2 + π (j + k₀)` for a fixed integer `k₀`. -/
 theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
@@ -1795,6 +1831,78 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
   rw [hν j, hlin j]
   push_cast
   ring
+
+theorem phase_asymptotics (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {κ : ℝ}
+    (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
+    {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) {k₀ : ℤ}
+    (hk₀ : ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀)) :
+    Tendsto (fun x : ℝ ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ)
+      (𝓝 (Real.pi * k₀)) := by
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  have hpi := Real.pi_pos
+  obtain ⟨X₁, hX₁⟩ := phase_rigidity hw hlim hU hN hφ (ε / 4) (by positivity)
+  obtain ⟨X₂, hX₂⟩ := Gaps.tendsto_multPrim_sub hw hlim 2 (ε / (4 * Real.pi)) (by positivity)
+  have hev3 : ∀ᶠ j in cofinite, |OCS.multPrim m (OCS.multBary m j) - (j + 1 / 2)| <
+      ε / (4 * Real.pi) := by
+    have := (Gaps.tendsto_multPrim_multBary hw hlim).eventually
+      (Metric.ball_mem_nhds 0 (show 0 < ε / (4 * Real.pi) by positivity))
+    filter_upwards [this] with j hj
+    simpa [Real.dist_eq] using hj
+  have hev4 : ∀ᶠ j in cofinite, OCS.multPt m (j + 1) - OCS.multPt m j < 2 :=
+    (Gaps.tendsto_multPt_succ_sub hw hlim).eventually (gt_mem_nhds (by norm_num))
+  have hev5 := eventually_le_abs_multBary hw (max X₁ X₂)
+  obtain ⟨J, hJ⟩ := Gaps.exists_index_of_cofinite (hev3.and (hev4.and hev5))
+  obtain ⟨X, hX⟩ := exists_abs_idx_ge hw J
+  have hXev : ∀ᶠ x : ℝ in cocompact ℝ, X ≤ |x| := by
+    refine mem_cocompact.2 ⟨Icc (-X) X, isCompact_Icc, fun x hx ↦ ?_⟩
+    simp only [mem_compl_iff, mem_Icc, not_and_or, not_le] at hx
+    rw [mem_ofPred_eq]
+    rcases hx with h | h
+    · exact (lt_neg.1 h).le.trans (neg_le_abs x)
+    · exact h.le.trans (le_abs_self x)
+  filter_upwards [hXev] with x hx
+  set j := OCS.multIdx m x with hjdef
+  have hjJ : (J : ℤ) ≤ |j| := hX x hx
+  obtain ⟨h3, h4, h5⟩ := hJ j hjJ
+  set s := OCS.multBary m j with hs
+  obtain ⟨hm1, hm2⟩ := OCS.multIdx_mem hw x
+  obtain ⟨hb1, hb2⟩ := OCS.multBary_mem hw j
+  have hapos : 0 < a / (2 * b ^ 2) := by have := hw.b_pos; have := hw.pos; positivity
+  have hτ : |x - s| ≤ 2 := by
+    rw [abs_le]; constructor <;> linarith
+  have hs1 : X₁ ≤ |s| := (le_max_left _ _).trans h5
+  have hs2 : X₂ ≤ |s| := (le_max_right _ _).trans h5
+  have e1 := hX₁ s hs1 (x - s) hτ
+  have e2 := hX₂ s hs2 (x - s) hτ
+  rw [add_sub_cancel] at e1 e2
+  have e3 := hk₀ j
+  rw [Real.dist_eq]
+  have : φ x - Real.pi * OCS.multPrim m x - Real.pi * k₀ =
+      (φ x - φ s - Real.pi * (x - s)) - Real.pi * (OCS.multPrim m x - OCS.multPrim m s - (x - s)) -
+        Real.pi * (OCS.multPrim m s - (j + 1 / 2)) := by
+    rw [hs, e3]; ring
+  rw [this]
+  have t1 : Real.pi * |OCS.multPrim m x - OCS.multPrim m s - (x - s)| ≤ ε / 4 := by
+    calc _ ≤ Real.pi * (ε / (4 * Real.pi)) := by gcongr
+      _ = ε / 4 := by field_simp
+  have t2 : Real.pi * |OCS.multPrim m s - (j + 1 / 2)| ≤ ε / 4 := by
+    calc _ ≤ Real.pi * (ε / (4 * Real.pi)) := by gcongr
+      _ = ε / 4 := by field_simp
+  calc |(φ x - φ s - Real.pi * (x - s)) - Real.pi * (OCS.multPrim m x - OCS.multPrim m s - (x - s)) -
+        Real.pi * (OCS.multPrim m s - (j + 1 / 2))|
+      ≤ |φ x - φ s - Real.pi * (x - s)| +
+        |Real.pi * (OCS.multPrim m x - OCS.multPrim m s - (x - s))| +
+        |Real.pi * (OCS.multPrim m s - (j + 1 / 2))| := by
+          refine (abs_sub _ _).trans ?_
+          gcongr
+          exact abs_sub _ _
+    _ < ε := by
+        rw [abs_mul, abs_mul, abs_of_pos hpi] at *
+        linarith
 
 /-- **The phase construction with phase asymptotics** (generalised at assembly to a linear drift
 `κ`).  If `U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` (`κ ≠ 0` is the generic case, e.g. for the
