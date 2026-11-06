@@ -266,7 +266,6 @@ theorem zero_set_eq_phaseLevel {E F : ℂ → ℂ} (hE : IsStrictHB E) (hF : IsH
     have := Complex.add_conj (E x * F x)
     rw [map_mul] at this
     rw [this]
-    push_cast
   have hφ := hφE.mul hφF
   constructor
   · intro hz
