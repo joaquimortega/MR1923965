@@ -44,9 +44,13 @@ Each `Prop` is a *hypothesis* of the main theorems that use it. It must be a tru
 otherwise the conditional results would be vacuous. Weakening a cited statement (more hypotheses,
 weaker conclusion) is always safe.
 
-- **`PaleyWienerThm`.** `f ∈ PW ⟺ f(z) = ∫_{-π}^{π} g(t)e^{izt}dt` with `g ∈ L²(-π,π)`, and
-  `‖f‖²_{L²(ℝ)} = 2π‖g‖²`. This is the Paley–Wiener theorem plus Plancherel. To be proved in
-  phase 2 from Mathlib's `MeasureTheory.Lp.fourierTransformₗᵢ`.
+- **`PaleyWienerThm`.** Two parts: (a) for every `g ∈ L²(-π,π)`, `f(z) = ∫_{-π}^{π} g(t)e^{izt}dt`
+  is in `PW` with `‖f‖²_{L²(ℝ)} = 2π‖g‖²`; (b) every `f ∈ PW` has this form. This is the
+  Paley–Wiener theorem plus Plancherel. (A first version stated `MemPW f ↔ ∃ g, rep ∧ norm identity`;
+  its `⇐` half was useless because it assumed the norm identity. Changed on the M01 writer's
+  request, before any review.) To be proved in phase 2 from Mathlib's
+  `MeasureTheory.Lp.fourierTransformₗᵢ`; Mathlib (v4.35) lacks the lemma that the `L¹` and `L²`
+  Fourier transforms agree on `L¹ ∩ L²`, which phase 2 needs.
 - **`TheoremC`.** de Branges [dB68, Theorem 23]: a Hilbert space of entire functions satisfying
   (H1)–(H3) and containing a nonzero element is isometrically equal to some `H(E)`, `E ∈ HB`. The
   Lean version quantifies over a complete inner product space `H` with an injective linear map

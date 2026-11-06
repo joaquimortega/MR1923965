@@ -174,14 +174,17 @@ The paper quotes the following results without proof.  They enter the formal sta
 explicit hypotheses, never as axioms.  Each `Prop` is implied by the statement in the source
 (see `blueprint/M00_Defs.md`). -/
 
-/-- **The Paley–Wiener theorem**, with Plancherel's identity (p. 790): `f ∈ PW` if and only if
-`f(z) = ∫_{-π}^{π} g(t) e^{izt} dt` for some `g ∈ L²(-π, π)`, and then
-`‖f‖²_{L²(ℝ)} = 2π ‖g‖²_{L²(-π, π)}`. -/
+/-- **The Paley–Wiener theorem**, with Plancherel's identity (p. 790):
+* for every `g ∈ L²(-π, π)`, `f(z) = ∫_{-π}^{π} g(t) e^{izt} dt` belongs to `PW` and
+  `‖f‖²_{L²(ℝ)} = 2π ‖g‖²_{L²(-π, π)}`;
+* every `f ∈ PW` is of this form. -/
 def PaleyWienerThm : Prop :=
-  ∀ f : ℂ → ℂ, MemPW f ↔
-    ∃ g : ℝ → ℂ, MemLp g 2 (volume.restrict (Ioc (-Real.pi) Real.pi)) ∧
-      (∀ z : ℂ, f z = ∫ t in (-Real.pi)..Real.pi, g t * Complex.exp (I * z * t)) ∧
-      pwNormSq f = ENNReal.ofReal (2 * Real.pi) * ∫⁻ t in Ioc (-Real.pi) Real.pi, ‖g t‖ₑ ^ 2
+  (∀ g : ℝ → ℂ, MemLp g 2 (volume.restrict (Ioc (-Real.pi) Real.pi)) →
+      MemPW (fun z ↦ ∫ t in (-Real.pi)..Real.pi, g t * Complex.exp (I * z * t)) ∧
+      pwNormSq (fun z ↦ ∫ t in (-Real.pi)..Real.pi, g t * Complex.exp (I * z * t)) =
+        ENNReal.ofReal (2 * Real.pi) * ∫⁻ t in Ioc (-Real.pi) Real.pi, ‖g t‖ₑ ^ 2) ∧
+    ∀ f : ℂ → ℂ, MemPW f → ∃ g : ℝ → ℂ, MemLp g 2 (volume.restrict (Ioc (-Real.pi) Real.pi)) ∧
+      ∀ z : ℂ, f z = ∫ t in (-Real.pi)..Real.pi, g t * Complex.exp (I * z * t)
 
 /-- **Theorem C** (de Branges [dB68, Theorem 23], p. 793).  A Hilbert space `H` of entire
 functions (given by an injective linear map `ι`) satisfying the axioms
