@@ -830,11 +830,41 @@ theorem exists_E_logExample (hPW : PaleyWienerThm) :
 
 /-! ## §6  Theorem E at the phase level `π/2` -/
 
+theorem re_eq_norm_mul_cos {E : ℂ → ℂ} {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) (x : ℝ) :
+    (E x).re = ‖E x‖ * Real.cos (φ x) := by
+  have h := hφ.2 x
+  conv_lhs => rw [h]
+  have : Complex.exp (-(I * (φ x : ℂ))) = Complex.exp (((-φ x : ℝ) : ℂ) * I) := by
+    congr 1; push_cast; ring
+  rw [Complex.re_ofReal_mul, this, Complex.exp_ofReal_mul_I_re, Real.cos_neg]
+
 theorem phaseLevel_eq_of_zero_set {E : ℂ → ℂ} {φ : ℝ → ℝ} {Γ : Set ℝ}
     (h0 : ∀ x : ℝ, E x ≠ 0) (hφ : IsPhaseFunction E φ)
     (hΓ : ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ Γ, z = (γ : ℂ)) :
     phaseLevel φ (Real.pi / 2) = Γ := by
-  sorry
+  ext x
+  have h1 : x ∈ Γ ↔ E x + fstar E x = 0 := by
+    rw [hΓ]
+    constructor
+    · intro h; exact ⟨x, h, rfl⟩
+    · rintro ⟨γ, hγ, hx⟩
+      have : x = γ := by exact_mod_cast hx
+      rwa [this]
+  rw [h1, fstar_ofReal]
+  have h2 : E x + conj (E x) = ((2 * (E x).re : ℝ) : ℂ) := by
+    rw [Complex.add_conj]
+  rw [h2, Complex.ofReal_eq_zero, re_eq_norm_mul_cos hφ x]
+  have hn : ‖E x‖ ≠ 0 := norm_ne_zero_iff.2 (h0 x)
+  simp only [phaseLevel, Set.mem_ofPred_eq]
+  rw [show 2 * (‖E x‖ * Real.cos (φ x)) = 0 ↔ Real.cos (φ x) = 0 by
+    constructor
+    · intro h; have := mul_eq_zero.1 (by linarith : ‖E x‖ * Real.cos (φ x) = 0)
+      exact this.resolve_left hn
+    · intro h; rw [h]; ring]
+  rw [Real.cos_eq_zero_iff]
+  constructor
+  · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
+  · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
 
 /-- `E + E^*` is not in `H(E)`: `|E + E^*| = 2|E||cos φ|` is not square integrable on `ℝ`,
 because `φ' ≃ 1`. -/
@@ -848,7 +878,46 @@ theorem not_memHE_sAlpha (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ
 
 theorem eq_zero_of_pwNormSq_eq_zero {f : ℂ → ℂ} (hf : MemPW f) (h : pwNormSq f = 0) :
     ∀ z, f z = 0 := by
-  sorry
+  have hcont : Continuous (fun x : ℝ ↦ f x) := hf.1.continuous.comp Complex.continuous_ofReal
+  have hmeas : Measurable (fun x : ℝ ↦ ‖f x‖ₑ ^ 2) := by
+    exact hcont.measurable.enorm.pow_const 2
+  have h1 := (lintegral_eq_zero_iff hmeas).1 h
+  have h2 : (fun x : ℝ ↦ f x) =ᵐ[volume] (fun _ ↦ (0 : ℂ)) := by
+    filter_upwards [h1] with x hx
+    simpa using hx
+  have h3 : (fun x : ℝ ↦ f x) = fun _ ↦ (0 : ℂ) :=
+    (Continuous.ae_eq_iff_eq volume hcont continuous_const).1 h2
+  have h4 : ∃ᶠ z in 𝓝[≠] (0 : ℂ), f z = 0 := by
+    have ht : Tendsto (fun x : ℝ ↦ (x : ℂ)) (𝓝[≠] 0) (𝓝[≠] 0) := by
+      refine tendsto_nhdsWithin_iff.2 ⟨?_, ?_⟩
+      · exact (Complex.continuous_ofReal.tendsto' 0 0 (by simp)).mono_left nhdsWithin_le_nhds
+      · filter_upwards [self_mem_nhdsWithin] with x hx
+        simpa using hx
+    refine ht.frequently ?_
+    exact Filter.Eventually.frequently (Filter.Eventually.of_forall fun x ↦ congrFun h3 x)
+  have h5 : Set.EqOn f 0 Set.univ :=
+    (hf.1.differentiableOn (s := Set.univ)).analyticOnNhd isOpen_univ |>.eqOn_zero_of_preconnected_of_frequently_eq_zero
+      isPreconnected_univ (Set.mem_univ 0) h4
+  intro z
+  exact h5 (Set.mem_univ z)
+
+theorem orthWeight_bounds (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+    (hHB : IsHB E) (hEPW : HEEqPW E) :
+    ∃ wl wu : ℝ≥0, 0 < wl ∧ 0 < wu ∧ ∀ γ : ℝ, (wl : ℝ≥0∞) ≤ orthWeight E γ ∧
+      orthWeight E γ ≤ wu := by
+  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hHB hEPW
+  obtain ⟨Cφ, hle⟩ := HEEqPW.phaseDeriv_mul_sq_le hPW hE hHB hEPW
+  have hCφ : 0 < Cφ := lt_of_lt_of_le hcφ ((hge 0).trans (hle 0))
+  refine ⟨(Real.pi / Cφ).toNNReal, (Real.pi / cφ).toNNReal, ?_, ?_, fun γ ↦ ?_⟩
+  · simpa using div_pos Real.pi_pos hCφ
+  · simpa using div_pos Real.pi_pos hcφ
+  · have hd : 0 < phaseDeriv E γ * ‖E γ‖ ^ 2 := lt_of_lt_of_le hcφ (hge γ)
+    unfold orthWeight
+    constructor
+    · change ENNReal.ofReal (Real.pi / Cφ) ≤ _
+      exact ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_left Real.pi_pos.le hd (hle γ))
+    · change _ ≤ ENNReal.ofReal (Real.pi / cφ)
+      exact ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_left Real.pi_pos.le hcφ (hge γ))
 
 /-- From `H(E) = PW`, `|E| ≃ 1` on `ℝ`, `φ_E' |E|² ≃ 1`, `E + E^* ∉ H(E)`: the zero set of
 `E + E^*` is sampling and complete interpolating for `PW`. -/
@@ -859,7 +928,64 @@ theorem sampling_cis_of_zero_set (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ
       c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im))
     (hΓ : ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ Γ, z = (γ : ℂ)) :
     IsSampling Γ ∧ IsCompleteInterpolating Γ := by
-  sorry
+  have hlev := phaseLevel_eq_of_zero_set h0 hφ hΓ
+  have hstrict : IsStrictHB E := HEEqPW.isStrictHB hHB hEPW
+  have hnot := not_memHE_sAlpha hPW hE hHB h0 hEPW hφ hcomp
+  obtain ⟨hnorm, hinterp⟩ := hE E hstrict h0 φ hφ (Real.pi / 2) hnot
+  rw [hlev] at hnorm hinterp
+  subst hlev
+  obtain ⟨wl, wu, hwl, hwu, hw⟩ := orthWeight_bounds hPW hE hHB hEPW
+  obtain ⟨c1, C1, hc1, hnE⟩ := hEPW.2
+  have hwl0 : (wl : ℝ≥0∞) ≠ 0 := by exact_mod_cast hwl.ne'
+  have hwu0 : (wu : ℝ≥0∞) ≠ 0 := by exact_mod_cast hwu.ne'
+  have hc10 : (c1 : ℝ≥0∞) ≠ 0 := by exact_mod_cast hc1.ne'
+  have hsumle : ∀ f : ℂ → ℂ, MemPW f →
+      (wl : ℝ≥0∞) * sampleSum (phaseLevel φ (Real.pi / 2)) f ≤ heNormSq E f ∧
+        heNormSq E f ≤ wu * sampleSum (phaseLevel φ (Real.pi / 2)) f := by
+    intro f hf
+    rw [hnorm f (hEPW.1 f |>.2 hf), sampleSum, ← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_left]
+    constructor
+    · exact ENNReal.tsum_le_tsum fun γ ↦ by gcongr; exact (hw _).1
+    · exact ENNReal.tsum_le_tsum fun γ ↦ by gcongr; exact (hw _).2
+  refine ⟨⟨c1 / wu, C1 / wl, by positivity, fun f hf ↦ ⟨?_, ?_⟩⟩, ?_⟩
+  · have h1 := (hnE f hf).1
+    have h2 := (hsumle f hf).2
+    have h3 : (c1 : ℝ≥0∞) * pwNormSq f ≤ wu * sampleSum (phaseLevel φ (Real.pi / 2)) f := h1.trans h2
+    have e : ((c1 / wu : ℝ≥0) : ℝ≥0∞) * pwNormSq f = ((c1 : ℝ≥0∞) * pwNormSq f) / wu := by
+      rw [ENNReal.coe_div hwu.ne', div_eq_mul_inv, div_eq_mul_inv]; ring
+    rw [e]
+    exact ENNReal.div_le_of_le_mul' h3
+  · have h1 := (hnE f hf).2
+    have h2 := (hsumle f hf).1
+    have h3 : (wl : ℝ≥0∞) * sampleSum (phaseLevel φ (Real.pi / 2)) f ≤ C1 * pwNormSq f := h2.trans h1
+    have e : ((C1 / wl : ℝ≥0) : ℝ≥0∞) * pwNormSq f = ((C1 : ℝ≥0∞) * pwNormSq f) / wl := by
+      rw [ENNReal.coe_div hwl.ne', div_eq_mul_inv, div_eq_mul_inv]; ring
+    rw [e, ENNReal.le_div_iff_mul_le (Or.inl hwl0) (Or.inl ENNReal.coe_ne_top), mul_comm]
+    exact h3
+  · intro a ha
+    have hfin : ∑' γ : ↑(phaseLevel φ (Real.pi / 2)), orthWeight E γ * ‖a γ‖ₑ ^ 2 < ∞ := by
+      calc _ ≤ ∑' γ : ↑(phaseLevel φ (Real.pi / 2)), (wu : ℝ≥0∞) * ‖a γ‖ₑ ^ 2 :=
+            ENNReal.tsum_le_tsum fun γ ↦ by gcongr; exact (hw _).2
+        _ = wu * ∑' γ : ↑(phaseLevel φ (Real.pi / 2)), ‖a γ‖ₑ ^ 2 := ENNReal.tsum_mul_left
+        _ < ∞ := ENNReal.mul_lt_top ENNReal.coe_lt_top ha
+    obtain ⟨f, hf, hfa⟩ := hinterp a hfin
+    refine ⟨f, ⟨(hEPW.1 f).1 hf, hfa⟩, ?_⟩
+    rintro g ⟨hg, hga⟩
+    have hd : MemPW (f - g) := ((hEPW.1 f).1 hf).sub hg
+    have hz : sampleSum (phaseLevel φ (Real.pi / 2)) (f - g) = 0 := by
+      unfold sampleSum
+      refine ENNReal.tsum_eq_zero.2 fun γ ↦ ?_
+      have := hfa γ γ.2
+      have h2 := hga γ γ.2
+      simp [this, h2]
+    have h1 := (hsumle _ hd).2
+    rw [hz, mul_zero] at h1
+    have h3 := (hnE _ hd).1
+    have h4 : (c1 : ℝ≥0∞) * pwNormSq (f - g) = 0 := le_antisymm (h3.trans h1) bot_le
+    have h5 : pwNormSq (f - g) = 0 := (mul_eq_zero.1 h4).resolve_left hc10
+    funext z
+    have := eq_zero_of_pwNormSq_eq_zero hd h5 z
+    simpa [sub_eq_zero] using this.symm
 
 /-! ## §7  Main statements -/
 
