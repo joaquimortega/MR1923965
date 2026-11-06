@@ -120,6 +120,120 @@ theorem norm_multF_comparable (hw : OCS.IsMultWeight m a b) :
         _ = (d₂ * D) * Real.exp (OCS.multU m 0 z) * min 1 (infDist z (OCS.multGammaC m)) := by ring
         _ ≤ _ := by gcongr; exact le_max_right _ _
 
+/-! ### Comparability on compact sets for entire functions with simple zeros -/
+
+section Compact
+
+variable {F : ℂ → ℂ}
+
+theorem exists_upper_on_compact (hF : Differentiable ℂ F) (hne : ∃ t, F t = 0) {K : Set ℂ}
+    (hK : IsCompact K) :
+    ∃ c : ℝ, 0 < c ∧ ∀ z ∈ K, ‖F z‖ ≤ c * min 1 (infDist z {t | F t = 0}) := by
+  obtain ⟨r, hr⟩ := hK.isBounded.subset_closedBall 0
+  have hcl : IsClosed {t | F t = 0} := isClosed_eq hF.continuous continuous_const
+  have hZne : ({t | F t = 0} : Set ℂ).Nonempty := hne
+  have hB : IsCompact (closedBall (0 : ℂ) (r + 1)) := isCompact_closedBall _ _
+  have hder : Continuous (deriv F) := by
+    have := hF.contDiff (n := 1)
+    exact this.continuous_deriv le_rfl
+  obtain ⟨L, hL⟩ := hB.exists_bound_of_continuousOn hder.continuousOn
+  obtain ⟨M, hM⟩ := hK.exists_bound_of_continuousOn hF.continuous.continuousOn
+  refine ⟨|M| + |L| + 1, by positivity, fun z hz ↦ ?_⟩
+  have hMa := le_abs_self M
+  have hLa := le_abs_self L
+  by_cases hd : 1 ≤ infDist z {t | F t = 0}
+  · rw [min_eq_left hd]
+    have := hM z hz
+    have := abs_nonneg M
+    have := abs_nonneg L
+    linarith
+  · push Not at hd
+    rw [min_eq_right hd.le]
+    obtain ⟨γ, hγ, hγd⟩ := hcl.exists_infDist_eq_dist hZne z
+    have hγz : dist z γ < 1 := hγd ▸ hd
+    have hzb : z ∈ closedBall (0 : ℂ) (r + 1) := by
+      have := hr hz
+      rw [mem_closedBall] at this ⊢; linarith
+    have hγb : γ ∈ closedBall (0 : ℂ) (r + 1) := by
+      have := hr hz
+      rw [mem_closedBall, dist_zero_right] at this ⊢
+      have h2 := norm_sub_norm_le γ z
+      rw [dist_eq_norm] at hγz
+      rw [norm_sub_rev γ z] at h2
+      linarith
+    have hlip := (convex_closedBall (0 : ℂ) (r + 1)).norm_image_sub_le_of_norm_deriv_le
+      (f := F) (C := L) (fun x _ ↦ hF x) (fun x hx ↦ hL x hx) hγb hzb
+    have hγ0 : F γ = 0 := hγ
+    rw [hγ0, sub_zero, ← dist_eq_norm] at hlip
+    rw [hγd]
+    have hdnn : 0 ≤ dist z γ := dist_nonneg
+    calc ‖F z‖ ≤ L * dist z γ := hlip
+      _ ≤ (|M| + |L| + 1) * dist z γ := by gcongr; linarith [abs_nonneg M]
+
+theorem exists_lower_local (hF : Differentiable ℂ F) (hs : ∀ t, F t = 0 → deriv F t ≠ 0) (z : ℂ) :
+    ∃ V ∈ 𝓝 z, ∃ c : ℝ, 0 < c ∧ ∀ y ∈ V, c * min 1 (infDist y {t | F t = 0}) ≤ ‖F y‖ := by
+  by_cases h0 : F z = 0
+  · have hg : Continuous (dslope F z) := by
+      have h := (differentiableOn_dslope (s := (Set.univ : Set ℂ)) (c := z) (f := F)
+        Filter.univ_mem).2 hF.differentiableOn
+      rw [← continuousOn_univ]
+      exact h.continuousOn
+    have hgz : dslope F z z ≠ 0 := by rw [dslope_same]; exact hs z h0
+    have hpos : 0 < ‖dslope F z z‖ / 2 := by positivity
+    have hnb : {y | ‖dslope F z z‖ / 2 < ‖dslope F z y‖} ∈ 𝓝 z := by
+      have := (hg.norm.tendsto z).eventually (lt_mem_nhds (show ‖dslope F z z‖ / 2 <
+        ‖dslope F z z‖ by linarith [norm_pos_iff.2 hgz]))
+      exact this
+    refine ⟨_, hnb, ‖dslope F z z‖ / 2, hpos, fun y hy ↦ ?_⟩
+    have hmul := sub_smul_dslope F z y
+    rw [h0, sub_zero, smul_eq_mul] at hmul
+    have hd : infDist y {t | F t = 0} ≤ ‖y - z‖ := by
+      rw [← dist_eq_norm]; exact infDist_le_dist_of_mem h0
+    have hm : min 1 (infDist y {t | F t = 0}) ≤ ‖y - z‖ := (min_le_right _ _).trans hd
+    calc ‖dslope F z z‖ / 2 * min 1 (infDist y {t | F t = 0})
+        ≤ ‖dslope F z y‖ * ‖y - z‖ := by
+          have : (0 : ℝ) ≤ min 1 (infDist y {t | F t = 0}) := le_min zero_le_one infDist_nonneg
+          exact mul_le_mul hy.le hm this (norm_nonneg _)
+      _ = ‖F y‖ := by rw [← hmul, norm_mul, mul_comm]
+  · have hpos : 0 < ‖F z‖ / 2 := by have := norm_pos_iff.2 h0; positivity
+    have hnb : {y | ‖F z‖ / 2 < ‖F y‖} ∈ 𝓝 z :=
+      (hF.continuous.norm.tendsto z).eventually (lt_mem_nhds (by
+        have := norm_pos_iff.2 h0; linarith))
+    refine ⟨_, hnb, ‖F z‖ / 2, hpos, fun y hy ↦ ?_⟩
+    have : min 1 (infDist y {t | F t = 0}) ≤ 1 := min_le_left _ _
+    have h2 : ‖F z‖ / 2 * min 1 (infDist y {t | F t = 0}) ≤ ‖F z‖ / 2 := by
+      calc _ ≤ ‖F z‖ / 2 * 1 := by gcongr
+        _ = _ := mul_one _
+    exact h2.trans (le_of_lt hy)
+
+theorem exists_lower_on_compact (hF : Differentiable ℂ F) (hs : ∀ t, F t = 0 → deriv F t ≠ 0)
+    {K : Set ℂ} (hK : IsCompact K) :
+    ∃ c : ℝ, 0 < c ∧ ∀ z ∈ K, c * min 1 (infDist z {t | F t = 0}) ≤ ‖F z‖ := by
+  refine hK.induction_on (p := fun S ↦ ∃ c : ℝ, 0 < c ∧ ∀ z ∈ S,
+    c * min 1 (infDist z {t | F t = 0}) ≤ ‖F z‖) ⟨1, one_pos, by simp⟩ ?_ ?_ ?_
+  · rintro S T hST ⟨c, hc, h⟩
+    exact ⟨c, hc, fun z hz ↦ h z (hST hz)⟩
+  · rintro S T ⟨c, hc, h⟩ ⟨c', hc', h'⟩
+    refine ⟨min c c', lt_min hc hc', fun z hz ↦ ?_⟩
+    have hm : (0 : ℝ) ≤ min 1 (infDist z {t | F t = 0}) := le_min zero_le_one infDist_nonneg
+    rcases hz with hz | hz
+    · exact le_trans (by gcongr; exact min_le_left _ _) (h z hz)
+    · exact le_trans (by gcongr; exact min_le_right _ _) (h' z hz)
+  · intro x _
+    obtain ⟨V, hV, c, hc, h⟩ := exists_lower_local hF hs x
+    exact ⟨V, mem_nhdsWithin_of_mem_nhds hV, c, hc, h⟩
+
+theorem comparable_on_compact (hF : Differentiable ℂ F) (hs : ∀ t, F t = 0 → deriv F t ≠ 0)
+    (hne : ∃ t, F t = 0) {K : Set ℂ} (hK : IsCompact K) :
+    ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ z ∈ K,
+      c₁ * min 1 (infDist z {t | F t = 0}) ≤ ‖F z‖ ∧
+        ‖F z‖ ≤ c₂ * min 1 (infDist z {t | F t = 0}) := by
+  obtain ⟨c₁, hc₁, h₁⟩ := exists_lower_on_compact hF hs hK
+  obtain ⟨c₂, hc₂, h₂⟩ := exists_upper_on_compact hF hne hK
+  exact ⟨c₁, c₂, hc₁, hc₂, fun z hz ↦ ⟨h₁ z hz, h₂ z hz⟩⟩
+
+end Compact
+
 end Comparable
 
 end FF
