@@ -6,7 +6,7 @@ the main theorems become unconditional (`theorem1_unconditional := theorem1 pale
 
 | `Prop` | Result | Source | Module | Assessment |
 |---|---|---|---|---|
-| `PaleyWienerThm` | Paley–Wiener + Plancherel | classical | P1 | feasible (Mathlib has the `L²` Fourier isometry) |
+| `PaleyWienerThm` | Paley–Wiener + Plancherel | classical | P1 | feasible (~1300 lines): part 1 by Parseval on `[-π,π]`; part 2 by Gaussian regularisation, the `L²` Fourier isometry (plus the missing `L¹∩L²` agreement lemma) and Phragmén–Lindelöf (`blueprint/P1_PaleyWiener.md`) |
 | `DSPerturbation` | Duffin–Schaeffer Lemma III | [DS52] | P2 | feasible: `L²` Bernstein + FTC (`blueprint/P2_DS_JN.md`), `PaleyWienerThm → DSPerturbation` |
 | `JohnNirenberg` | John–Nirenberg inequality | [JN61], [Ga81] | P2 | feasible: dyadic stopping time + Lebesgue differentiation (`blueprint/P2_DS_JN.md`) |
 | `TheoremD` | reproducing kernel of `H(E)` | [dB68, Thm 19] | P3 | to assess |
