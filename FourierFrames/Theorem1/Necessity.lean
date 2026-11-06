@@ -132,7 +132,7 @@ theorem IsSeparated.eventually_le_abs {Λ : Set ℝ} (h : IsSeparated Λ) (r : �
   rw [Filter.eventually_cofinite]
   have hfin := h.finite_inter_Icc (|r|)
   refine (hfin.preimage Subtype.val_injective.injOn).subset fun x hx ↦ ?_
-  simp only [mem_setOf_eq, not_le] at hx
+  simp only [Set.mem_ofPred_eq, not_le] at hx
   simp only [mem_preimage, mem_inter_iff, mem_Icc]
   refine ⟨x.2, ?_, ?_⟩
   · have := neg_abs_le r
@@ -760,7 +760,7 @@ def genProd (Λ : Set ℝ) (z : ℂ) : ℂ :=
 
 theorem isGenusOneData_zeroSet {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
     OCS.IsGenusOneData (zeroSet Λ) (fun a ↦ a⁻¹) := by
-  refine ⟨?_, ?_, by simpa using summable_zero⟩
+  refine ⟨?_, ?_, by simp⟩
   · rintro ⟨y, hy, hy0⟩
     exact hy.2 (by simpa using hy0)
   · have hg : Summable fun x : Λ ↦ (‖(((x : ℝ)) : ℂ)‖⁻¹) ^ 2 := by
@@ -977,7 +977,7 @@ theorem exists_F {E A P Q : ℂ → ℂ} (hE : IsHB E) (hE0 : ∀ x : ℝ, E (x 
     intro z0
     by_cases h0 : 0 < z0.im
     · have hev : Φ =ᶠ[𝓝 z0] fun z ↦ Q z * A z / E z :=
-        Filter.eventuallyEq_of_mem (hU.mem_nhds h0) (fun z hz ↦ if_pos hz)
+        Filter.eventuallyEq_of_mem (hU.mem_nhds h0) (fun z (hz : 0 < z.im) ↦ by simp [Φ, hz])
       have hd : DifferentiableAt ℂ (fun z ↦ Q z * A z / E z) z0 :=
         ((hQ z0).mul (hA.differentiableAt (hU.mem_nhds h0))).div (hEd z0) (hEne z0 h0)
       exact hd.congr_of_eventuallyEq hev
@@ -987,9 +987,9 @@ theorem exists_F {E A P Q : ℂ → ℂ} (hE : IsHB E) (hE0 : ∀ x : ℝ, E (x 
       have hev : Φ =ᶠ[𝓝 z0] fun z ↦ P z / fstar E z := by
         refine Filter.eventuallyEq_of_mem (hV.mem_nhds hz0) (fun z hz ↦ ?_)
         by_cases h : 0 < z.im
-        · simp only [Φ, if_pos h]
+        · simp only [Φ, h, ite_true]
           exact hΦeq z h hz
-        · simp only [Φ, if_neg h]
+        · simp only [Φ, h, ite_false]
       have hd : DifferentiableAt ℂ (fun z ↦ P z / fstar E z) z0 :=
         (hP z0).div ((Differentiable.fstar hEd) z0) hz0
       exact hd.congr_of_eventuallyEq hev
@@ -997,10 +997,10 @@ theorem exists_F {E A P Q : ℂ → ℂ} (hE : IsHB E) (hE0 : ∀ x : ℝ, E (x 
     intro z
     by_cases h : 0 < z.im
     · have hne := hEne z h
-      simp only [Φ, h, if_true]
+      simp only [Φ, h, ite_true]
       field_simp
       linear_combination -(hrel z h)
-    · simp only [Φ, h, if_false]
+    · simp only [Φ, h, ite_false]
       exact mul_div_cancel₀ _ (hEsne z (not_lt.1 h))
   have hFstar : fstar (fstar (fun z ↦ -Φ z)) = fun z ↦ -Φ z := fstar_fstar _
   have hEF : ∀ z : ℂ, E z * fstar (fun z ↦ -Φ z) z = Q z := by
@@ -1023,7 +1023,7 @@ theorem exists_F {E A P Q : ℂ → ℂ} (hE : IsHB E) (hE0 : ∀ x : ℝ, E (x 
       rw [eq_div_iff (hEne z hz)]
       linear_combination hEF z
     rw [hFz]
-    simp only [Φ, hz, if_true]
+    simp only [Φ, hz, ite_true]
     ring
 
 /-- `F ∈ \overline{HB}`. -/
