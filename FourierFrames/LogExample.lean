@@ -527,35 +527,208 @@ theorem isMultWeight_logDensity : OCS.IsMultWeight logDensity (1 / 10) 20 :=
   ⟨measurable_logDensity, by norm_num, fun t ↦ (logDensity_bounds t).1,
     fun t ↦ (logDensity_bounds t).2⟩
 
+theorem abs_weight_sub_one_le {a b : ℝ} (ha : 3 / 10 ≤ a) (ha' : a ≤ 17 / 10) (hb : 3 / 10 ≤ b)
+    (hb' : b ≤ 17 / 10) : |2 * b / (a * (a + b)) - 1| ≤ 23 * (|b - 1| + |a - 1|) := by
+  have hpos : 0 < a * (a + b) := by positivity
+  have hden : 9 / 50 ≤ a * (a + b) := by nlinarith
+  have e : 2 * b / (a * (a + b)) - 1 =
+      ((b - 1) - 3 * (a - 1) - (a - 1) ^ 2 - (a - 1) * (b - 1)) / (a * (a + b)) := by
+    field_simp; ring
+  rw [e, abs_div, abs_of_pos hpos, div_le_iff₀ hpos]
+  have hnum : |(b - 1) - 3 * (a - 1) - (a - 1) ^ 2 - (a - 1) * (b - 1)| ≤
+      4 * (|b - 1| + |a - 1|) := by
+    rcases abs_cases (b - 1) with ⟨h1, h1'⟩ | ⟨h1, h1'⟩ <;>
+    rcases abs_cases (a - 1) with ⟨h2, h2'⟩ | ⟨h2, h2'⟩ <;>
+    · rw [h1, h2, abs_le]; constructor <;> nlinarith
+  have h0 : 0 ≤ |b - 1| + |a - 1| := by positivity
+  nlinarith
+
+theorem abs_logGap_pred_le (j : ℤ) : |logGap (j - 1) - 1| ≤ 6 / (1 + |(j : ℝ)|) := by
+  have := abs_logGap_sub_one_le (j - 1)
+  refine this.trans ?_
+  push_cast
+  have h1 : |(j : ℝ)| ≤ |(j : ℝ) - 1| + 1 := by
+    have := abs_sub_abs_le_abs_sub (j : ℝ) 1
+    simp at this; linarith
+  rw [div_le_div_iff₀ (by positivity) (by positivity)]
+  nlinarith [abs_nonneg ((j : ℝ) - 1), abs_nonneg (j : ℝ)]
+
+theorem abs_logPt_le (j : ℤ) : |logPt j| ≤ 2 * |(j : ℝ)| + 1 / 2 := by
+  have hl : ∀ k : ℤ, |logLam k - k| ≤ |(k : ℝ)| := fun k => by
+    unfold logLam
+    rw [add_sub_cancel_left, abs_of_nonneg Real.posLog_nonneg]
+    rw [Real.posLog_abs]; exact Real.posLog_le_abs _
+  have h1 := hl (j - 1)
+  have h2 := hl j
+  have h3 : |((j - 1 : ℤ) : ℝ)| ≤ |(j : ℝ)| + 1 := by
+    push_cast
+    have := abs_sub (j : ℝ) 1
+    simpa using this
+  have e : logPt j - j = ((logLam (j - 1) - ((j - 1 : ℤ) : ℝ)) + (logLam j - j)) / 2 := by
+    unfold logPt; push_cast; ring
+  have : |logPt j - j| ≤ |(j : ℝ)| + 1 / 2 := by
+    rw [e, abs_div, abs_of_pos (by norm_num : (0:ℝ) < 2), div_le_iff₀ (by norm_num)]
+    have := abs_add_le (logLam (j - 1) - ((j - 1 : ℤ) : ℝ)) (logLam j - j)
+    linarith
+  have := abs_sub_abs_le_abs_sub (logPt j) (j : ℝ)
+  linarith [abs_nonneg (j : ℝ)]
+
+theorem one_add_abs_le_of_mem {j : ℤ} {t : ℝ} (ht : t ∈ Ico (logPt j) (logPt (j + 1))) :
+    1 + |t| ≤ 5 * (1 + |(j : ℝ)|) := by
+  have h1 := abs_logPt_le j
+  have h2 := abs_logPt_le (j + 1)
+  have h3 : |((j + 1 : ℤ) : ℝ)| ≤ |(j : ℝ)| + 1 := by
+    push_cast; simpa using abs_add_le (j : ℝ) 1
+  have : |t| ≤ 2 * |(j : ℝ)| + 5 / 2 := by
+    have a1 := abs_le.1 h1
+    have a2 := abs_le.1 h2
+    rw [abs_le]
+    constructor <;> linarith [ht.1, ht.2, a1.1, a1.2, a2.1, a2.2, h3]
+  nlinarith [abs_nonneg (j : ℝ)]
+
 /-- `|m(t) - 1| ≤ C_m / (1 + |t|)` (one can take `C_m = 1100`). -/
 theorem abs_logDensity_sub_one_le (t : ℝ) : |logDensity t - 1| ≤ 1100 / (1 + |t|) := by
-  sorry
+  set j := logIdx t with hj
+  obtain ⟨h1, h2⟩ := logIdx_spec t
+  have ht : t ∈ Ico (logPt j) (logPt (j + 1)) := ⟨h1, h2⟩
+  have ha := logGap_bounds (j - 1)
+  have hb := logGap_bounds j
+  have hea := abs_logGap_pred_le j
+  have heb : |logGap j - 1| ≤ 3 / (1 + |(j : ℝ)|) := abs_logGap_sub_one_le j
+  have hjp : 0 < 1 + |(j : ℝ)| := by positivity
+  have hsum : |logGap j - 1| + |logGap (j - 1) - 1| ≤ 9 / (1 + |(j : ℝ)|) := by
+    have : (9 : ℝ) / (1 + |(j : ℝ)|) = 3 / (1 + |(j : ℝ)|) + 6 / (1 + |(j : ℝ)|) := by ring
+    linarith
+  have hm : |logDensity t - 1| ≤ 207 / (1 + |(j : ℝ)|) := by
+    have : |logDensity t - 1| ≤ 23 * (9 / (1 + |(j : ℝ)|)) := by
+      unfold logDensity
+      split_ifs
+      · refine (abs_weight_sub_one_le ha.1 ha.2 hb.1 hb.2).trans ?_
+        linarith
+      · have := abs_weight_sub_one_le hb.1 hb.2 ha.1 ha.2
+        unfold logWeightR
+        rw [add_comm (logGap (logIdx t - 1))]
+        refine this.trans ?_
+        linarith
+    have e : 23 * (9 / (1 + |(j : ℝ)|)) = 207 / (1 + |(j : ℝ)|) := by ring
+    linarith
+  have h5 := one_add_abs_le_of_mem ht
+  have htp : 0 < 1 + |t| := by positivity
+  refine hm.trans ?_
+  rw [div_le_div_iff₀ hjp htp]
+  nlinarith
 
 theorem tendsto_logDensity : Tendsto logDensity (cocompact ℝ) (𝓝 1) := by
-  sorry
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  have h0 : Tendsto (fun t : ℝ ↦ 1100 / (1 + |t|)) (cocompact ℝ) (𝓝 0) := by
+    have h : Tendsto (fun t : ℝ ↦ ‖t‖) (cocompact ℝ) atTop := tendsto_norm_cocompact_atTop
+    have : Tendsto (fun t : ℝ ↦ 1 + |t|) (cocompact ℝ) atTop :=
+      tendsto_atTop_add_const_left _ _ (by simpa [Real.norm_eq_abs] using h)
+    exact this.const_div_atTop 1100
+  refine squeeze_zero (fun t => norm_nonneg _) (fun t => ?_) h0
+  simpa [Real.norm_eq_abs] using abs_logDensity_sub_one_le t
+
+theorem integral_mul_density_left (j : ℤ) {F : ℝ → ℝ} :
+    ∫ t in logPt j..logBary j, F t * logDensity t = logWeightL j * ∫ t in logPt j..logBary j, F t := by
+  have hle := (logPt_lt_logBary j).1.le
+  rw [← intervalIntegral.integral_const_mul]
+  apply intervalIntegral.integral_congr_ae
+  filter_upwards [(Set.countable_singleton (logBary j)).ae_notMem volume] with x hx hx'
+  rw [Set.uIoc_of_le hle] at hx'
+  have hx2 : x < logBary j := lt_of_le_of_ne hx'.2 (by simpa using hx)
+  rw [logDensity_of_Ico_left hx'.1.le hx2]; ring
+
+theorem integral_mul_density_right (j : ℤ) {F : ℝ → ℝ} :
+    ∫ t in logBary j..logPt (j + 1), F t * logDensity t =
+      logWeightR j * ∫ t in logBary j..logPt (j + 1), F t := by
+  have hle := (logPt_lt_logBary j).2.le
+  rw [← intervalIntegral.integral_const_mul]
+  apply intervalIntegral.integral_congr_ae
+  filter_upwards [(Set.countable_singleton (logPt (j + 1))).ae_notMem volume] with x hx hx'
+  rw [Set.uIoc_of_le hle] at hx'
+  have hx2 : x < logPt (j + 1) := lt_of_le_of_ne hx'.2 (by simpa using hx)
+  rw [logDensity_of_Ico_right hx'.1.le hx2]; ring
+
+theorem integral_mul_density_split (j : ℤ) {F : ℝ → ℝ} (hF : Continuous F) :
+    ∫ t in logPt j..logPt (j + 1), F t * logDensity t =
+      logWeightL j * (∫ t in logPt j..logBary j, F t) +
+        logWeightR j * (∫ t in logBary j..logPt (j + 1), F t) := by
+  rw [← integral_mul_density_left, ← integral_mul_density_right,
+    ← intervalIntegral.integral_add_adjacent_intervals
+      (a := logPt j) (b := logBary j) (c := logPt (j + 1))
+      (isMultWeight_logDensity.intervalIntegrable_mul (hF.intervalIntegrable _ _))
+      (isMultWeight_logDensity.intervalIntegrable_mul (hF.intervalIntegrable _ _))]
+
+theorem logWeightL_mul (j : ℤ) : logWeightL j * (logGap (j - 1) / 2) = logGap j / (logGap (j - 1) + logGap j) := by
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  unfold logWeightL
+  field_simp
+
+theorem logWeightR_mul (j : ℤ) : logWeightR j * (logGap j / 2) = logGap (j - 1) / (logGap (j - 1) + logGap j) := by
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  unfold logWeightR
+  field_simp
 
 /-- `∫_{p_j}^{p_{j+1}} m = 1`. -/
 theorem integral_logDensity_logPt (j : ℤ) : ∫ t in logPt j..logPt (j + 1), logDensity t = 1 := by
-  sorry
+  have h := integral_mul_density_split j (F := fun _ ↦ (1 : ℝ)) continuous_const
+  simp only [one_mul, intervalIntegral.integral_const, smul_eq_mul, mul_one] at h
+  rw [h, logPt_succ_eq, logPt_eq]
+  have e1 := logWeightL_mul j
+  have e2 := logWeightR_mul j
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  have e3 : logBary j - (logBary j - logGap (j - 1) / 2) = logGap (j - 1) / 2 := by ring
+  have e4 : logBary j + logGap j / 2 - logBary j = logGap j / 2 := by ring
+  rw [e3, e4, e1, e2, ← add_div, add_comm]
+  exact div_self (by positivity)
 
 /-- `∫_{p_j}^{p_{j+1}} t m(t) dt = β_j`. -/
 theorem integral_mul_logDensity_logPt (j : ℤ) :
     ∫ t in logPt j..logPt (j + 1), t * logDensity t = logBary j := by
-  sorry
+  have h := integral_mul_density_split j (F := fun t ↦ t) continuous_id
+  have i1 : ∀ a b : ℝ, ∫ t in a..b, t = (b ^ 2 - a ^ 2) / 2 := fun a b => integral_id
+  rw [i1, i1] at h
+  rw [h, logPt_succ_eq, logPt_eq]
+  have := (logGap_bounds (j - 1)).1
+  have := (logGap_bounds j).1
+  unfold logWeightL logWeightR
+  field_simp
+  ring
+
+theorem multPrim_logDensity_logPt_succ (j : ℤ) :
+    OCS.multPrim logDensity (logPt (j + 1)) = OCS.multPrim logDensity (logPt j) + 1 := by
+  have := OCS.multPrim_sub_eq isMultWeight_logDensity (logPt j) (logPt (j + 1))
+  rw [integral_logDensity_logPt] at this
+  linarith
 
 theorem multPrim_logDensity_logPt (j : ℤ) : OCS.multPrim logDensity (logPt j) = j := by
-  sorry
+  induction j using Int.induction_on with
+  | zero => simp [logPt_zero, OCS.multPrim_zero]
+  | succ i ih => rw [multPrim_logDensity_logPt_succ, ih]; push_cast; ring
+  | pred i ih =>
+    have := multPrim_logDensity_logPt_succ (-(i : ℤ) - 1)
+    rw [show -(i : ℤ) - 1 + 1 = -i by ring, ih] at this
+    push_cast at ih this ⊢; linarith
 
-theorem multPt_logDensity (j : ℤ) : OCS.multPt logDensity j = logPt j := by
-  sorry
+theorem multPt_logDensity (j : ℤ) : OCS.multPt logDensity j = logPt j :=
+  OCS.multPt_eq_of isMultWeight_logDensity (multPrim_logDensity_logPt j)
 
 theorem multBary_logDensity (j : ℤ) : OCS.multBary logDensity j = logLam j + 1 / 2 := by
-  sorry
+  unfold OCS.multBary
+  rw [multPt_logDensity, multPt_logDensity, integral_mul_logDensity_logPt]
+  rfl
 
 /-- The barycentre sequence of `m` is `Λ + 1/2`, exactly. -/
 theorem multGamma_logDensity :
     OCS.multGamma logDensity = (fun x : ℝ ↦ x + 1 / 2) '' logExample := by
-  sorry
+  ext x
+  simp only [OCS.multGamma, Set.mem_range, Set.mem_image, logExample_eq_range, multBary_logDensity]
+  constructor
+  · rintro ⟨j, rfl⟩; exact ⟨logLam j, ⟨j, rfl⟩, rfl⟩
+  · rintro ⟨_, ⟨j, rfl⟩, rfl⟩; exact ⟨j, rfl⟩
 
 /-! ## §4  The potential estimate -/
 
