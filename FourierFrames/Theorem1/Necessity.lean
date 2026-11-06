@@ -148,6 +148,11 @@ theorem PWFun.memPW (h : PWFun) : MemPW (PWFun.val h) := h.2
 
 theorem PWFun.val_injective : Function.Injective PWFun.val := Subtype.val_injective
 
+/-- Build an element of `PWFun` from a function in `PW`. -/
+def PWFun.mk (f : ℂ → ℂ) (hf : MemPW f) : PWFun := ⟨f, hf⟩
+
+@[simp] theorem PWFun.val_mk (f : ℂ → ℂ) (hf : MemPW f) : PWFun.val (PWFun.mk f hf) = f := rfl
+
 /-- The sampling inner product `⟨f, g⟩ = ∑_{λ ∈ Λ} conj (f λ) g λ` (Mathlib's convention:
 conjugate-linear in the first slot). -/
 def sampInner (Λ : Set ℝ) (f g : ℂ → ℂ) : ℂ :=
@@ -158,32 +163,74 @@ section Sampling
 variable {Λ : Set ℝ} (hs : IsSampling Λ) {f g : ℂ → ℂ}
 include hs
 
-theorem sampleSum_ne_top (hf : MemPW f) : sampleSum Λ f ≠ ∞ := sorry
+theorem sampleSum_ne_top (hf : MemPW f) : sampleSum Λ f ≠ ∞ := by
+  obtain ⟨A, B, _, h⟩ := hs
+  exact ne_top_of_le_ne_top (ENNReal.mul_ne_top ENNReal.coe_ne_top (pwNormSq_ne_top hf))
+    (h f hf).2
 
 theorem summable_sq_norm_samp (hf : MemPW f) :
-    Summable fun x : Λ ↦ ‖f ((x : ℝ) : ℂ)‖ ^ 2 := sorry
+    Summable fun x : Λ ↦ ‖f ((x : ℝ) : ℂ)‖ ^ 2 := by
+  have h := ENNReal.summable_toReal (f := fun x : Λ ↦ ‖f ((x : ℝ) : ℂ)‖ₑ ^ 2)
+    (sampleSum_ne_top hs hf)
+  refine h.congr fun x ↦ ?_
+  simp [ENNReal.toReal_pow]
 
 theorem sampleSum_eq_ofReal_tsum (hf : MemPW f) :
-    sampleSum Λ f = ENNReal.ofReal (∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2) := sorry
+    sampleSum Λ f = ENNReal.ofReal (∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2) := by
+  rw [ENNReal.ofReal_tsum_of_nonneg (fun x ↦ by positivity) (summable_sq_norm_samp hs hf)]
+  unfold sampleSum
+  refine tsum_congr fun x ↦ ?_
+  rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
 
 theorem summable_samp_inner (hf : MemPW f) (hg : MemPW g) :
-    Summable fun x : Λ ↦ conj (f ((x : ℝ) : ℂ)) * g ((x : ℝ) : ℂ) := sorry
+    Summable fun x : Λ ↦ conj (f ((x : ℝ) : ℂ)) * g ((x : ℝ) : ℂ) := by
+  refine Summable.of_norm_bounded
+    (((summable_sq_norm_samp hs hf).add (summable_sq_norm_samp hs hg)).mul_left (1 / 2 : ℝ))
+    fun x ↦ ?_
+  rw [norm_mul, Complex.norm_conj]
+  nlinarith [sq_nonneg (‖f ((x : ℝ) : ℂ)‖ - ‖g ((x : ℝ) : ℂ)‖)]
 
 theorem sampInner_self (hf : MemPW f) :
-    sampInner Λ f f = ((∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 : ℝ) : ℂ) := sorry
+    sampInner Λ f f = ((∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 : ℝ) : ℂ) := by
+  unfold sampInner
+  rw [Complex.ofReal_tsum]
+  refine tsum_congr fun x ↦ ?_
+  rw [Complex.conj_mul']
+  push_cast; rfl
 
 theorem sampInner_conj_symm (hf : MemPW f) (hg : MemPW g) :
-    conj (sampInner Λ g f) = sampInner Λ f g := sorry
+    conj (sampInner Λ g f) = sampInner Λ f g := by
+  unfold sampInner
+  rw [Complex.conj_tsum]
+  refine tsum_congr fun x ↦ ?_
+  simp [mul_comm]
 
 theorem sampInner_add_left {h : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) (hh : MemPW h) :
-    sampInner Λ (f + g) h = sampInner Λ f h + sampInner Λ g h := sorry
+    sampInner Λ (f + g) h = sampInner Λ f h + sampInner Λ g h := by
+  unfold sampInner
+  rw [← (summable_samp_inner hs hf hh).tsum_add (summable_samp_inner hs hg hh)]
+  refine tsum_congr fun x ↦ ?_
+  simp [add_mul]
 
 theorem sampInner_smul_left (c : ℂ) (hf : MemPW f) (hg : MemPW g) :
-    sampInner Λ (c • f) g = conj c * sampInner Λ f g := sorry
+    sampInner Λ (c • f) g = conj c * sampInner Λ f g := by
+  unfold sampInner
+  rw [← tsum_mul_left]
+  refine tsum_congr fun x ↦ ?_
+  simp [mul_assoc]
 
 /-- Positive definiteness (uses the lower sampling bound and
 `MemPW.eq_zero_of_pwNormSq_eq_zero`). -/
-theorem sampInner_definite (hf : MemPW f) (h : sampInner Λ f f = 0) : f = 0 := sorry
+theorem sampInner_definite (hf : MemPW f) (h : sampInner Λ f f = 0) : f = 0 := by
+  rw [sampInner_self hs hf] at h
+  have h0 : ∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 = 0 := by exact_mod_cast h
+  have hS : sampleSum Λ f = 0 := by rw [sampleSum_eq_ofReal_tsum hs hf, h0]; simp
+  obtain ⟨A, B, hA, hb⟩ := hs
+  have h1 := (hb f hf).1
+  rw [hS, nonpos_iff_eq_zero, mul_eq_zero] at h1
+  rcases h1 with h1 | h1
+  · exact absurd h1 (by exact_mod_cast hA.ne')
+  · exact hf.eq_zero_of_pwNormSq_eq_zero h1
 
 set_option warn.classDefReducibility false in
 /-- The `InnerProductSpace.Core` on `PWFun` given by the sampling inner product. -/
@@ -204,21 +251,67 @@ Cauchy for `sampleSum Λ (f m - f n)` has a limit in `PW` for the same quantity.
 theorem samp_cauchy_converges (hPW : PaleyWienerThm) {f : ℕ → ℂ → ℂ} (hf : ∀ n, MemPW (f n))
     (hc : ∀ ε : ℝ≥0∞, ε ≠ 0 → ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
       sampleSum Λ (fun z ↦ f m z - f n z) < ε) :
-    ∃ g : ℂ → ℂ, MemPW g ∧ Tendsto (fun n ↦ sampleSum Λ (fun z ↦ f n z - g z)) atTop (𝓝 0) :=
-  sorry
+    ∃ g : ℂ → ℂ, MemPW g ∧ Tendsto (fun n ↦ sampleSum Λ (fun z ↦ f n z - g z)) atTop (𝓝 0) := by
+  obtain ⟨A, B, hA, hb⟩ := hs
+  have hA0 : (A : ℝ≥0∞) ≠ 0 := by exact_mod_cast hA.ne'
+  have hc' : ∀ ε : ℝ≥0∞, ε ≠ 0 → ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
+      pwNormSq (fun z ↦ f m z - f n z) < ε := by
+    intro ε hε
+    obtain ⟨N, hN⟩ := hc (A * ε) (mul_ne_zero hA0 hε)
+    refine ⟨N, fun m hm n hn ↦ ?_⟩
+    have h1 := (hb (fun z ↦ f m z - f n z) ((hf m).sub (hf n))).1
+    exact (ENNReal.mul_lt_mul_iff_right hA0 ENNReal.coe_ne_top).1 (h1.trans_lt (hN m hm n hn))
+  obtain ⟨g, hg, _, ht⟩ := pw_complete hPW hf hc'
+  refine ⟨g, hg, ?_⟩
+  have h2 : Tendsto (fun n ↦ (B : ℝ≥0∞) * pwNormSq (fun z ↦ f n z - g z)) atTop (𝓝 0) := by
+    have := ENNReal.Tendsto.const_mul ht (Or.inr (ENNReal.coe_ne_top (r := B)))
+    simpa using this
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h2 (fun _ ↦ zero_le)
+    (fun n ↦ ?_)
+  exact (hb _ ((hf n).sub hg)).2
 
 /-- (H1) at the level of functions: for `f ∈ PW` with a nonreal zero `ζ`, the function
 `(z - ζ̄) f(z)/(z - ζ)` is in `PW` and has the same sampling sum. -/
 theorem samp_H1 (hf : MemPW f) {ζ : ℂ} (hζ : ζ.im ≠ 0) (hz : f ζ = 0) :
     MemPW (fun z ↦ dslope f ζ z * (z - conj ζ)) ∧
-      sampleSum Λ (fun z ↦ dslope f ζ z * (z - conj ζ)) = sampleSum Λ f := sorry
+      sampleSum Λ (fun z ↦ dslope f ζ z * (z - conj ζ)) = sampleSum Λ f := by
+  refine ⟨hf.mul_div_sub hz _, ?_⟩
+  unfold sampleSum
+  refine tsum_congr fun x ↦ ?_
+  have hne : ((x : ℝ) : ℂ) ≠ ζ := fun h ↦ hζ (by rw [← h]; simp)
+  have hne' : ((x : ℝ) : ℂ) - ζ ≠ 0 := sub_ne_zero.2 hne
+  beta_reduce
+  rw [dslope_of_ne f hne, slope_def_field, hz]
+  have : ‖(f ((x : ℝ) : ℂ) - 0) / (((x : ℝ) : ℂ) - ζ) * (((x : ℝ) : ℂ) - conj ζ)‖ =
+      ‖f ((x : ℝ) : ℂ)‖ := by
+    have hc : ((x : ℝ) : ℂ) - conj ζ = conj (((x : ℝ) : ℂ) - ζ) := by simp
+    rw [norm_mul, norm_div, hc, Complex.norm_conj, sub_zero]
+    exact div_mul_cancel₀ _ (norm_ne_zero_iff.2 hne')
+  rw [← ofReal_norm, this, ofReal_norm]
 
 /-- (H2) quantitatively: `|f(ζ)|² ≤ e^{2π|Im ζ|} A⁻¹ ∑|f(λ)|²`. -/
 theorem samp_H2 (hPW : PaleyWienerThm) (ζ : ℂ) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ f : ℂ → ℂ, MemPW f → ‖f ζ‖ ^ 2 ≤ C * (sampleSum Λ f).toReal := sorry
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ f : ℂ → ℂ, MemPW f → ‖f ζ‖ ^ 2 ≤ C * (sampleSum Λ f).toReal := by
+  obtain ⟨A, B, hA, hb⟩ := hs
+  have hA' : (0 : ℝ) < A := by exact_mod_cast hA
+  refine ⟨Real.exp (2 * Real.pi * |ζ.im|) / A, by positivity, fun f hf ↦ ?_⟩
+  have h1 := pw_norm_sq_le hPW hf ζ
+  have hne : sampleSum Λ f ≠ ∞ := sampleSum_ne_top ⟨A, B, hA, hb⟩ hf
+  have h2 : (A : ℝ) * (pwNormSq f).toReal ≤ (sampleSum Λ f).toReal := by
+    have := ENNReal.toReal_mono hne (hb f hf).1
+    rwa [ENNReal.toReal_mul, ENNReal.coe_toReal] at this
+  have h3 : (pwNormSq f).toReal ≤ (sampleSum Λ f).toReal / A := by
+    rw [le_div_iff₀ hA']; linarith
+  calc ‖f ζ‖ ^ 2 ≤ Real.exp (2 * Real.pi * |ζ.im|) * (pwNormSq f).toReal := h1
+    _ ≤ Real.exp (2 * Real.pi * |ζ.im|) * ((sampleSum Λ f).toReal / A) :=
+        mul_le_mul_of_nonneg_left h3 (Real.exp_pos _).le
+    _ = _ := by ring
 
 /-- (H3) at the level of functions. -/
-theorem samp_H3 (hf : MemPW f) : sampleSum Λ (fstar f) = sampleSum Λ f := sorry
+theorem samp_H3 (hf : MemPW f) : sampleSum Λ (fstar f) = sampleSum Λ f := by
+  unfold sampleSum
+  refine tsum_congr fun x ↦ ?_
+  rw [fstar_ofReal, ← ofReal_norm, ← ofReal_norm, Complex.norm_conj]
 
 /-- **The sampling Hilbert space.** `PW` with the norm `(∑_{λ ∈ Λ} |f(λ)|²)^{1/2}` satisfies all
 the hypotheses of Theorem C. -/
@@ -230,7 +323,91 @@ theorem exists_samplingHilbertSpace (hPW : PaleyWienerThm) :
       (∀ ζ : ℂ, ζ.im ≠ 0 → Continuous fun h : H ↦ ι h ζ) ∧
       (∀ h : H, ∃ g : H, ‖g‖ = ‖h‖ ∧ ι g = fstar (ι h)) ∧ (∃ h : H, h ≠ 0) ∧
       (∀ f : ℂ → ℂ, f ∈ Set.range ι ↔ MemPW f) ∧
-      ∀ h : H, ENNReal.ofReal (‖h‖ ^ 2) = sampleSum Λ (ι h) := sorry
+      ∀ h : H, ENNReal.ofReal (‖h‖ ^ 2) = sampleSum Λ (ι h) := by
+  letI i1 : NormedAddCommGroup PWFun := (sampCore hs).toNormedAddCommGroup
+  letI i2 : InnerProductSpace ℂ PWFun := InnerProductSpace.ofCore (sampCore hs).toCore
+  have hsq : ∀ h : PWFun, ‖h‖ ^ 2 = ∑' x : Λ, ‖PWFun.val h ((x : ℝ) : ℂ)‖ ^ 2 := by
+    intro h
+    rw [norm_sq_eq_re_inner (𝕜 := ℂ) h]
+    have := sampInner_self hs h.memPW
+    change (sampInner Λ (PWFun.val h) (PWFun.val h)).re = _
+    rw [this, Complex.ofReal_re]
+  have hnorm : ∀ h : PWFun, ENNReal.ofReal (‖h‖ ^ 2) = sampleSum Λ (PWFun.val h) := by
+    intro h
+    rw [hsq h, sampleSum_eq_ofReal_tsum hs h.memPW]
+  have hnorm' : ∀ h : PWFun, ‖h‖ ^ 2 = (sampleSum Λ (PWFun.val h)).toReal := by
+    intro h
+    rw [← hnorm h, ENNReal.toReal_ofReal (by positivity)]
+  have hnorm_eq : ∀ g h : PWFun, sampleSum Λ (PWFun.val g) = sampleSum Λ (PWFun.val h) →
+      ‖g‖ = ‖h‖ := by
+    intro g h hgh
+    have : ‖g‖ ^ 2 = ‖h‖ ^ 2 := by rw [hnorm' g, hnorm' h, hgh]
+    exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).1 this
+  have hcomplete : CompleteSpace PWFun := by
+    refine Metric.complete_of_cauchySeq_tendsto fun u hu ↦ ?_
+    have hc : ∀ ε : ℝ≥0∞, ε ≠ 0 → ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
+        sampleSum Λ (fun z ↦ PWFun.val (u m) z - PWFun.val (u n) z) < ε := by
+      intro ε hε
+      obtain ⟨r, hr0, hr1, hr2⟩ := ENNReal.lt_iff_exists_real_btwn.1 (pos_iff_ne_zero.2 hε)
+      have hrpos : 0 < r := by
+        rcases hr0.eq_or_lt with h | h
+        · rw [← h] at hr1; simp at hr1
+        · exact h
+      obtain ⟨N, hN⟩ := Metric.cauchySeq_iff.1 hu (Real.sqrt r) (Real.sqrt_pos.2 hrpos)
+      refine ⟨N, fun m hm n hn ↦ ?_⟩
+      have h1 := hN m hm n hn
+      rw [dist_eq_norm] at h1
+      have h2 : ‖u m - u n‖ ^ 2 < r := by
+        have := pow_lt_pow_left₀ h1 (norm_nonneg _) (two_ne_zero)
+        rwa [Real.sq_sqrt hrpos.le] at this
+      have h3 := hnorm (u m - u n)
+      have h4 : PWFun.val (u m - u n) = fun z ↦ PWFun.val (u m) z - PWFun.val (u n) z := by
+        funext z; simp
+      rw [h4] at h3
+      rw [← h3]
+      exact lt_trans ((ENNReal.ofReal_lt_ofReal_iff hrpos).2 h2) hr2
+    obtain ⟨g, hg, ht⟩ := samp_cauchy_converges hs hPW (fun n ↦ (u n).memPW) hc
+    refine ⟨PWFun.mk g hg, ?_⟩
+    rw [tendsto_iff_dist_tendsto_zero]
+    have h5 : ∀ n, dist (u n) (PWFun.mk g hg) =
+        Real.sqrt ((sampleSum Λ (fun z ↦ PWFun.val (u n) z - g z)).toReal) := by
+      intro n
+      rw [dist_eq_norm, ← Real.sqrt_sq (norm_nonneg (u n - PWFun.mk g hg)), hnorm']
+      congr 3
+    simp_rw [h5]
+    have := (ENNReal.tendsto_toReal (ENNReal.zero_ne_top)).comp ht
+    have h6 := (Real.continuous_sqrt.tendsto _).comp this
+    simp only [ENNReal.toReal_zero, Real.sqrt_zero] at h6
+    exact h6
+  refine ⟨PWFun, i1, i2, hcomplete, PWFun.val, PWFun.val_injective, fun h ↦ h.memPW.1, ?_, ?_, ?_,
+    ?_, ?_, hnorm⟩
+  · intro h ζ hζ hz
+    obtain ⟨hm, hS⟩ := samp_H1 hs h.memPW hζ hz
+    refine ⟨PWFun.mk _ hm, hnorm_eq _ _ (by simpa using hS), fun z hzz ↦ ?_⟩
+    simp only [PWFun.val_mk]
+    have hne : z - ζ ≠ 0 := sub_ne_zero.2 hzz
+    rw [dslope_of_ne _ hzz, slope_def_field, hz]
+    field_simp
+    ring
+  · intro ζ hζ
+    obtain ⟨C, hC0, hC⟩ := samp_H2 hs hPW ζ
+    let L : PWFun →ₗ[ℂ] ℂ := (LinearMap.proj ζ).comp PWFun.val
+    refine (AddMonoidHomClass.continuous_of_bound L (Real.sqrt C) fun h ↦ ?_)
+    change ‖PWFun.val h ζ‖ ≤ _
+    have h1 := hC _ h.memPW
+    rw [← hnorm' h] at h1
+    refine (pow_le_pow_iff_left₀ (norm_nonneg _) (by positivity) two_ne_zero).1 ?_
+    rw [mul_pow, Real.sq_sqrt hC0]
+    exact h1
+  · intro h
+    refine ⟨PWFun.mk _ h.memPW.fstar, hnorm_eq _ _ ?_, rfl⟩
+    simpa using samp_H3 hs h.memPW
+  · obtain ⟨g, hg, hg0⟩ := exists_memPW_eval_ne_zero
+    refine ⟨PWFun.mk g hg, fun h ↦ ?_⟩
+    have := congrFun (congrArg PWFun.val h) 0
+    simp [hg0] at this
+  · intro f
+    exact ⟨fun ⟨h, hh⟩ ↦ hh ▸ h.memPW, fun hf ↦ ⟨PWFun.mk f hf, rfl⟩⟩
 
 end Sampling
 
@@ -241,7 +418,19 @@ section StepE
 /-- Steps 1–2 of the proof: Theorem C applied to the sampling Hilbert space. -/
 theorem exists_E (hPW : PaleyWienerThm) (hC : TheoremC) {Λ : Set ℝ} (hs : IsSampling Λ) :
     ∃ E : ℂ → ℂ, IsHB E ∧ HEEqPW E ∧ (∀ f : ℂ → ℂ, MemHE E f ↔ MemPW f) ∧
-      ∀ f : ℂ → ℂ, MemPW f → heNormSq E f = sampleSum Λ f := sorry
+      ∀ f : ℂ → ℂ, MemPW f → heNormSq E f = sampleSum Λ f := by
+  obtain ⟨H, i1, i2, i3, ι, hinj, hdiff, h1, h2, h3, hne, hrange, hnorm⟩ :=
+    exists_samplingHilbertSpace hs hPW
+  obtain ⟨E, hE, hmem, hn⟩ := @hC H i1 i2 i3 ι hinj hdiff h1 h2 h3 hne
+  have hmem' : ∀ f : ℂ → ℂ, MemHE E f ↔ MemPW f := fun f ↦ (hmem f).trans (hrange f)
+  have hnormPW : ∀ f : ℂ → ℂ, MemPW f → heNormSq E f = sampleSum Λ f := by
+    intro f hf
+    obtain ⟨h, rfl⟩ := (hrange f).2 hf
+    rw [← hn h, hnorm h]
+  obtain ⟨A, B, hA, hb⟩ := hs
+  refine ⟨E, hE, ⟨hmem', A, B, hA, fun f hf ↦ ?_⟩, hmem', hnormPW⟩
+  rw [hnormPW f hf]
+  exact hb f hf
 
 end StepE
 
