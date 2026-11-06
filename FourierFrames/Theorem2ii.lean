@@ -4,6 +4,7 @@ import FourierFrames.Theorem2ii.Window
 import FourierFrames.Theorem2ii.UOne
 import FourierFrames.Theorem2ii.Ramp
 import FourierFrames.Theorem2ii.Mass
+import FourierFrames.Theorem2ii.Cells
 
 /-!
 # M09 — Theorem 2 (ii)
@@ -889,12 +890,267 @@ theorem pwNormSq_testFn_ge :
 /-- **Sampling sum.**  For admissible `ψ` vanishing on `(-∞, 0]`, there is `C` (depending on
 `sup |ψ'|` only) such that, if `Λ(ψ)` is `η`-close to `ℤ + 1/2` on `[2a₁ + 3, a₂ - 3]`, then
 `∑_{λ ∈ Λ(ψ)} |f(λ)|² ≤ C a₁ (1 + η² log(a₂/a₁))`. -/
+theorem env_le_sq {a₁ a₂ y : ℝ} (ha₁ : 0 < a₁) (h12 : a₁ ≤ a₂) (hy : 0 < y) :
+    env a₁ a₂ y ≤ a₁ * a₂ / y ^ 2 := by
+  have ha₂ : 0 < a₂ := lt_of_lt_of_le ha₁ h12
+  unfold env
+  rw [abs_of_pos hy]
+  rcases le_total y a₁ with h | h
+  · rw [max_eq_left h, max_eq_left (h.trans h12), div_self ha₁.ne', div_self ha₂.ne', one_mul,
+      le_div_iff₀ (by positivity)]
+    nlinarith
+  · rw [max_eq_right h]
+    rcases le_total y a₂ with h' | h'
+    · rw [max_eq_left h', div_self ha₂.ne', mul_one, div_le_div_iff₀ hy (by positivity)]
+      nlinarith [mul_pos ha₁ hy]
+    · rw [max_eq_right h', div_mul_div_comm, sq]
+
+theorem testFn_sq_le {C₁ : ℝ} {a₁ a₂ : ℝ} (hC₁ : 0 ≤ C₁) (ha₁ : 0 < a₁) (ha₂ : 0 < a₂)
+    (hw : OCS.IsMultWeight (dens a₁ a₂) (1 / 2) 1)
+    (hbd : ∀ x : ℝ, ‖testFn a₁ a₂ x‖ ≤ C₁ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
+          infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂))) (x : ℝ) :
+    ‖testFn a₁ a₂ x‖ ^ 2 ≤ 4 * C₁ ^ 2 * env a₁ a₂ (x + 1 / 2) := by
+  have h1 := hbd x
+  have h2 := infDist_multGammaC_le hw (x + 1 / 2)
+  have hd0 : 0 ≤ infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) := infDist_nonneg
+  have hd : infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) ≤ 2 := by
+    have := h2; norm_num at this; linarith
+  have hs := Real.sqrt_nonneg (env a₁ a₂ (x + 1 / 2))
+  have h3 : ‖testFn a₁ a₂ x‖ ≤ C₁ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * 2 :=
+    h1.trans (mul_le_mul_of_nonneg_left hd (by positivity))
+  have h4 := pow_le_pow_left₀ (norm_nonneg _) h3 2
+  refine h4.trans (le_of_eq ?_)
+  have := Real.sq_sqrt (env_pos ha₁ ha₂ (x + 1 / 2)).le
+  calc (C₁ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) * 2) ^ 2 =
+      4 * C₁ ^ 2 * (Real.sqrt (env a₁ a₂ (x + 1 / 2))) ^ 2 := by ring
+    _ = _ := by rw [this]
+
+theorem testFn_sq_le_window {C₁ : ℝ} {a₁ a₂ η : ℝ} (hC₁ : 0 ≤ C₁) (h₁ : 2 ≤ a₁) (h₂ : 2 * a₁ < a₂)
+    (hbd : ∀ x : ℝ, ‖testFn a₁ a₂ x‖ ≤ C₁ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
+          infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)))
+    {x : ℝ} (hx : x ∈ Icc (2 * a₁ + 3) (a₂ - 3)) (hη : T2ii.dev x ≤ η) :
+    ‖testFn a₁ a₂ x‖ ^ 2 ≤ C₁ ^ 2 * η ^ 2 * (a₁ / (x + 1 / 2)) := by
+  have ha₁ : 0 < a₁ := by linarith
+  have h1 := hbd x
+  rw [infDist_dens_stretch h₁ h₂ hx, T2ii.dev_eq_round, env_eq_of_mem ha₁ hx] at h1
+  have hx0 : 0 < x + 1 / 2 := by linarith [hx.1]
+  have hs := Real.sq_sqrt (by positivity : 0 ≤ a₁ / (x + 1 / 2))
+  have hnn : 0 ≤ C₁ * Real.sqrt (a₁ / (x + 1 / 2)) * T2ii.dev x :=
+    mul_nonneg (mul_nonneg hC₁ (Real.sqrt_nonneg _)) (T2ii.dev_nonneg x)
+  have h3 : C₁ * Real.sqrt (a₁ / (x + 1 / 2)) * T2ii.dev x ≤
+      C₁ * Real.sqrt (a₁ / (x + 1 / 2)) * η :=
+    mul_le_mul_of_nonneg_left hη (mul_nonneg hC₁ (Real.sqrt_nonneg _))
+  have h4 := pow_le_pow_left₀ (norm_nonneg _) (h1.trans h3) 2
+  refine h4.trans (le_of_eq ?_)
+  calc (C₁ * Real.sqrt (a₁ / (x + 1 / 2)) * η) ^ 2 =
+      C₁ ^ 2 * η ^ 2 * (Real.sqrt (a₁ / (x + 1 / 2))) ^ 2 := by ring
+    _ = _ := by rw [hs]
+
 theorem sampleSum_testFn_le {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0) :
     ∃ C : ℝ, 0 < C ∧ ∀ a₁ a₂ η : ℝ, 8 ≤ a₁ → 16 * a₁ ≤ a₂ → 0 ≤ η →
       (∀ l ∈ LambdaPsi ψ, l ∈ Icc (2 * a₁ + 3) (a₂ - 3) → ∃ k : ℤ, |l - (k + 1 / 2)| ≤ η) →
       sampleSum (LambdaPsi ψ) (testFn a₁ a₂) ≤
         ENNReal.ofReal (C * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁))) := by
-  sorry
+  obtain ⟨B, hB0, hB⟩ := T2ii.exists_bound_deriv hψ
+  set N : ℕ := ⌊1 + B⌋₊ + 1 with hN
+  obtain ⟨c₀, C₁, hc₀, hC₁, hbd⟩ := testFn_norm_real
+  have hup : ∀ a₁ a₂ : ℝ, 1 ≤ a₁ → 2 * a₁ < a₂ → ∀ x : ℝ, ‖testFn a₁ a₂ x‖ ≤
+      C₁ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
+        infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) :=
+    fun a₁ a₂ h₁ h₂ x ↦ (hbd a₁ a₂ h₁ h₂ x).2
+  refine ⟨20 * N * C₁ ^ 2, by positivity, fun a₁ a₂ η h8 h16 hη hwin ↦ ?_⟩
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have h₁ : 1 ≤ a₁ := by linarith
+  have h₂ : 2 * a₁ < a₂ := by linarith
+  have hw := dens_isMultWeight h₁ h₂
+  set K : ℝ := C₁ ^ 2 with hK
+  have hK0 : 0 ≤ K := by positivity
+  -- pointwise bounds
+  have P1 : ∀ x : ℝ, ‖testFn a₁ a₂ x‖ ^ 2 ≤ 4 * K * env a₁ a₂ (x + 1 / 2) :=
+    fun x ↦ testFn_sq_le hC₁.le ha₁ ha₂ hw (hup a₁ a₂ h₁ h₂) x
+  have P2 : ∀ x ∈ LambdaPsi ψ, x ∈ Icc (2 * a₁ + 3) (a₂ - 3) →
+      ‖testFn a₁ a₂ x‖ ^ 2 ≤ K * η ^ 2 * (a₁ / (x + 1 / 2)) := by
+    intro x hxΛ hx
+    obtain ⟨k, hk⟩ := hwin x hxΛ hx
+    have hdev : T2ii.dev x ≤ η := by
+      rw [← T2ii.dev_eq_round]
+      refine (round_le (x - 1 / 2) k).trans ?_
+      rw [show x - 1 / 2 - (k : ℝ) = x - (k + 1 / 2) by ring]; exact hk
+    exact testFn_sq_le_window hC₁.le (by linarith) h₂ (hup a₁ a₂ h₁ h₂) hx hdev
+  -- cells
+  have cells : ∀ {A : Set ℝ}, A ⊆ LambdaPsi ψ → A ⊆ Ici 0 → ∀ (H : ℕ → ℝ≥0∞) (T : ℝ≥0∞),
+      (∀ l ∈ A, ‖testFn a₁ a₂ l‖ₑ ^ 2 ≤ H ⌊l⌋₊) → (∀ J : Finset ℕ, ∑ j ∈ J, H j ≤ T) →
+      ∑' l : A, ‖testFn a₁ a₂ l‖ₑ ^ 2 ≤ N * T := by
+    intro A hAΛ hA0 H T hH hT
+    exact T2ii.tsum_cells_le hA0 (fun j F hF hj ↦
+      T2ii.lambda_cell_count hψ hB0 hB j F (hF.trans hAΛ) hj) _ H hH T hT
+  set Λ := LambdaPsi ψ with hΛ
+  set φ : ℝ → ℝ≥0∞ := fun l ↦ ‖testFn a₁ a₂ l‖ₑ ^ 2 with hφ
+  have hφ' : ∀ l, φ l = ENNReal.ofReal (‖testFn a₁ a₂ l‖ ^ 2) := by
+    intro l; simp only [hφ]; rw [← ofReal_norm, ENNReal.ofReal_pow (norm_nonneg _)]
+  set J₀ : ℕ := ⌊2 * a₁ + 3⌋₊ with hJ₀
+  set J₁ : ℕ := ⌊a₂ - 3⌋₊ with hJ₁
+  have hJ₀1 : (J₀ : ℝ) ≤ 2 * a₁ + 3 := Nat.floor_le (by linarith)
+  have hJ₀2 : 2 * a₁ + 3 < J₀ + 1 := Nat.lt_floor_add_one _
+  have hJ₁1 : (J₁ : ℝ) ≤ a₂ - 3 := Nat.floor_le (by linarith)
+  have hJ₁2 : a₂ - 3 < J₁ + 1 := Nat.lt_floor_add_one _
+  have hJ01 : J₀ ≤ J₁ := Nat.floor_le_floor (by linarith)
+  have hJ₁pos : (1 : ℝ) ≤ J₁ := by linarith
+  have hJ₁1' : 1 ≤ J₁ := by exact_mod_cast hJ₁pos
+  -- region 0
+  have T0 : ∑' l : ↑(Λ ∩ Iic 0), φ l = 0 := by
+    refine (tsum_congr (fun x ↦ ?_)).trans tsum_zero
+    obtain ⟨⟨k, hk⟩, hx0⟩ := x.2
+    have hψ0 : ψ x = 0 := h0 x hx0
+    have hxk : (x : ℝ) = k := by rw [hψ0, add_zero] at hk; exact hk
+    have hk0 : k ≤ 0 := by
+      have : (k : ℝ) ≤ 0 := hxk ▸ hx0
+      exact_mod_cast this
+    have : testFn a₁ a₂ ((x : ℝ) : ℂ) = 0 := by
+      rw [hxk]; exact testFn_eq_zero_of_nonpos (by linarith) h₂ k hk0
+    simp only [hφ, this, enorm_zero]
+    norm_num
+  -- region 1
+  have T1 : ∑' l : ↑(Λ ∩ Ioo 0 (2 * a₁ + 3)), φ l ≤ N * ENNReal.ofReal ((J₀ + 1 : ℕ) * (4 * K)) := by
+    refine cells (inter_subset_left) (fun l hl ↦ le_of_lt hl.2.1)
+      (fun j ↦ if j ∈ Finset.range (J₀ + 1) then ENNReal.ofReal (4 * K) else 0) _ ?_ ?_
+    · intro l hl
+      have hmem : ⌊l⌋₊ ∈ Finset.range (J₀ + 1) := by
+        rw [Finset.mem_range, Nat.lt_succ_iff]; exact Nat.floor_le_floor hl.2.2.le
+      simp only [hmem, ↓reduceIte]
+      show φ l ≤ _
+      rw [hφ']
+      refine ENNReal.ofReal_le_ofReal ((P1 l).trans ?_)
+      have := env_le_one ha₁ ha₂ (l + 1 / 2)
+      nlinarith
+    · intro J
+      refine (T2ii.sumH_finset J (Finset.range (J₀ + 1)) (fun _ ↦ 4 * K) (fun _ ↦ by positivity)).trans ?_
+      simp
+  -- region 2
+  have T2 : ∑' l : ↑(Λ ∩ Icc (2 * a₁ + 3) (a₂ - 3)), φ l ≤
+      N * ENNReal.ofReal (K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁))) := by
+    refine cells (inter_subset_left) (fun l hl ↦ mem_Ici.2 (by linarith [hl.2.1, ha₁]))
+      (fun j ↦ if j ∈ Finset.Icc J₀ J₁ then
+        ENNReal.ofReal (K * η ^ 2 * a₁ * (1 / ((j : ℝ) + 1 / 2))) else 0) _ ?_ ?_
+    · intro l hl
+      have hmem : ⌊l⌋₊ ∈ Finset.Icc J₀ J₁ := by
+        rw [Finset.mem_Icc]
+        exact ⟨Nat.floor_le_floor hl.2.1, Nat.floor_le_floor hl.2.2⟩
+      simp only [hmem, ↓reduceIte]
+      show φ l ≤ _
+      rw [hφ']
+      refine ENNReal.ofReal_le_ofReal ((P2 l hl.1 hl.2).trans ?_)
+      have hl0 : 0 < l := by linarith [hl.2.1]
+      have hfl : (⌊l⌋₊ : ℝ) ≤ l := Nat.floor_le hl0.le
+      have : a₁ / (l + 1 / 2) ≤ a₁ * (1 / ((⌊l⌋₊ : ℝ) + 1 / 2)) := by
+        rw [mul_one_div]
+        exact div_le_div_of_nonneg_left ha₁.le (by positivity) (by linarith)
+      calc K * η ^ 2 * (a₁ / (l + 1 / 2)) ≤ K * η ^ 2 * (a₁ * (1 / ((⌊l⌋₊ : ℝ) + 1 / 2))) :=
+            mul_le_mul_of_nonneg_left this (by positivity)
+        _ = _ := by ring
+    · intro J
+      refine (T2ii.sumH_finset J (Finset.Icc J₀ J₁) (fun j ↦ K * η ^ 2 * a₁ * (1 / ((j : ℝ) + 1 / 2)))
+        (fun j ↦ by positivity)).trans (ENNReal.ofReal_le_ofReal ?_)
+      rw [← Finset.mul_sum]
+      refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+      refine (T2ii.sum_Icc_inv_half hJ01).trans ?_
+      have hA : 1 / ((J₀ : ℝ) + 1 / 2) ≤ 1 := by
+        rw [div_le_one (by positivity)]; linarith
+      have hB' : Real.log (((J₁ : ℝ) + 1 / 2) / ((J₀ : ℝ) + 1 / 2)) ≤ Real.log (a₂ / a₁) := by
+        refine Real.log_le_log (by positivity) ?_
+        rw [div_le_div_iff₀ (by positivity) ha₁]
+        have : (0 : ℝ) ≤ J₀ := Nat.cast_nonneg _
+        nlinarith
+      linarith
+  -- region 3
+  have T3 : ∑' l : ↑(Λ ∩ Ioi (a₂ - 3)), φ l ≤ N * ENNReal.ofReal (8 * K * a₁) := by
+    refine cells (inter_subset_left) (fun l hl ↦ mem_Ici.2 (by linarith [hl.2.out, h16, ha₁]))
+      (fun j ↦ if J₁ ≤ j then
+        ENNReal.ofReal (4 * K * a₁ * a₂ * (1 / ((j : ℝ) + 1 / 2) ^ 2)) else 0) _ ?_ ?_
+    · intro l hl
+      have hmem : J₁ ≤ ⌊l⌋₊ := Nat.floor_le_floor hl.2.out.le
+      simp only [hmem, ↓reduceIte]
+      show φ l ≤ _
+      rw [hφ']
+      refine ENNReal.ofReal_le_ofReal ((P1 l).trans ?_)
+      have hl0 : 0 < l := by linarith [hl.2.out]
+      have hfl : (⌊l⌋₊ : ℝ) ≤ l := Nat.floor_le hl0.le
+      have hq : 0 < (⌊l⌋₊ : ℝ) + 1 / 2 := by positivity
+      have h1 := env_le_sq ha₁ (by linarith : a₁ ≤ a₂) (by linarith : 0 < l + 1 / 2)
+      have h2 : a₁ * a₂ / (l + 1 / 2) ^ 2 ≤ a₁ * a₂ * (1 / ((⌊l⌋₊ : ℝ) + 1 / 2) ^ 2) := by
+        rw [mul_one_div]
+        exact div_le_div_of_nonneg_left (by positivity) (by positivity)
+          (pow_le_pow_left₀ hq.le (by linarith) 2)
+      calc 4 * K * env a₁ a₂ (l + 1 / 2) ≤ 4 * K * (a₁ * a₂ * (1 / ((⌊l⌋₊ : ℝ) + 1 / 2) ^ 2)) :=
+            mul_le_mul_of_nonneg_left (h1.trans h2) (by positivity)
+        _ = _ := by ring
+    · intro J
+      refine (T2ii.sumH_tail J J₁ (fun j ↦ 4 * K * a₁ * a₂ * (1 / ((j : ℝ) + 1 / 2) ^ 2))
+        (fun j ↦ by positivity) (8 * K * a₁) (fun M ↦ ?_))
+      rw [← Finset.mul_sum]
+      have h1 := T2ii.sum_Ico_inv_sq hJ₁1' M
+      have h3 : 4 * K * a₁ * a₂ * (1 / (J₁ : ℝ)) ≤ 8 * K * a₁ := by
+        rw [mul_one_div, div_le_iff₀ (by linarith)]
+        have : 0 ≤ K * a₁ := by positivity
+        nlinarith
+      exact (mul_le_mul_of_nonneg_left h1 (by positivity)).trans h3
+  -- assembling
+  have hcover : Λ ⊆ ((Λ ∩ Iic 0 ∪ Λ ∩ Ioo 0 (2 * a₁ + 3)) ∪ Λ ∩ Icc (2 * a₁ + 3) (a₂ - 3)) ∪
+      Λ ∩ Ioi (a₂ - 3) := by
+    intro l hl
+    by_cases h1 : l ≤ 0
+    · exact Or.inl (Or.inl (Or.inl ⟨hl, h1⟩))
+    · by_cases h2 : l < 2 * a₁ + 3
+      · exact Or.inl (Or.inl (Or.inr ⟨hl, not_le.1 h1, h2⟩))
+      · by_cases h3 : l ≤ a₂ - 3
+        · exact Or.inl (Or.inr ⟨hl, not_lt.1 h2, h3⟩)
+        · exact Or.inr ⟨hl, not_le.1 h3⟩
+  have hsplit : sampleSum Λ (testFn a₁ a₂) ≤
+      ∑' l : ↑(Λ ∩ Iic 0), φ l + ∑' l : ↑(Λ ∩ Ioo 0 (2 * a₁ + 3)), φ l +
+      ∑' l : ↑(Λ ∩ Icc (2 * a₁ + 3) (a₂ - 3)), φ l + ∑' l : ↑(Λ ∩ Ioi (a₂ - 3)), φ l := by
+    unfold sampleSum
+    refine (ENNReal.tsum_mono_subtype φ hcover).trans ?_
+    refine (ENNReal.tsum_union_le φ _ _).trans (add_le_add ?_ le_rfl)
+    refine (ENNReal.tsum_union_le φ _ _).trans (add_le_add ?_ le_rfl)
+    exact ENNReal.tsum_union_le φ _ _
+  have hL : 1 ≤ Real.log (a₂ / a₁) := by
+    rw [Real.le_log_iff_exp_le (by positivity), le_div_iff₀ ha₁]
+    have := Real.exp_one_lt_d9
+    nlinarith
+  have hnum : (N : ℝ) * ((J₀ + 1 : ℕ) * (4 * K)) + (N : ℝ) * (K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁))) +
+      (N : ℝ) * (8 * K * a₁) ≤ 20 * N * C₁ ^ 2 * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁)) := by
+    have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg _
+    have e1 : ((J₀ + 1 : ℕ) : ℝ) * (4 * K) ≤ 12 * K * a₁ := by
+      push_cast
+      have : (J₀ : ℝ) + 1 ≤ 3 * a₁ := by linarith
+      nlinarith
+    have hη2 : 0 ≤ η ^ 2 := sq_nonneg η
+    have hLη : K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁)) ≤ 2 * K * a₁ * (η ^ 2 * Real.log (a₂ / a₁)) := by
+      have : 0 ≤ K * a₁ * η ^ 2 := by positivity
+      nlinarith
+    have : ((J₀ + 1 : ℕ) : ℝ) * (4 * K) + K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁)) + 8 * K * a₁ ≤
+        20 * K * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁)) := by
+      have : 0 ≤ K * a₁ * (η ^ 2 * Real.log (a₂ / a₁)) := by positivity
+      nlinarith
+    calc _ = (N : ℝ) * (((J₀ + 1 : ℕ) : ℝ) * (4 * K) + K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁)) +
+          8 * K * a₁) := by ring
+      _ ≤ (N : ℝ) * (20 * K * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁))) :=
+          mul_le_mul_of_nonneg_left this hN0
+      _ = _ := by rw [hK]; ring
+  calc sampleSum Λ (testFn a₁ a₂) ≤ _ := hsplit
+    _ ≤ 0 + N * ENNReal.ofReal ((J₀ + 1 : ℕ) * (4 * K)) +
+        N * ENNReal.ofReal (K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁))) +
+        N * ENNReal.ofReal (8 * K * a₁) := by
+          rw [T0]; gcongr
+    _ = ENNReal.ofReal ((N : ℝ) * ((J₀ + 1 : ℕ) * (4 * K)) +
+          (N : ℝ) * (K * η ^ 2 * a₁ * (1 + Real.log (a₂ / a₁))) + (N : ℝ) * (8 * K * a₁)) := by
+        have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg _
+        rw [zero_add, ENNReal.ofReal_add (by positivity) (by positivity),
+          ENNReal.ofReal_add (by positivity) (by positivity),
+          ENNReal.ofReal_mul hN0, ENNReal.ofReal_mul hN0, ENNReal.ofReal_mul hN0,
+          ENNReal.ofReal_natCast]
+    _ ≤ _ := ENNReal.ofReal_le_ofReal hnum
 
 /-! ## Part E: the choice of the window -/
 
