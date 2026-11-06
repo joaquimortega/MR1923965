@@ -2,6 +2,7 @@ import FourierFrames.HB.DeBranges
 import FourierFrames.PW.PlancherelPolya
 import FourierFrames.Theorem1.Sufficiency.Interlace
 import FourierFrames.Theorem1.Sufficiency.Limit
+import FourierFrames.Theorem1.Sufficiency.LevelSet
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -148,21 +149,21 @@ theorem HEEqPW.levelSet_ineq (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ →
     ∃ C₀ : ℝ≥0, 0 < C₀ ∧ ∀ G : ℂ → ℂ, IsHB G → (∀ x : ℝ, G x ≠ 0) → ∀ ψ : ℝ → ℝ,
       IsPhaseFunction (fun z ↦ E z * G z) ψ → ∀ α : ℝ,
         ¬ Exceptional (fun z ↦ E z * G z) α → ∀ f : ℂ → ℂ, MemPW f →
-          pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ α) f := by
-  sorry
+          pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ α) f :=
+  levelSet_ineq_aux hPW hE hEHB hEPW
 
 /-- For `H(E) = PW` and `α` non-exceptional for `E`, `Γ_α = {φ_E ∈ α + πℤ}` is separated
 (README §3.8). -/
 theorem HEEqPW.levelSet_separated (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
-    (hα : ¬ Exceptional E α) : IsSeparated (phaseLevel φ α) := by
-  sorry
+    (hα : ¬ Exceptional E α) : IsSeparated (phaseLevel φ α) :=
+  levelSet_separated_aux hPW hE hEHB hEPW hφ hα
 
 /-- For `H(E) = PW` and `α` non-exceptional, `Γ_α` is a complete interpolating sequence. -/
 theorem HEEqPW.levelSet_cis (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
-    (hα : ¬ Exceptional E α) : IsCompleteInterpolating (phaseLevel φ α) := by
-  sorry
+    (hα : ¬ Exceptional E α) : IsCompleteInterpolating (phaseLevel φ α) :=
+  levelSet_cis_aux hPW hE hEHB hEPW hφ hα
 
 /-- If `H(E) = PW`, the phase of `E` is unbounded in both directions (so `Γ_α` is infinite on both
 sides). -/
