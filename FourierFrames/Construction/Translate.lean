@@ -224,6 +224,105 @@ theorem sin_lower : ∃ c₀ : ℝ, 0 < c₀ ∧ ∀ w : ℂ, ∃ n : ℤ,
       _ = 2 * min 1 ‖w - n‖ := by rw [mul_assoc 2, hee]; ring
       _ ≤ _ := hsn
 
+theorem sin_shift_eq_zero_iff (θ : ℝ) (z : ℂ) :
+    Complex.sin (Real.pi * (z - θ)) = 0 ↔ ∃ n : ℤ, z = θ + n := by
+  rw [Complex.sin_eq_zero_iff]
+  have hpi : (Real.pi : ℂ) ≠ 0 := by exact_mod_cast Real.pi_ne_zero
+  constructor
+  · rintro ⟨k, hk⟩
+    refine ⟨k, ?_⟩
+    have : z - θ = k := by
+      apply mul_left_cancel₀ hpi; rw [hk]; ring
+    linear_combination this
+  · rintro ⟨n, rfl⟩
+    exact ⟨n, by ring⟩
+
+theorem sin_zero_unique (θ : ℝ) {z z' : ℂ} (hz : Complex.sin (Real.pi * (z - θ)) = 0)
+    (hz' : Complex.sin (Real.pi * (z' - θ)) = 0) (h : ‖z - z'‖ < 1) : z = z' := by
+  obtain ⟨n, rfl⟩ := (sin_shift_eq_zero_iff θ z).1 hz
+  obtain ⟨k, rfl⟩ := (sin_shift_eq_zero_iff θ z').1 hz'
+  have : ((n - k : ℤ) : ℂ) = (n : ℂ) - k := by push_cast; ring
+  have h2 : ‖((n - k : ℤ) : ℝ)‖ < 1 := by
+    rw [Real.norm_eq_abs]
+    have : (((θ : ℂ) + n) - ((θ : ℂ) + k)) = ((n - k : ℤ) : ℝ) := by push_cast; ring
+    rw [this, Complex.norm_real] at h
+    simpa using h
+  rw [Real.norm_eq_abs] at h2
+  have : n - k = 0 := by
+    have h3 : |n - k| < 1 := by exact_mod_cast h2
+    rw [abs_lt] at h3; omega
+  have : n = k := by omega
+  rw [this]
+
+/-- If `|G| ≤ K |sin π (· - θ)|` and `G` is entire, then `G = c sin π (· - θ)`. -/
+theorem eq_const_mul_sin {G : ℂ → ℂ} (hd : Differentiable ℂ G) (θ K : ℝ)
+    (hK : ∀ z, ‖G z‖ ≤ K * ‖Complex.sin (Real.pi * (z - θ))‖) :
+    ∃ c : ℂ, ∀ z, G z = c * Complex.sin (Real.pi * (z - θ)) := by
+  set S : ℂ → ℂ := fun z ↦ Complex.sin (Real.pi * (z - θ)) with hSdef
+  have hSd : Differentiable ℂ S := by rw [hSdef]; fun_prop
+  set f : ℂ → ℂ := fun z ↦ G z / S z with hf
+  set Q : ℂ → ℂ := fun z ↦ limUnder (𝓝[≠] z) f with hQ
+  have hfK : ∀ z, S z ≠ 0 → ‖f z‖ ≤ K := by
+    intro z hz
+    have h1 := hK z
+    have h2 : 0 < ‖S z‖ := norm_pos_iff.2 hz
+    rw [hf]; simp only [norm_div]
+    rw [div_le_iff₀ h2]; exact h1
+  have hQeq : ∀ z, S z ≠ 0 → Q z = f z := by
+    intro z hz
+    have hc : ContinuousAt f z := (hd.continuous.continuousAt).div hSd.continuous.continuousAt hz
+    exact (hc.tendsto.mono_left nhdsWithin_le_nhds).limUnder_eq
+  have hball : ∀ p, S p = 0 → ∀ z' ∈ ball p 1, z' ≠ p → S z' ≠ 0 := by
+    intro p hp z' hz' hne h0
+    refine hne (sin_zero_unique θ h0 hp ?_)
+    rw [mem_ball, dist_eq_norm] at hz'; exact hz'
+  have hQd : Differentiable ℂ Q := by
+    intro p
+    by_cases hp : S p = 0
+    · have hsd : DifferentiableOn ℂ f (ball p 1 \ {p}) := by
+        intro z' hz'
+        have hne := hball p hp z' hz'.1 hz'.2
+        exact ((hd z').div (hSd z') hne).differentiableWithinAt
+      have hb : BddAbove (norm ∘ f '' (ball p 1 \ {p})) := by
+        refine ⟨K, ?_⟩
+        rintro _ ⟨z', hz', rfl⟩
+        exact hfK z' (hball p hp z' hz'.1 hz'.2)
+      have := Complex.differentiableOn_update_limUnder_of_bddAbove (ball_mem_nhds p one_pos) hsd hb
+      have hev : Q =ᶠ[𝓝 p] Function.update f p (limUnder (𝓝[≠] p) f) := by
+        filter_upwards [ball_mem_nhds p one_pos] with z' hz'
+        by_cases hzp : z' = p
+        · subst hzp; simp [hQ]
+        · rw [Function.update_of_ne hzp]; exact hQeq z' (hball p hp z' hz' hzp)
+      exact DifferentiableAt.congr_of_eventuallyEq
+        (this.differentiableAt (ball_mem_nhds p one_pos)) hev
+    · have hev : Q =ᶠ[𝓝 p] f := by
+        have : {z' | S z' ≠ 0} ∈ 𝓝 p :=
+          (isOpen_ne_fun hSd.continuous continuous_const).mem_nhds hp
+        filter_upwards [this] with z' hz' using hQeq z' hz'
+      exact DifferentiableAt.congr_of_eventuallyEq ((hd p).div (hSd p) hp) hev
+  have hQb : ∀ z, ‖Q z‖ ≤ K := by
+    intro p
+    by_cases hp : S p = 0
+    · have hev : ∀ᶠ z' in 𝓝[≠] p, ‖Q z'‖ ≤ K := by
+        have : {p}ᶜ ∩ ball p 1 ∈ 𝓝[≠] p :=
+          inter_mem_nhdsWithin _ (ball_mem_nhds p one_pos)
+        filter_upwards [this] with z' hz'
+        rw [hQeq z' (hball p hp z' hz'.2 hz'.1)]
+        exact hfK z' (hball p hp z' hz'.2 hz'.1)
+      exact le_of_tendsto ((hQd.continuous.tendsto p).mono_left nhdsWithin_le_nhds).norm hev
+    · rw [hQeq p hp]; exact hfK p hp
+  have hconst : ∀ z, Q z = Q 0 := fun z ↦
+    hQd.apply_eq_apply_of_bounded
+      (isBounded_iff_forall_norm_le.2 ⟨K, by rintro _ ⟨z, rfl⟩; exact hQb z⟩) z 0
+  refine ⟨Q 0, fun z ↦ ?_⟩
+  by_cases hz : S z = 0
+  · have := hK z
+    rw [show Complex.sin (Real.pi * (z - θ)) = 0 from hz, norm_zero, mul_zero] at this
+    rw [norm_le_zero_iff.1 this, show Complex.sin (Real.pi * (z - θ)) = 0 from hz, mul_zero]
+  · rw [← hconst z, hQeq z hz, hf]
+    simp only
+    rw [div_mul_cancel₀ _ hz]
+
 end Translate
 
 end FF
