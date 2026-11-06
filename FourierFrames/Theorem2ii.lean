@@ -3,6 +3,7 @@ import FourierFrames.Lemma3Uniform
 import FourierFrames.Theorem2ii.Window
 import FourierFrames.Theorem2ii.UOne
 import FourierFrames.Theorem2ii.Ramp
+import FourierFrames.Theorem2ii.Mass
 
 /-!
 # M09 — Theorem 2 (ii)
@@ -788,10 +789,102 @@ theorem memPW_testFn {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a�
 /-! ## Part D: norm lower bound and sampling upper bound -/
 
 /-- **Mass.**  `‖f‖² ≥ c a₁ log(a₂/(4 a₁))` for an absolute `c > 0`. -/
+theorem env_eq_of_mem {a₁ a₂ : ℝ} (ha₁ : 0 < a₁) {x : ℝ}
+    (hx : x ∈ Icc (2 * a₁ + 3) (a₂ - 3)) : env a₁ a₂ (x + 1 / 2) = a₁ / (x + 1 / 2) := by
+  have h1 : a₁ ≤ |x + 1 / 2| := by
+    rw [abs_of_pos (by linarith [hx.1])]; linarith [hx.1]
+  have h2 : |x + 1 / 2| ≤ a₂ := by
+    rw [abs_of_pos (by linarith [hx.1])]; linarith [hx.2]
+  have ha₂ : 0 < a₂ := by linarith [hx.1, hx.2]
+  unfold env
+  rw [max_eq_right h1, max_eq_left h2, div_self ha₂.ne', mul_one,
+    abs_of_pos (by linarith [hx.1])]
+
+theorem testFn_sq_ge {c₀ : ℝ} (hc₀ : 0 ≤ c₀) {a₁ a₂ : ℝ} (h₁ : 2 ≤ a₁) (h₂ : 2 * a₁ < a₂)
+    (hbd : ∀ x : ℝ, c₀ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
+          infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) ≤ ‖testFn a₁ a₂ x‖)
+    {x : ℝ} (hx : x ∈ Icc (2 * a₁ + 3) (a₂ - 3)) :
+    c₀ ^ 2 * (a₁ * T2ii.dev x ^ 2 / (x + 1 / 2)) ≤ ‖testFn a₁ a₂ x‖ ^ 2 := by
+  have ha₁ : 0 < a₁ := by linarith
+  have h := hbd x
+  rw [infDist_dens_stretch h₁ h₂ hx, T2ii.dev_eq_round, env_eq_of_mem ha₁ hx] at h
+  have hx0 : 0 < x + 1 / 2 := by linarith [hx.1]
+  have hnn : 0 ≤ c₀ * Real.sqrt (a₁ / (x + 1 / 2)) * T2ii.dev x :=
+    mul_nonneg (mul_nonneg hc₀ (Real.sqrt_nonneg _)) (T2ii.dev_nonneg x)
+  have := pow_le_pow_left₀ hnn h 2
+  refine le_trans (le_of_eq ?_) this
+  have hs := Real.sq_sqrt (by positivity : 0 ≤ a₁ / (x + 1 / 2))
+  calc c₀ ^ 2 * (a₁ * T2ii.dev x ^ 2 / (x + 1 / 2)) =
+      c₀ ^ 2 * (a₁ / (x + 1 / 2)) * T2ii.dev x ^ 2 := by ring
+    _ = _ := by rw [mul_pow, mul_pow, hs]
+
 theorem pwNormSq_testFn_ge :
     ∃ c : ℝ, 0 < c ∧ ∀ a₁ a₂ : ℝ, 8 ≤ a₁ → 16 * a₁ ≤ a₂ →
       ENNReal.ofReal (c * a₁ * Real.log (a₂ / (4 * a₁))) ≤ pwNormSq (testFn a₁ a₂) := by
-  sorry
+  obtain ⟨c₀, C₀, hc₀, -, hbd⟩ := testFn_norm_real
+  refine ⟨c₀ ^ 2 / 12, by positivity, fun a₁ a₂ h8 h16 ↦ ?_⟩
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have h₁ : 1 ≤ a₁ := by linarith
+  have h₂ : 2 * a₁ < a₂ := by linarith
+  have hlow : ∀ x : ℝ, c₀ * Real.sqrt (env a₁ a₂ (x + 1 / 2)) *
+      infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) ≤ ‖testFn a₁ a₂ x‖ :=
+    fun x ↦ (hbd a₁ a₂ h₁ h₂ x).1
+  set m₀ : ℕ := ⌈2 * a₁ + 3⌉₊ with hm₀
+  set n₁ : ℕ := ⌊a₂ - 3⌋₊ with hn₁
+  have hm₀1 : 2 * a₁ + 3 ≤ (m₀ : ℝ) := Nat.le_ceil _
+  have hm₀2 : (m₀ : ℝ) < 2 * a₁ + 3 + 1 := Nat.ceil_lt_add_one (by linarith)
+  have hn₁1 : (n₁ : ℝ) ≤ a₂ - 3 := Nat.floor_le (by linarith)
+  have hn₁2 : a₂ - 3 < (n₁ : ℝ) + 1 := Nat.lt_floor_add_one _
+  have hmn : m₀ ≤ n₁ := by
+    have : (m₀ : ℝ) ≤ n₁ := by linarith
+    exact_mod_cast this
+  set n : ℕ := n₁ - m₀ with hn
+  have hnc : (m₀ : ℝ) + n = n₁ := by
+    rw [hn, Nat.cast_sub hmn]; ring
+  -- the lower function
+  set g : ℝ → ℝ := fun x ↦ a₁ * T2ii.dev x ^ 2 / (x + 1 / 2) with hg
+  have hgint : IntervalIntegrable g volume (m₀ : ℝ) ((m₀ : ℝ) + n) :=
+    T2ii.intervalIntegrable_dev_weight (by positivity) (by positivity)
+  have hgint' : IntegrableOn (fun x ↦ c₀ ^ 2 * g x) (Ioc (m₀ : ℝ) ((m₀ : ℝ) + n)) :=
+    (hgint.1).const_mul _
+  have hgnn : ∀ x ∈ Ioc (m₀ : ℝ) ((m₀ : ℝ) + n), 0 ≤ c₀ ^ 2 * g x := by
+    intro x hx
+    have : 0 < x + 1 / 2 := by linarith [hx.1, (Nat.cast_nonneg m₀ : (0 : ℝ) ≤ m₀)]
+    simp only [hg]; positivity
+  have hS : ∀ x ∈ Ioc (m₀ : ℝ) ((m₀ : ℝ) + n), x ∈ Icc (2 * a₁ + 3) (a₂ - 3) := by
+    intro x hx
+    rw [hnc] at hx
+    exact ⟨by linarith [hx.1], by linarith [hx.2]⟩
+  have hpt : ∀ x ∈ Ioc (m₀ : ℝ) ((m₀ : ℝ) + n),
+      ENNReal.ofReal (c₀ ^ 2 * g x) ≤ ‖testFn a₁ a₂ x‖ₑ ^ 2 := by
+    intro x hx
+    have h := testFn_sq_ge hc₀.le (by linarith) h₂ hlow (hS x hx)
+    rw [← ofReal_norm, ← ENNReal.ofReal_pow (norm_nonneg _)]
+    exact ENNReal.ofReal_le_ofReal h
+  have hmain : ENNReal.ofReal (∫ x in Ioc (m₀ : ℝ) ((m₀ : ℝ) + n), c₀ ^ 2 * g x) ≤
+      pwNormSq (testFn a₁ a₂) := by
+    rw [ofReal_integral_eq_lintegral_ofReal hgint' ((ae_restrict_iff' measurableSet_Ioc).2
+      (ae_of_all _ hgnn))]
+    unfold pwNormSq
+    refine le_trans (setLIntegral_mono' measurableSet_Ioc hpt) ?_
+    exact setLIntegral_le_lintegral _ _
+  refine le_trans (ENNReal.ofReal_le_ofReal ?_) hmain
+  rw [← intervalIntegral.integral_of_le (by linarith), intervalIntegral.integral_const_mul]
+  have hI := T2ii.integral_dev_weight_ge ha₁ m₀ n
+  have hlog : Real.log (a₂ / (4 * a₁)) ≤
+      Real.log (((m₀ : ℝ) + 3 / 2 + n) / ((m₀ : ℝ) + 3 / 2)) := by
+    refine Real.log_le_log (by positivity) ?_
+    rw [div_le_div_iff₀ (by positivity) (by positivity)]
+    have e : (m₀ : ℝ) + 3 / 2 + n = n₁ + 3 / 2 := by linarith
+    rw [e]
+    nlinarith
+  have hc2 : 0 ≤ c₀ ^ 2 := by positivity
+  calc c₀ ^ 2 / 12 * a₁ * Real.log (a₂ / (4 * a₁))
+      = c₀ ^ 2 * ((a₁ / 12) * Real.log (a₂ / (4 * a₁))) := by ring
+    _ ≤ c₀ ^ 2 * ((a₁ / 12) * Real.log (((m₀ : ℝ) + 3 / 2 + n) / ((m₀ : ℝ) + 3 / 2))) := by
+        gcongr
+    _ ≤ _ := by gcongr
 
 /-- **Sampling sum.**  For admissible `ψ` vanishing on `(-∞, 0]`, there is `C` (depending on
 `sup |ψ'|` only) such that, if `Λ(ψ)` is `η`-close to `ℤ + 1/2` on `[2a₁ + 3, a₂ - 3]`, then
