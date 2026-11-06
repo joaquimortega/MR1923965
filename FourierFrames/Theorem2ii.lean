@@ -823,6 +823,60 @@ theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissibl
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ) := by
-  sorry
+  rintro ⟨A, B, hA, hS⟩
+  obtain ⟨c, hc, hmass⟩ := pwNormSq_testFn_ge
+  obtain ⟨C, hC, hsum⟩ := sampleSum_testFn_le hψ h0
+  have hA' : (0 : ℝ) < A := by exact_mod_cast hA
+  have hAc : 0 < (A : ℝ) * c := mul_pos hA' hc
+  have hlog4 : 0 ≤ Real.log 4 := Real.log_nonneg (by norm_num)
+  set s : ℝ := max 1 (3 * C / ((A : ℝ) * c)) with hs
+  have hs1 : 1 ≤ s := le_max_left _ _
+  have hsC : 3 * C ≤ (A : ℝ) * c * s := by
+    have h3 : 3 * C / ((A : ℝ) * c) ≤ s := le_max_right _ _
+    rw [div_le_iff₀ hAc] at h3
+    linarith
+  have hD : 0 < 3 * C * (1 + Real.log 4) := by positivity
+  set η : ℝ := Real.sqrt ((A : ℝ) * c / (3 * C * (1 + Real.log 4))) with hη
+  have hηpos : 0 < η := Real.sqrt_pos.2 (by positivity)
+  have hη2 : η ^ 2 * (3 * C * (1 + Real.log 4)) = (A : ℝ) * c := by
+    rw [hη, Real.sq_sqrt (by positivity)]; field_simp
+  obtain ⟨a₁, a₂, -, h8, h16, hL, hwin⟩ := exists_window hψ h0 hsmall hηpos (by linarith : 0 < s) 8
+  have h₁ : 1 ≤ a₁ := by linarith
+  have h₂ : 2 * a₁ < a₂ := by linarith
+  have hf := memPW_testFn h₁ h₂
+  have hsamp := (hS _ hf).1
+  have hm := hmass a₁ a₂ h8 h16
+  have hsm := hsum a₁ a₂ η h8 h16 hηpos.le hwin
+  set L := Real.log (a₂ / (4 * a₁)) with hLdef
+  have hL1 : 1 ≤ L := hs1.trans hL
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have hch : (A : ℝ≥0∞) * ENNReal.ofReal (c * a₁ * L) ≤
+      ENNReal.ofReal (C * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁))) :=
+    (mul_le_mul' le_rfl hm).trans (hsamp.trans hsm)
+  have hAeq : (A : ℝ≥0∞) = ENNReal.ofReal (A : ℝ) := (ENNReal.ofReal_coe_nnreal).symm
+  rw [hAeq, ← ENNReal.ofReal_mul hA'.le] at hch
+  have hlogpos : 0 ≤ Real.log (a₂ / a₁) :=
+    Real.log_nonneg (by rw [le_div_iff₀ ha₁]; linarith)
+  have hreal := (ENNReal.ofReal_le_ofReal_iff
+    (mul_nonneg (mul_nonneg hC.le ha₁.le) (by nlinarith [sq_nonneg η]))).1 hch
+  have hlogeq : Real.log (a₂ / a₁) = L + Real.log 4 := by
+    rw [hLdef, show a₂ / a₁ = 4 * (a₂ / (4 * a₁)) by field_simp,
+      Real.log_mul (by norm_num) (ne_of_gt (by positivity)), add_comm]
+  have hlog_le : Real.log (a₂ / a₁) ≤ L * (1 + Real.log 4) := by
+    rw [hlogeq]; nlinarith
+  have h1 : C * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁)) ≤
+      C * a₁ + C * a₁ * (η ^ 2 * (L * (1 + Real.log 4))) := by
+    have : η ^ 2 * Real.log (a₂ / a₁) ≤ η ^ 2 * (L * (1 + Real.log 4)) :=
+      mul_le_mul_of_nonneg_left hlog_le (sq_nonneg η)
+    nlinarith [mul_pos hC ha₁]
+  have h2 : C * a₁ * (η ^ 2 * (L * (1 + Real.log 4))) * 3 ≤ (A : ℝ) * c * a₁ * L := by
+    have : η ^ 2 * (3 * C * (1 + Real.log 4)) * (a₁ * L) = (A : ℝ) * c * (a₁ * L) := by rw [hη2]
+    nlinarith [this]
+  have h3 : C * a₁ * 3 ≤ (A : ℝ) * c * a₁ * L := by
+    have : 3 * C ≤ (A : ℝ) * c * L := by nlinarith
+    nlinarith [mul_le_mul_of_nonneg_right this ha₁.le]
+  have hpos : 0 < (A : ℝ) * c * a₁ * L := by positivity
+  nlinarith [hreal, h1, h2, h3, hpos]
 
 end FF
