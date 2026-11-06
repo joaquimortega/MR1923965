@@ -77,11 +77,16 @@ on p. 797.
 
 ## Section 3: Theorem 1
 
-### N-07 (G) — p. 795, (3): normalisation of the Herglotz representation — *tex-checked*
-(3) uses the kernel `1/(z - λ_k) + 1/λ_k`, which is undefined if `0 ∈ Λ`. The formalization uses
-`1/(λ_k - z) - λ_k/(1 + λ_k²)`, and a genus-one canonical product `G` with a factor `z` when
-`0 ∈ Λ`. The constant in front of the sum (the paper has `-i`, while Theorem F's Poisson integral
-carries `1/π`) is to be checked (M03).
+### N-07 (E) — p. 795, (3): sign, factor `1/π`, and `1/λ_k` — *tex-checked; coordinator-checked*
+(3) reads `-i ∑_k |E(λ_k)|² (1/(z - λ_k) + 1/λ_k) + ia = (E + E^*A)/(E - E^*A)`.
+- **Sign.** `Re(-i/(z - λ)) = -y/|z - λ|² ≤ 0` for `y > 0`, while the right side has positive real
+  part (it is the Poisson integral of `μ`). The kernel must be `-i/(λ - z)` (equivalently `i/(z - λ)`).
+- **Factor.** Theorem F's Poisson integral carries `1/π`, so the sum needs a factor `1/π`.
+- **`0 ∈ Λ`.** `1/λ_k` is undefined if `0 ∈ Λ` (also in `G`), and the convergence of the series is not
+  discussed. The formalization uses the kernel `1/(λ_k - z) - λ_k/(1 + λ_k²)`; the series converges
+  because `∑ |E(λ_k)|²/(1 + λ_k²)` is the (finite) Poisson integral at `z = i`. `G` is the genus-one
+  product over `Λ ∖ {0}`, times `z` if `0 ∈ Λ`.
+None of this affects the argument.
 
 ### N-08 (S) — p. 796: `G = (EF + E^*F^*)/2` — *print-checked*
 The paper argues through real parts on `ℝ`. It follows directly by adding `M + 1 = EF/G` and
@@ -150,18 +155,26 @@ identification of the limits (`c_k cos πx`) needs to be justified.
 entire `f`. The integrals must run over `[t_{n-1}, t_n]`, whose mass is `1`. The same applies to
 (10). The rewriting of `j_n` "by (9)" and the formula for `V_1` already use `[t_{n-1}, t_n]`.
 
-### N-21 (E) — pp. 804–805: the proof of Theorem 2 (ii) — *open*
+### N-21 (E) — pp. 804–805: the proof of Theorem 2 (ii) — *reconstructed; referee-pending*
 - **Typos.** "`φ_n(t) = ψ_n(t) - n - 1/2`" should read `ψ(t)`. "The assumption `φ_n'(t) = o(1/t)`"
-  should be about `ψ'`.
+  should be about `ψ'`. In the heuristic formula for `U_n`, `∫_0^{|x|}` diverges and should be
+  `∫_1^{|x|}`.
 - **`ε_n → 0` fails.** The equation `∫_{t_n}^{ξ_n} φ_n(x)/x dx = 0` does not give `ε_n → 0` in
-  general. For `ψ = log log x` it gives `ε_n ≈ 0.37`. If `ψ` is linear in `log x` on the relevant
-  range it would give `ψ(ξ_n) = n + 1`, contradicting `ξ_n < t_{n+1}/2`.
-- **The estimates do not follow.** With the paper's heuristic formula for `U_n`, one gets
-  `U_n(ξ_n) ≈ -½ log ξ_n - ½ log t_n`, not `-½ log ξ_n + O(1)`. Then (11) does not follow, while
-  (12) holds because of the mass near the origin.
-
-The proof has to be reconstructed (blueprint M09). Whether the statement holds is under
-investigation.
+  general. For `ψ = log log x` it gives `ε_n ≈ 0.37` (it reduces to `∫_{-1/2}^{ε} u e^u du = 0`). If
+  `ψ` is linear in `log x` on the relevant range it gives `ψ(ξ_n) = n + 1`, contradicting
+  `ξ_n < t_{n+1}/2`.
+- **The estimates do not follow.** `U_n + ½ log x ≃ 1` fails (on `(t_n, ξ_n)` the slope is
+  `ψ - n - 1`, not `-1/2`), and with the paper's heuristic formula one gets
+  `U_n(ξ_n) ≈ -½ log ξ_n - ½ log t_n`. Then (11) does not follow, while (12) holds because of the mass
+  near the origin.
+- **The statement is true; a simpler proof.** The authors' idea (critical decay `|f|² ≈ 1/x` over a
+  logarithmically long range) works with a different test function. Since `xψ' → 0`, there are
+  arbitrarily long windows `[x₀, x₀e^s]` on which `|ψ - (n + 1/2)| ≤ η`, so `Λ` lies within `η` of
+  `ℤ + 1/2` there. Take the [OS99] Lemma 3 function for the density `1 + μ`, where `μ` consists of two
+  negative ramps of mass `-1/2` just before and after the window, normalised and shifted so that its
+  zeros are `ℤ` on the left, `ℤ + 1/2` on the window and `ℤ` after. Then `f` vanishes on
+  `Λ ∩ (-∞, 0] = ℤ_{≤0}`, `‖f‖² ≳ a log(L)` while `∑_Λ |f|² ≲ a(1 + η² log L)`, and the ratio tends
+  to `0` (blueprint M09).
 
 ### N-22 (G/D) — Theorem 2 (i) needs regularity of `ψ` beyond the stated hypotheses — *referee-pending*
 The proof of (i) uses "the smoothness of `ψ` ensures that `∑_{n(z)-1}^{n(z)+1} j_n(z) ≃ 1`"
@@ -219,6 +232,40 @@ Fatou argument for `L²(ℝ)` and a separate bound in the strip `|Im z| ≤ 1`.
 "This sequence is sampling, because … sine-type" is really sine-type ⇒ complete interpolating ⇒
 sampling. The formalization proves the needed estimate `|E(z)| ≃ e^{π Im z}` (the conjugate function
 of `log|t|` is bounded) and replaces Levin's theorem by Theorem E.
+
+### N-31 (G) — pp. 795–796: further gaps in the proof of necessity — *referee-pending*
+- "`M - 1` vanishes whenever `E^*` vanishes": this uses that the zeros of `E^*` lie in `ℂ₊`, i.e.
+  that `E` has no real zeros, which the paper only states in the converse part, and a multiplicity
+  argument. That `G(M - 1)` is entire is also tacit.
+- "`F` has no zeros in `Im z > 0`" is not justified as written; it follows from
+  `F = 2G/(E - E^*A)` on `ℂ₊`.
+- `E(λ_k) ≠ 0` is needed for the isometry with `μ = ∑ |E(λ_k)|² δ_{λ_k}`.
+- "PW with the sampling norm is a de Branges space" hides completeness, definiteness and the axioms
+  (H1)–(H3); all hold.
+
+### N-32 (G) — p. 796: removing the real zeros of `F` — *referee-pending*
+"`F = S F̃`, where `F̃ ∈ \overline{HB}` without real zeros and `S` is an entire function with real
+zero set": `S` is not constructed. The real zeros of `F` lie in the separated set `Λ`, but their
+multiplicities can be unbounded (e.g. `F` real entire with prescribed multiplicities), so a genus-one
+product may not converge. A Weierstrass product of variable genus (`p_x ≥ m_x + |x|`) works; Mathlib
+has no Weierstrass factorization theorem, so the formalization constructs it. Also "If we prove that
+`Λ₁` is a sampling sequence, then `Λ` is also": the upper bound for `Λ ⊋ Λ₁` needs the
+Plancherel–Pólya inequality for the separated `Λ`.
+
+### N-33 (G) — p. 796: the level sets are indexed by `ℤ` — *referee-pending*
+`Λ_α = {λ_{α,k}}_{k ∈ ℤ}` presupposes that `φ_{EF}` maps `ℝ` onto `ℝ`. This holds (e.g. since
+`φ_E → ±∞`, which follows from Theorem E: a level set bounded on one side would contradict the
+interpolation property), but it is not shown. "We may assume it fails for `α = π/2`" is unnecessary:
+along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
+
+### N-34 (G) — Corollary 1 and the remark of p. 797 — *referee-pending*
+- Corollary 1 does not say that `Γ` is separated, which Pavlov's theorem requires in the Claim; it
+  follows from Theorem E and the Bernstein bound.
+- "If `Λ` is a complete interpolating sequence, then there exists `E ∈ \overline{HB}` such that
+  `H(E) = PW` and `Λ` constitutes the zero sequence of `E + E^*`. This follows from Theorems C and
+  E": the argument also needs that a complete interpolating sequence is sampling (open mapping
+  theorem), Theorem D (orthogonality of the kernels at `Λ` forces `Λ` into one phase level set),
+  completeness of the kernels, and a rotation `E ↦ e^{iθ}E`.
 
 ---
 
