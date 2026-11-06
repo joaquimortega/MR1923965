@@ -337,28 +337,164 @@ theorem potW_le_complex {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ <
 /-! ## Part B: the zeros of `F` -/
 
 /-- `∫_0^x m = x - 1/2` for `2 a₁ ≤ x ≤ a₂`. -/
+theorem dens_eq_one_of_lt {a₁ a₂ : ℝ} (h₂ : 2 * a₁ < a₂) (h₁ : 0 < a₁) {t : ℝ} (ht : t < a₁) :
+    dens a₁ a₂ t = 1 := by
+  unfold dens; rw [rampMu_eq_zero h₂ h₁ (fun h ↦ by linarith [h.1])]; simp
+
+theorem dens_eq_one_of_mem_Ioo {a₁ a₂ t : ℝ} (ht : t ∈ Ioo (2 * a₁) a₂) : dens a₁ a₂ t = 1 := by
+  have hA : t ∉ Icc a₁ (2 * a₁) := fun h ↦ by linarith [h.2, ht.1]
+  have hB : t ∉ Icc a₂ (2 * a₂) := fun h ↦ by linarith [h.1, ht.2]
+  unfold dens rampMu
+  rw [indicator_of_notMem hA, indicator_of_notMem hB]; simp
+
+theorem multPrim_dens_small {a₁ a₂ : ℝ} (h₂ : 2 * a₁ < a₂) (h₁ : 0 < a₁) {x : ℝ} (hx : x ≤ a₁) :
+    OCS.multPrim (dens a₁ a₂) x = x := by
+  unfold OCS.multPrim
+  have : ∫ t in (0 : ℝ)..x, dens a₁ a₂ t = ∫ t in (0 : ℝ)..x, (1 : ℝ) := by
+    refine intervalIntegral.integral_congr_ae ?_
+    filter_upwards [OCS.ae_ne_real a₁] with t ht ht'
+    have : t ≤ a₁ := by
+      rw [Set.mem_uIoc] at ht'
+      rcases ht' with h | h <;> linarith [h.2]
+    exact dens_eq_one_of_lt h₂ h₁ (lt_of_le_of_ne this ht)
+  rw [this]; simp
+
 theorem multPrim_dens_stretch {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) {x : ℝ}
     (hx : x ∈ Icc (2 * a₁) a₂) : OCS.multPrim (dens a₁ a₂) x = x - 1 / 2 := by
-  sorry
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have hx0 : 0 ≤ x := by linarith [hx.1]
+  unfold OCS.multPrim
+  rw [intervalIntegral.integral_of_le hx0]
+  have hint : IntegrableOn (rampMu a₁ a₂) (Ioc 0 x) := (integrable_rampMu h₁ h₂).integrableOn
+  have hd : ∫ t in Ioc 0 x, dens a₁ a₂ t = x + ∫ t in Ioc 0 x, rampMu a₁ a₂ t := by
+    unfold dens
+    rw [integral_add (integrableOn_const (by simp)) hint]
+    simp [hx0]
+  rw [hd]
+  have i₁ : Integrable ((Icc a₁ (2 * a₁)).indicator (1 : ℝ → ℝ)) :=
+    (integrable_indicator_iff measurableSet_Icc).2 (integrableOn_const (by simp))
+  have i₂ : Integrable ((Icc a₂ (2 * a₂)).indicator (1 : ℝ → ℝ)) :=
+    (integrable_indicator_iff measurableSet_Icc).2 (integrableOn_const (by simp))
+  have hfun : rampMu a₁ a₂ = fun t ↦ -((1 / 2) / a₁) * (Icc a₁ (2 * a₁)).indicator 1 t -
+    ((1 / 2) / a₂) * (Icc a₂ (2 * a₂)).indicator 1 t := rfl
+  rw [hfun, integral_sub (i₁.const_mul _).integrableOn (i₂.const_mul _).integrableOn,
+    integral_const_mul, integral_const_mul]
+  have e1 : ∫ t in Ioc 0 x, (Icc a₁ (2 * a₁)).indicator (1 : ℝ → ℝ) t = a₁ := by
+    rw [setIntegral_eq_integral_of_forall_compl_eq_zero, integral_indicator_one measurableSet_Icc]
+    · simp only [Real.volume_real_Icc]; rw [max_eq_left (by linarith)]; ring
+    · intro t ht
+      have : t ∉ Icc a₁ (2 * a₁) := fun h ↦ ht ⟨by linarith [h.1], by linarith [h.2, hx.1]⟩
+      rw [indicator_of_notMem this]
+  have e2 : ∫ t in Ioc 0 x, (Icc a₂ (2 * a₂)).indicator (1 : ℝ → ℝ) t = 0 := by
+    refine setIntegral_eq_zero_of_ae_eq_zero ?_
+    filter_upwards [OCS.ae_ne_real a₂] with t ht1 ht2
+    have : t ∉ Icc a₂ (2 * a₂) := fun h ↦ ht1 (le_antisymm (ht2.2.trans hx.2) h.1)
+    rw [indicator_of_notMem this]
+  rw [e1, e2]
+  field_simp
+  ring
 
 /-- Left zeros: for `1 ≤ a₁`, `j ≤ 0`, the barycentre `γ_j = j + 1/2` (the interval `I_j = [j, j+1]`
 lies in `{m = 1}`), so `testFn` vanishes at every integer `j ≤ 0`. -/
+theorem multPt_dens_of {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) {j : ℤ} {y : ℝ}
+    (hy : y ∈ Icc (2 * a₁) a₂) (hj : y - 1 / 2 = j) : OCS.multPt (dens a₁ a₂) j = y :=
+  OCS.multPt_eq_of (dens_isMultWeight h₁ h₂) (by rw [multPrim_dens_stretch h₁ h₂ hy, hj])
+
+theorem multBary_dens_nonpos {a₁ a₂ : ℝ} (h₁ : 2 ≤ a₁) (h₂ : 2 * a₁ < a₂) {j : ℤ} (hj : j ≤ 0) :
+    OCS.multBary (dens a₁ a₂) j = j + 1 / 2 := by
+  have hw := dens_isMultWeight (by linarith : 1 ≤ a₁) h₂
+  have hj' : (j : ℝ) ≤ 0 := by exact_mod_cast hj
+  have p0 : OCS.multPt (dens a₁ a₂) j = j :=
+    OCS.multPt_eq_of hw (by rw [multPrim_dens_small h₂ (by linarith) (by linarith)])
+  have p1 : OCS.multPt (dens a₁ a₂) (j + 1) = j + 1 := by
+    refine OCS.multPt_eq_of hw ?_
+    rw [multPrim_dens_small h₂ (by linarith) (by linarith)]; push_cast; ring
+  unfold OCS.multBary
+  rw [p0, p1]
+  have : ∫ t in (j : ℝ)..(j + 1 : ℝ), t * dens a₁ a₂ t = ∫ t in (j : ℝ)..(j + 1 : ℝ), t := by
+    refine intervalIntegral.integral_congr (fun t ht ↦ ?_)
+    rw [Set.uIcc_of_le (by linarith)] at ht
+    rw [dens_eq_one_of_lt h₂ (by linarith) (by linarith [ht.2]), mul_one]
+  rw [this, integral_id]
+  ring
+
 theorem testFn_eq_zero_of_nonpos {a₁ a₂ : ℝ} (h₁ : 2 ≤ a₁) (h₂ : 2 * a₁ < a₂) (j : ℤ)
     (hj : j ≤ 0) : testFn a₁ a₂ (j : ℂ) = 0 := by
-  sorry
+  have hw := dens_isMultWeight (by linarith : 1 ≤ a₁) h₂
+  unfold testFn gFun
+  have : OCS.multF (dens a₁ a₂) 0 ((j : ℂ) + 1 / 2) = 0 := by
+    rw [OCS.multF_eq_zero_iff hw]
+    refine ⟨OCS.multBary (dens a₁ a₂) j, ⟨j, rfl⟩, ?_⟩
+    rw [multBary_dens_nonpos h₁ h₂ hj]; push_cast; ring
+  rw [this, zero_mul]
 
 /-- Stretch zeros: `Γ ∩ [2a₁ + 1, a₂ - 1] = ℤ + 1` (the zeros of `G`), so for the argument `x` of
 the test function, `x ∈ [2a₁ + 3, a₂ - 3]`, `dist(x + 1/2, Γ) = dist(x, ℤ + 1/2)`. -/
+theorem multBary_dens_stretch {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) {j : ℤ}
+    (hj1 : 2 * a₁ < j + 1 / 2) (hj2 : (j : ℝ) + 3 / 2 < a₂) :
+    OCS.multBary (dens a₁ a₂) j = j + 1 := by
+  have p0 : OCS.multPt (dens a₁ a₂) j = j + 1 / 2 :=
+    multPt_dens_of h₁ h₂ (y := j + 1 / 2) ⟨hj1.le, by linarith⟩ (by ring)
+  have p1 : OCS.multPt (dens a₁ a₂) (j + 1) = j + 3 / 2 :=
+    multPt_dens_of h₁ h₂ (y := j + 3 / 2) ⟨by linarith, hj2.le⟩ (by push_cast; ring)
+  unfold OCS.multBary
+  rw [p0, p1]
+  have : ∫ t in ((j : ℝ) + 1 / 2)..((j : ℝ) + 3 / 2), t * dens a₁ a₂ t =
+      ∫ t in ((j : ℝ) + 1 / 2)..((j : ℝ) + 3 / 2), t := by
+    refine intervalIntegral.integral_congr (fun t ht ↦ ?_)
+    rw [Set.uIcc_of_le (by linarith)] at ht
+    rw [dens_eq_one_of_mem_Ioo (a₁ := a₁) ⟨by linarith [ht.1], by linarith [ht.2]⟩, mul_one]
+  rw [this, integral_id]
+  ring
+
 theorem infDist_dens_stretch {a₁ a₂ : ℝ} (h₁ : 2 ≤ a₁) (h₂ : 2 * a₁ < a₂) {x : ℝ}
     (hx : x ∈ Icc (2 * a₁ + 3) (a₂ - 3)) :
     infDist (((x + 1 / 2 : ℝ)) : ℂ) (OCS.multGammaC (dens a₁ a₂)) =
       |x - 1 / 2 - round (x - 1 / 2)| := by
-  sorry
+  have h₁' : 1 ≤ a₁ := by linarith
+  have hw := dens_isMultWeight h₁' h₂
+  have hy : x + 1 / 2 ∈ Icc (2 * a₁) a₂ := ⟨by linarith [hx.1], by linarith [hx.2]⟩
+  have hprim : OCS.multPrim (dens a₁ a₂) (x + 1 / 2) = x := by
+    rw [multPrim_dens_stretch h₁' h₂ hy]; ring
+  have hk : OCS.multIdx (dens a₁ a₂) (x + 1 / 2) = ⌊x⌋ := by
+    unfold OCS.multIdx; rw [hprim]
+  have hround : round (x - 1 / 2) = ⌊x⌋ := by
+    rw [round_eq]; congr 1; ring
+  obtain ⟨i, hi, hmin, hd⟩ := OCS.exists_infDist_multGammaC_eq hw (((x + 1 / 2 : ℝ)) : ℂ)
+  rw [Complex.ofReal_re, hk] at hi hmin
+  have hmin' := hmin ⌊x⌋ (by simp)
+  simp only [Finset.mem_Icc] at hi
+  have hbary : ∀ j : ℤ, ⌊x⌋ - 1 ≤ j → j ≤ ⌊x⌋ + 1 → OCS.multBary (dens a₁ a₂) j = j + 1 := by
+    intro j hj1 hj2
+    have f1 := Int.floor_le x
+    have f2 := Int.lt_floor_add_one x
+    have e1 : ((⌊x⌋ : ℤ) : ℝ) - 1 ≤ j := by exact_mod_cast hj1
+    have e2 : (j : ℝ) ≤ ⌊x⌋ + 1 := by exact_mod_cast hj2
+    exact multBary_dens_stretch h₁' h₂ (by linarith [hx.1]) (by linarith [hx.2])
+  have hnorm : ∀ g : ℝ, ‖(((x + 1 / 2 : ℝ)) : ℂ) - (g : ℂ)‖ = |x + 1 / 2 - g| := by
+    intro g; rw [← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
+  rw [hnorm, hnorm, hbary i hi.1 hi.2, hbary ⌊x⌋ (by omega) (by omega)] at hmin'
+  have e : x + 1 / 2 - ((i : ℝ) + 1) = x - 1 / 2 - i := by ring
+  have e' : x + 1 / 2 - ((⌊x⌋ : ℝ) + 1) = x - 1 / 2 - ⌊x⌋ := by ring
+  rw [e, e'] at hmin'
+  rw [hd, hnorm, hbary i hi.1 hi.2, hround, e]
+  refine le_antisymm hmin' ?_
+  have lo := round_le (x - 1 / 2) i
+  rwa [hround] at lo
 
 /-- For every weight and real `y`, `dist(y, Γ) ≤ 1/a`. -/
 theorem infDist_multGammaC_le {m : ℝ → ℝ} {a b : ℝ} (hw : OCS.IsMultWeight m a b) (y : ℝ) :
     infDist (y : ℂ) (OCS.multGammaC m) ≤ 1 / a := by
-  sorry
+  set k := OCS.multIdx m y
+  have h1 := OCS.multIdx_mem hw y
+  have h2 := OCS.multBary_mem hw k
+  have h3 := (OCS.multPt_succ_sub_bounds hw k).2
+  have hpos : 0 < a / (2 * b ^ 2) := by have := hw.pos; have := hw.b_pos; positivity
+  have hmem : ((OCS.multBary m k : ℝ) : ℂ) ∈ OCS.multGammaC m := ⟨_, ⟨k, rfl⟩, rfl⟩
+  refine (infDist_le_dist_of_mem hmem).trans ?_
+  rw [dist_eq_norm, ← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs, abs_le]
+  constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
 
 /-! ## Part C: `testFn ∈ PW` and its size on `ℝ` -/
 
