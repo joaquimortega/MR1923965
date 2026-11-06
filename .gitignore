@@ -1,0 +1,10 @@
+.lake/
+*.olean
+/build
+
+# Source papers are kept locally only.
+*.pdf
+literature/
+
+# The corrected version of the paper is kept locally only (not committed).
+/fixed/

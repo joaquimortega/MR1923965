@@ -1,0 +1,29 @@
+name = "FourierFrames"
+version = "0.1.0"
+defaultTargets = ["FourierFrames"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.35.0"
+
+# Vendored subset of the library of the companion project (Ortega-Cerdà–Seip 1999,
+# github.com/joaquimortega/MR1682065, commit 05e3ac2): [OS99] Lemma 3 and the Bernstein-space
+# toolkit.  See OrtegaCerdaSeip/VENDORED.md.
+[[lean_lib]]
+name = "OrtegaCerdaSeip"
+
+[[lean_lib]]
+name = "FourierFrames"
+
+# Self-contained statements file and its solution, checked by `comparator` (see comparator/).
+[[lean_lib]]
+name = "FFChallenge"
+
+[[lean_lib]]
+name = "FFSolution"
