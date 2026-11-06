@@ -795,7 +795,24 @@ theorem integrable_log_mul_sub_one {z : ℂ} (hz : 0 < z.im) :
 theorem multU_logDensity_eq {z : ℂ} (hz : 0 < z.im) :
     OCS.multU logDensity 0 z = Real.pi * z.im + logKappa * z.re +
       ∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1) := by
-  sorry
+  have hpt : ∀ t : ℝ, OCS.multUIntegrand logDensity z t = OCS.multUIntegrand (fun _ ↦ 1) z t +
+      (Real.log ‖1 - z / t‖ * (logDensity t - 1) +
+        z.re * ((1 - (Icc (-1 : ℝ) 1).indicator 1 t) * ((logDensity t - 1) / t))) := by
+    intro t
+    unfold OCS.multUIntegrand
+    rw [Complex.div_ofReal_re]
+    ring
+  have h1 : Integrable (OCS.multUIntegrand (fun _ ↦ 1) z) :=
+    OCS.integrable_multUIntegrand (a := 1) (b := 1) ⟨measurable_const, one_pos, fun _ ↦ le_rfl, fun _ ↦ le_rfl⟩ z
+  have h2 := integrable_log_mul_sub_one hz
+  have h3 := integrable_logKappa.const_mul z.re
+  rw [OCS.multU_eq]
+  simp_rw [hpt]
+  have h23 : Integrable (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * (logDensity t - 1) +
+      z.re * ((1 - (Icc (-1 : ℝ) 1).indicator 1 t) * ((logDensity t - 1) / t))) := h2.add h3
+  rw [integral_add h1 h23, integral_add h2 h3, integral_const_mul, multU_model hz,
+    logKappa]
+  ring
 
 /-- The kernel `K_z(t) = (t - x)/((t - x)² + y²) - 1/t = Re(z / (t (t - z)))`. -/
 def logKernel (z : ℂ) (t : ℝ) : ℝ := (t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2) - 1 / t
@@ -843,7 +860,39 @@ theorem integral_abs_rho_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
 
 theorem abs_integral_log_mul_sub_one_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
     |∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1)| ≤ C := by
-  sorry
+  obtain ⟨C1, hC1⟩ := abs_integral_posLog_mul_logKernel_le
+  obtain ⟨C2, hC2⟩ := integral_abs_rho_logKernel_le
+  refine ⟨C1 + C2, fun z hz ↦ ?_⟩
+  have hz0 : 0 < z.im := by linarith
+  obtain ⟨hI1, hb1⟩ := hC1 z hz
+  obtain ⟨hI2, hb2⟩ := hC2 z hz
+  rw [integral_log_mul_sub_one_eq hz0]
+  -- measurability of ρ K
+  have hWc : Continuous logW := logW_lipschitz.continuous
+  have hρc : Continuous (fun t : ℝ ↦ logW t + Real.posLog (|t|)) :=
+    hWc.add (Real.continuous_posLog.comp continuous_abs)
+  have hKm : Measurable (logKernel z) := by
+    unfold logKernel
+    have h1 : Measurable (fun t : ℝ ↦ (t - z.re) / ((t - z.re) ^ 2 + z.im ^ 2)) := by fun_prop
+    have h2 : Measurable (fun t : ℝ ↦ 1 / t) := by fun_prop
+    exact h1.sub h2
+  have hI3 : Integrable (fun t : ℝ ↦ (logW t + Real.posLog (|t|)) * logKernel z t) := by
+    refine Integrable.mono' hI2 (hρc.measurable.mul hKm).aestronglyMeasurable
+      (Filter.Eventually.of_forall fun t ↦ ?_)
+    rw [Real.norm_eq_abs, abs_mul]
+  have e : ∀ t : ℝ, logW t * logKernel z t =
+      (logW t + Real.posLog (|t|)) * logKernel z t - Real.posLog (|t|) * logKernel z t :=
+    fun t ↦ by ring
+  simp_rw [e]
+  rw [integral_sub hI3 hI1]
+  have h3 : |∫ t : ℝ, (logW t + Real.posLog (|t|)) * logKernel z t| ≤ C2 := by
+    refine (abs_integral_le_integral_abs).trans ?_
+    refine le_trans (integral_mono hI3.abs hI2 (fun t ↦ ?_)) hb2
+    simp only [abs_mul, le_refl]
+  have h4 := abs_le.1 hb1
+  have h5 := abs_le.1 h3
+  rw [neg_sub, abs_le]
+  constructor <;> linarith [h4.1, h4.2, h5.1, h5.2]
 
 /-- Comparison in the strip: `|U(x + iy) - U(x + i)| ≤ 20 π` for `0 ≤ y ≤ 1`. -/
 theorem abs_multU_sub_multU_le {z : ℂ} (h0 : 0 ≤ z.im) (h1 : z.im ≤ 1) :
@@ -853,7 +902,36 @@ theorem abs_multU_sub_multU_le {z : ℂ} (h0 : 0 ≤ z.im) (h1 : z.im ≤ 1) :
 /-- **The sine-type estimate**: `U(z) = π Im z + κ Re z + O(1)` for `Im z ≥ 0`. -/
 theorem logDensity_U_estimate : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
     |OCS.multU logDensity 0 z - Real.pi * z.im - logKappa * z.re| ≤ C := by
-  sorry
+  obtain ⟨C1, hC1⟩ := abs_integral_log_mul_sub_one_le
+  refine ⟨20 * Real.pi + C1 + Real.pi, fun z hz ↦ ?_⟩
+  have hπ := Real.pi_pos
+  rcases le_or_gt 1 z.im with h1 | h1
+  · rw [multU_logDensity_eq (by linarith)]
+    have := hC1 z h1
+    have e : Real.pi * z.im + logKappa * z.re +
+        (∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1)) - Real.pi * z.im - logKappa * z.re =
+        ∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1) := by ring
+    rw [e]
+    have : 0 ≤ 20 * Real.pi + Real.pi := by positivity
+    linarith
+  · set z' : ℂ := (z.re : ℂ) + Complex.I with hz'
+    have hre : z'.re = z.re := by simp [hz']
+    have him : z'.im = 1 := by simp [hz']
+    have h2 := abs_multU_sub_multU_le hz h1.le
+    have h3 := hC1 z' (by rw [him])
+    have hU' := multU_logDensity_eq (z := z') (by rw [him]; norm_num)
+    rw [hre, him] at hU'
+    have h4 : |OCS.multU logDensity 0 z' - Real.pi - logKappa * z.re| ≤ C1 := by
+      rw [hU']
+      have e : Real.pi * 1 + logKappa * z.re +
+          (∫ t : ℝ, Real.log ‖1 - z' / t‖ * (logDensity t - 1)) - Real.pi - logKappa * z.re =
+          ∫ t : ℝ, Real.log ‖1 - z' / t‖ * (logDensity t - 1) := by ring
+      rw [e]; exact h3
+    have h5 := abs_le.1 h2
+    have h6 := abs_le.1 h4
+    have h7 : 0 ≤ z.im := hz
+    rw [abs_le]
+    constructor <;> nlinarith [h5.1, h5.2, h6.1, h6.2]
 
 /-! ## §5  The Hermite–Biehler function -/
 
