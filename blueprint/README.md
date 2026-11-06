@@ -183,7 +183,24 @@ All in namespace `FF`; `hPW : PaleyWienerThm` etc. are explicit hypotheses.
 - `memHE_sAlpha_unique`: `S_α, S_β ∈ H(E)` ⇒ `β - α ∈ πℤ` (`E` strict).
 - `heEqPW_of_comparable` (main result).
 
-**M07 (construction)** — names fixed by the M07 writer; M06, M08, M09 consume them.
+**M07 (construction, `Construction.lean`)** — consumed by M06 and M07 (Corollary 2):
+```lean
+/-- The phase construction of p. 801: for a density `m ≃ 1` with `m → 1` at `±∞`, the generating
+function `A` of the [OS99] barycentre sequence `Γ = OCS.multGamma m`, a companion `B` with
+interlacing zeros, and `E = A - iB`. -/
+theorem exists_hb_of_density {m : ℝ → ℝ} (hm : Measurable m) {a b : ℝ} (ha : 0 < a)
+    (hlow : ∀ t, a ≤ m t) (hup : ∀ t, m t ≤ b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
+    ∃ E : ℂ → ℂ, IsHB E ∧ (∀ x : ℝ, E x ≠ 0) ∧
+      (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
+        c * Real.exp (OCS.multU m 0 z) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (OCS.multU m 0 z)) ∧
+      (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) ∧
+      ∃ φ : ℝ → ℝ, IsPhaseFunction E φ ∧ ∃ c₀ : ℝ,
+        Tendsto (fun x ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ) (𝓝 c₀)
+```
+(The M07 writer may strengthen this; any change must keep it usable by M06.) M07 also exports
+`IsSampling.of_perturbation (hPW) (hDS)`: a separated sampling `Γ` and an injective perturbation
+`γ ↦ γ + δ(γ)` with `δ → 0` along `Γ` (finitely many arbitrary moves allowed) give a sampling
+sequence. M08 consumes the main statement `corollary2`; M09 consumes `OCS.lemma3` directly.
 
 ## 4a. Known issues in the source (seeds for `../NOTEBOOK.md`; each to be verified)
 
