@@ -985,7 +985,8 @@ theorem sampling_cis_of_zero_set (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ
     have h5 : pwNormSq (f - g) = 0 := (mul_eq_zero.1 h4).resolve_left hc10
     funext z
     have := eq_zero_of_pwNormSq_eq_zero hd h5 z
-    simpa [sub_eq_zero] using this.symm
+    have h6 : f z = g z := by simpa [sub_eq_zero] using this
+    exact h6.symm
 
 /-! ## §7  Main statements -/
 
