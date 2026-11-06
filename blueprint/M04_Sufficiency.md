@@ -35,7 +35,7 @@ arguments, as the README table indicates).
 
 ## 0. Reading guide
 
-All sets `Λ ⊆ ℝ` are `Set ℝ`; "separated" is `IsSeparated`, and `Suff.SepBy δ Λ` is the same with an explicit constant `δ`.
+All sets `Λ ⊆ ℝ` are `Set ℝ`; "separated" is `IsSeparated`, and `IsSepBy δ Λ` (M01, `PW/Basic.lean`) is the same with an explicit constant `δ` (the duplicate `Suff.IsSepBy` was removed before implementation; use `IsSepBy.mono` for `sepBy_mono`/`sepBy_subset`).
 The proof of sufficiency (pp. 795–797) is long; the steps are:
 
 | step | content | Lean |
@@ -55,7 +55,7 @@ obtained from `F` (the paper's `F̃`), `E' = EG`, `φ_E, φ_G` phase functions w
 
 ```lean
 /-- `Λ` is `δ`-separated. -/
-def SepBy (δ : ℝ) (Λ : Set ℝ) : Prop :=
+def IsSepBy (δ : ℝ) (Λ : Set ℝ) : Prop :=
   ∀ a ∈ Λ, ∀ b ∈ Λ, a ≠ b → δ ≤ |a - b|
 ```
 
@@ -112,12 +112,12 @@ theorem phaseLevel_add_pi (φ : ℝ → ℝ) (α : ℝ) :
 ```
 
 ```lean
-theorem sepBy_mono {δ δ' : ℝ} (h : δ' ≤ δ) {Λ : Set ℝ} (hΛ : SepBy δ Λ) : SepBy δ' Λ :=
+theorem sepBy_mono {δ δ' : ℝ} (h : δ' ≤ δ) {Λ : Set ℝ} (hΛ : IsSepBy δ Λ) : IsSepBy δ' Λ :=
   fun a ha b hb hab ↦ h.trans (hΛ a ha b hb hab)
 ```
 
 ```lean
-theorem sepBy_subset {δ : ℝ} {Λ Λ' : Set ℝ} (h : Λ' ⊆ Λ) (hΛ : SepBy δ Λ) : SepBy δ Λ' :=
+theorem sepBy_subset {δ : ℝ} {Λ Λ' : Set ℝ} (h : Λ' ⊆ Λ) (hΛ : IsSepBy δ Λ) : IsSepBy δ Λ' :=
   fun a ha b hb hab ↦ hΛ a (h ha) b (h hb) hab
 ```
 
@@ -328,8 +328,8 @@ theorem HEEqPW.phase_mul_bijective (hPW : PaleyWienerThm) (hE : TheoremE) {E G :
 increasing `φ` is `δ`-separated, then `{φ ∈ π/2 + ε + πℤ}` (`0 < ε < π`) is a union of two
 `δ`-separated sets (even and odd index). -/
 theorem phaseLevel_sepBy_two {φ : ℝ → ℝ} (hc : Continuous φ) (hφ : StrictMono φ) {δ : ℝ}
-    (hsep : SepBy δ (phaseLevel φ (Real.pi / 2))) {ε : ℝ} (hε0 : 0 < ε) (hεπ : ε < Real.pi) :
-    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ SepBy δ A ∧ SepBy δ B := by
+    (hsep : IsSepBy δ (phaseLevel φ (Real.pi / 2))) {ε : ℝ} (hε0 : 0 < ε) (hεπ : ε < Real.pi) :
+    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ IsSepBy δ A ∧ IsSepBy δ B := by
   sorry
 ```
 
@@ -392,7 +392,7 @@ all `n` large, with `α_n = π/2 + ε_n`, `0 < ε_n < π`, `ε_n → 0`, then th
 `Λ = Λ_{π/2}`. -/
 theorem levelSet_limit (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψc : Continuous ψ)
     (hψm : StrictMono ψ) (hψs : Function.Surjective ψ) {δ : ℝ} (hδ : 0 < δ)
-    (hsep : SepBy δ (phaseLevel ψ (Real.pi / 2))) {C₀ : ℝ≥0∞} (hC₀ : C₀ ≠ ∞)
+    (hsep : IsSepBy δ (phaseLevel ψ (Real.pi / 2))) {C₀ : ℝ≥0∞} (hC₀ : C₀ ≠ ∞)
     {ε : ℕ → ℝ} (hε0 : ∀ n, 0 < ε n) (hεπ : ∀ n, ε n < Real.pi)
     (hεlim : Tendsto ε atTop (𝓝 0))
     (hlev : ∀ᶠ n in atTop, ∀ f : ℂ → ℂ, MemPW f →

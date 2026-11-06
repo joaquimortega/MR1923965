@@ -196,8 +196,7 @@ No other suspected false statement among the reconciled declarations. Points to 
   `HEEqPW.ne_zero_ofReal` and `memHE_sAlpha_unique` are *stronger* than what the consumers
   declared; I re-derived the first and last on paper (above);
 - `blueprint/M04_Sufficiency.md` refers to `exists_HB_of_sampling`, which does not exist (use `exists_E`);
-- `Suff.SepBy` (`Sufficiency.lean`) duplicates `IsSepBy` (`PW/Basic.lean`) under another name (left
-  as is, it appears in M04 statements under review);
+- `Suff.SepBy` was removed in favour of `IsSepBy` (coordinator, before implementation).
 - `lake build OrtegaCerdaSeip` fails (no root file `OrtegaCerdaSeip.lean`; pre-existing lakefile
   issue, the default target `lake build` is fine).
 

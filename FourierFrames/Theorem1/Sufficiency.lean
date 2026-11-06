@@ -16,18 +16,9 @@ See `blueprint/M04_Sufficiency.md`.
 
 namespace Suff
 
-/-- `Λ` is `δ`-separated. -/
-def SepBy (δ : ℝ) (Λ : Set ℝ) : Prop :=
-  ∀ a ∈ Λ, ∀ b ∈ Λ, a ≠ b → δ ≤ |a - b|
-
-theorem isSeparated_iff {Λ : Set ℝ} : IsSeparated Λ ↔ ∃ δ : ℝ, 0 < δ ∧ SepBy δ Λ := Iff.rfl
-
 /-- `α` is *exceptional* for `E`: `e^{iα}E - e^{-iα}E^* ∈ H(E)` (the hypothesis of Theorem E fails). -/
 def Exceptional (E : ℂ → ℂ) (α : ℝ) : Prop :=
   MemHE E (fun z ↦ Complex.exp (I * α) * E z - Complex.exp (-(I * α)) * fstar E z)
-
-theorem sepBy_subset {δ : ℝ} {Λ Λ' : Set ℝ} (h : Λ' ⊆ Λ) (hΛ : SepBy δ Λ) : SepBy δ Λ' :=
-  fun a ha b hb hab ↦ hΛ a (h ha) b (h hb) hab
 
 /-- Splitting a sampling sum into a bounded and an unbounded part. -/
 theorem sampleSum_split (Λ : Set ℝ) (f : ℂ → ℂ) (R : ℝ) :
@@ -49,15 +40,12 @@ theorem phaseLevel_add_pi (φ : ℝ → ℝ) (α : ℝ) :
   · rintro ⟨k, hk⟩
     exact ⟨k - 1, by rw [hk]; push_cast; ring⟩
 
-theorem sepBy_mono {δ δ' : ℝ} (h : δ' ≤ δ) {Λ : Set ℝ} (hΛ : SepBy δ Λ) : SepBy δ' Λ :=
-  fun a ha b hb hab ↦ h.trans (hΛ a ha b hb hab)
-
 /-- **Interlacing** (p. 796): if the level set `Λ = {φ ∈ π/2 + πℤ}` of a continuous strictly
 increasing `φ` is `δ`-separated, then `{φ ∈ π/2 + ε + πℤ}` (`0 < ε < π`) is a union of two
 `δ`-separated sets (even and odd index). -/
 theorem phaseLevel_sepBy_two {φ : ℝ → ℝ} (hc : Continuous φ) (hφ : StrictMono φ) {δ : ℝ}
-    (hsep : SepBy δ (phaseLevel φ (Real.pi / 2))) {ε : ℝ} (hε0 : 0 < ε) (hεπ : ε < Real.pi) :
-    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ SepBy δ A ∧ SepBy δ B := by
+    (hsep : IsSepBy δ (phaseLevel φ (Real.pi / 2))) {ε : ℝ} (hε0 : 0 < ε) (hεπ : ε < Real.pi) :
+    ∃ A B : Set ℝ, phaseLevel φ (Real.pi / 2 + ε) = A ∪ B ∧ IsSepBy δ A ∧ IsSepBy δ B := by
   sorry
 
 /-- At most one `n` has `π/2 + π/(n+2)` exceptional, so eventually none has. -/
@@ -88,7 +76,7 @@ all `n` large, with `α_n = π/2 + ε_n`, `0 < ε_n < π`, `ε_n → 0`, then th
 `Λ = Λ_{π/2}`. -/
 theorem levelSet_limit (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψc : Continuous ψ)
     (hψm : StrictMono ψ) (hψs : Function.Surjective ψ) {δ : ℝ} (hδ : 0 < δ)
-    (hsep : SepBy δ (phaseLevel ψ (Real.pi / 2))) {C₀ : ℝ≥0∞} (hC₀ : C₀ ≠ ∞)
+    (hsep : IsSepBy δ (phaseLevel ψ (Real.pi / 2))) {C₀ : ℝ≥0∞} (hC₀ : C₀ ≠ ∞)
     {ε : ℕ → ℝ} (hε0 : ∀ n, 0 < ε n) (hεπ : ∀ n, ε n < Real.pi)
     (hεlim : Tendsto ε atTop (𝓝 0))
     (hlev : ∀ᶠ n in atTop, ∀ f : ℂ → ℂ, MemPW f →

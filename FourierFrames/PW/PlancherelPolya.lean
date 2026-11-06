@@ -71,4 +71,12 @@ theorem plancherelPolya_tail (hPW : PaleyWienerThm) {δ : ℝ} (hδ : 0 < δ) {f
     ∃ R : ℝ, ∀ Λ : Set ℝ, IsSepBy δ Λ → sampleSum (Λ ∩ {x : ℝ | R ≤ |x|}) f ≤ ε := by
   sorry
 
+/-- The tail bound for a union of two `δ`-separated sets (used for the level sets `Λ_α`, which are
+unions of two `δ`-separated sets, in the limit `α → π/2` of Theorem 1). -/
+theorem plancherelPolya_tail_union (hPW : PaleyWienerThm) {δ : ℝ} (hδ : 0 < δ) {f : ℂ → ℂ}
+    (hf : MemPW f) {ε : ℝ≥0∞} (hε : ε ≠ 0) :
+    ∃ R : ℝ, ∀ A B : Set ℝ, IsSepBy δ A → IsSepBy δ B →
+      sampleSum ((A ∪ B) ∩ {x : ℝ | R ≤ |x|}) f ≤ ε := by
+  sorry
+
 end FF

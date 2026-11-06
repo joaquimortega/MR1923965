@@ -321,3 +321,24 @@ to, `ψ' = o(1/x)`.
 
 (I-entries: divergences decided during implementation, removed or changed helper statements, and
 anything an implementer had to do differently from the blueprint.)
+
+### I-01 — statement changes after the review round (2026-11-06)
+Made by the coordinator at the referees' request, after the reviews and before the freeze tag
+`scaffold-reviewed`; not themselves re-reviewed:
+- **`theorem2_i_of_densityBound`** (new main statement, R1, R5): Theorem 2 (i) under the hypothesis
+  the proof uses, `IsLogRegularPartitionWithDensity` (new definition in `Defs.lean`: the
+  logarithmically regular partition together with `ψ' ≤ K/d_n` on each cell), without the
+  hypothesis `ψ'(x) = 1/O(x)`, which the proof does not use (N-26). `theorem2_i` (with
+  `ψ'` eventually nonincreasing) is kept.
+- **`landau_sharp`** (R1, R4): strengthened from "the logarithmic term cannot be removed" to "no
+  coefficient `A < 1` of `log⁺(b - a)` works".
+- **`plancherelPolya_tail_union`** (R2): new helper, the tail bound for a union of two
+  `δ`-separated sets, which Theorem 1 sufficiency uses.
+- `Suff.SepBy` (a duplicate of `IsSepBy`) removed from `Theorem1/Sufficiency.lean`.
+
+### I-02 — unused hypotheses in main statements
+`theorem2_i` has the hypothesis `hlow` (`ψ'(x) ≥ c/x`) and `theorem2_ii` has `hPW`; neither is
+used by the proofs. They are kept for faithfulness during implementation; the linter warnings are
+resolved at the end by a deliberate, recorded statement change (removing a hypothesis strengthens
+the theorem), not by suppression.
+
