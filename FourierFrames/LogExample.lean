@@ -820,7 +820,13 @@ theorem exists_E_logExample (hPW : PaleyWienerThm) :
         c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ (fun x : ℝ ↦ x + 1 / 2) '' logExample, z = (γ : ℂ)) ∧
       ∃ φ : ℝ → ℝ, IsPhaseFunction E φ := by
-  sorry
+  obtain ⟨CU, hCU⟩ := logDensity_U_estimate
+  obtain ⟨E, hHB, h0, hcomp, hzero, φ, hφ, -⟩ := exists_hb_of_density_phase
+    (m := logDensity) (a := 1 / 10) (b := 20) measurable_logDensity (by norm_num)
+    (fun t ↦ (logDensity_bounds t).1) (fun t ↦ (logDensity_bounds t).2) tendsto_logDensity
+    ⟨logKappa, CU, hCU⟩
+  refine ⟨E, hHB, h0, heEqPW_of_comparable hPW hHB hcomp, hcomp, ?_, φ, hφ⟩
+  rwa [multGamma_logDensity] at hzero
 
 /-! ## §6  Theorem E at the phase level `π/2` -/
 
@@ -860,16 +866,29 @@ theorem sampling_cis_of_zero_set (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ
 theorem logExample_shift_sampling_cis (hPW : PaleyWienerThm) (hE : TheoremE) :
     IsSampling ((fun x : ℝ ↦ x + 1 / 2) '' logExample) ∧
       IsCompleteInterpolating ((fun x : ℝ ↦ x + 1 / 2) '' logExample) := by
-  sorry
+  obtain ⟨E, hHB, h0, hEPW, hcomp, hzero, φ, hφ⟩ := exists_E_logExample hPW
+  exact sampling_cis_of_zero_set hPW hE hHB h0 hEPW hφ hcomp hzero
 
 /-- **The example of p. 798**: `{k + log⁺|k|}` is a complete interpolating sequence. -/
 theorem logExample_isCompleteInterpolating (hPW : PaleyWienerThm) (hE : TheoremE) :
-    IsCompleteInterpolating logExample := by
-  sorry
+    IsCompleteInterpolating logExample :=
+  isCompleteInterpolating_of_image_add (1 / 2) (logExample_shift_sampling_cis hPW hE).2
 
 theorem logExample_isSampling (hPW : PaleyWienerThm) (hE : TheoremE) :
-    IsSampling logExample := by
-  sorry
+    IsSampling logExample :=
+  isSampling_of_image_add (1 / 2) (logExample_shift_sampling_cis hPW hE).1
+
+theorem finite_logExample_inter_Ioc_pos (R : ℝ) : (logExample ∩ Ioc 0 R).Finite := by
+  refine ((Set.finite_Icc (1 : ℤ) ⌈R⌉).image logLam).subset ?_
+  rintro _ ⟨⟨k, rfl⟩, h0, hR⟩
+  have hk := (logLam_pos_iff k).1 h0
+  refine ⟨k, ⟨hk, ?_⟩, rfl⟩
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hR : logLam k ≤ R := hR
+  rw [logLam_of_one_le hk] at hR
+  have := Real.log_nonneg hk1
+  have : (k : ℝ) ≤ R := by linarith
+  exact_mod_cast this.trans (Int.le_ceil R)
 
 /-- **Landau's inequality is best possible** (p. 798): `{k + log⁺|k|}` is a separated sampling
 sequence for which the logarithmic term cannot be removed. -/
@@ -878,6 +897,34 @@ theorem landau_sharp (hPW : PaleyWienerThm) (hE : TheoremE) :
       ∀ A : ℝ, A < 1 → ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
         ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤
           ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
-  sorry
+  refine ⟨logExample_isSeparated, logExample_isSampling hPW hE, ?_⟩
+  intro A hA ⟨B, hB⟩
+  obtain ⟨C, hC⟩ := logExample_count
+  have hC0 : 0 ≤ C := (abs_nonneg _).trans (hC 1 le_rfl).1
+  have h1A : 0 < 1 - A := by linarith
+  set x : ℝ := (|B| + C + 1) / (1 - A) + 1 with hx
+  have hxpos : 1 ≤ x := by
+    have : 0 ≤ (|B| + C + 1) / (1 - A) := by positivity
+    linarith
+  have hxA : |B| + C + 1 < (1 - A) * x := by
+    have : (1 - A) * ((|B| + C + 1) / (1 - A)) = |B| + C + 1 := by field_simp
+    rw [hx]; nlinarith
+  set R : ℝ := Real.exp x with hRdef
+  have hRge : 1 ≤ R := by rw [hRdef]; exact Real.one_le_exp (by linarith)
+  have hlogR : Real.log R = x := Real.log_exp x
+  have hpl : Real.posLog R = x := by
+    rw [Real.posLog_eq_log (by rw [abs_of_nonneg (by linarith)]; exact hRge), hlogR]
+  have h := hB 0 R (by linarith)
+  rw [sub_zero, hpl, ← Set.Finite.cast_ncard_eq (finite_logExample_inter_Ioc_pos R)] at h
+  have h2 : R - A * x - B ≤ ((logExample ∩ Ioc 0 R).ncard : ℝ) := by
+    have h' : ENNReal.ofReal (R - A * x - B) ≤ ((logExample ∩ Ioc 0 R).ncard : ℝ≥0∞) := by
+      simpa using h
+    have := (ENNReal.ofReal_le_iff_le_toReal (by simp)).1 h'
+    simpa using this
+  have h3 := (hC R hRge).1
+  rw [abs_le] at h3
+  rw [hlogR] at h3
+  have : |B| ≥ B := le_abs_self B
+  nlinarith [h3.2]
 
 end FF
