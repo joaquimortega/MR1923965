@@ -323,6 +323,129 @@ theorem eq_const_mul_sin {G : ℂ → ℂ} (hd : Differentiable ℂ G) (θ K : �
     simp only
     rw [div_mul_cancel₀ _ hz]
 
+/-! ### The zeros near `s` -/
+
+section Zeros
+
+variable (hw : OCS.IsMultWeight m a b)
+include hw
+
+theorem tt_bound (s : ℝ) :
+    |OCS.multBary m (OCS.multIdx m s) - s| ≤ 1 / a := by
+  have h1 := OCS.multIdx_mem hw s
+  have h2 := OCS.multBary_mem hw (OCS.multIdx m s)
+  have h3 := (OCS.multPt_succ_sub_bounds hw (OCS.multIdx m s)).2
+  have hc : 0 < a / (2 * b ^ 2) := by have := hw.b_pos; have := hw.pos; positivity
+  rw [abs_le]; constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
+
+theorem tendsto_idx_cofinite {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
+    Tendsto (fun k ↦ OCS.multIdx m (s k)) atTop cofinite := by
+  intro T hT
+  rw [Filter.mem_cofinite] at hT
+  obtain ⟨R, hR⟩ := (hT.image Int.natAbs).bddAbove
+  set M : ℝ := max |OCS.multPt m (-(R : ℤ))| |OCS.multPt m ((R : ℤ) + 1)|
+  have hev := hs.eventually_gt_atTop M
+  rw [Filter.mem_map]
+  filter_upwards [hev] with k hk
+  by_contra hkT
+  have hjT : OCS.multIdx m (s k) ∈ Tᶜ := hkT
+  have hj : (OCS.multIdx m (s k)).natAbs ≤ R := hR ⟨_, hjT, rfl⟩
+  have h1 := OCS.multIdx_mem hw (s k)
+  have hmono := (OCS.strictMono_multPt hw).monotone
+  have h2 : OCS.multPt m (-(R : ℤ)) ≤ OCS.multPt m (OCS.multIdx m (s k)) := hmono (by omega)
+  have h3 : OCS.multPt m (OCS.multIdx m (s k) + 1) ≤ OCS.multPt m ((R : ℤ) + 1) :=
+    hmono (by omega)
+  have hl := le_max_left |OCS.multPt m (-(R : ℤ))| |OCS.multPt m ((R : ℤ) + 1)|
+  have hr := le_max_right |OCS.multPt m (-(R : ℤ))| |OCS.multPt m ((R : ℤ) + 1)|
+  have e1 := le_abs_self (OCS.multPt m ((R : ℤ) + 1))
+  have e2 := neg_abs_le (OCS.multPt m (-(R : ℤ)))
+  rw [lt_abs] at hk
+  rcases hk with hk | hk <;> linarith [h1.1, h1.2]
+
+end Zeros
+
+theorem tendsto_multBary_add (hw : OCS.IsMultWeight m a b)
+    (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) (n : ℤ) :
+    Tendsto (fun j : ℤ ↦ OCS.multBary m (j + n) - OCS.multBary m j) cofinite (𝓝 (n : ℝ)) := by
+  have hg := Gaps.tendsto_multBary_succ_sub hw hlim
+  induction n using Int.induction_on with
+  | zero => simp
+  | succ i ih =>
+    have h1 := hg.comp (add_left_injective (i : ℤ)).tendsto_cofinite
+    have h2 : Tendsto (fun j : ℤ ↦ OCS.multBary m (j + ((i : ℤ) + 1)) - OCS.multBary m j) cofinite
+        (𝓝 (1 + ((i : ℤ) : ℝ))) := (h1.add ih).congr fun j ↦ by
+      simp only [Function.comp]
+      rw [show j + ((i : ℤ) + 1) = j + i + 1 by ring]
+      ring
+    convert h2 using 2
+    push_cast; ring
+  | pred i ih =>
+    have h1 := hg.comp (add_left_injective (-(i : ℤ) - 1)).tendsto_cofinite
+    have h2 : Tendsto (fun j : ℤ ↦ OCS.multBary m (j + (-(i : ℤ) - 1)) - OCS.multBary m j) cofinite
+        (𝓝 (((-(i : ℤ) : ℤ) : ℝ) - 1)) := (ih.sub h1).congr fun j ↦ by
+      simp only [Function.comp]
+      rw [show j + (-(i : ℤ) - 1) + 1 = j + -(i : ℤ) by ring]
+      ring
+    convert h2 using 2
+    push_cast; ring
+
+/-- `t_k = γ_{j(s_k)} - s_k`. -/
+def tt (m : ℝ → ℝ) (s : ℕ → ℝ) (k : ℕ) : ℝ :=
+  OCS.multBary m (OCS.multIdx m (s k)) - s k
+
+theorem tendsto_shifted (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {θ : ℝ}
+    (ht : Tendsto (tt m s) atTop (𝓝 θ)) (n : ℤ) :
+    Tendsto (fun k ↦ OCS.multBary m (OCS.multIdx m (s k) + n) - s k) atTop (𝓝 (θ + n)) := by
+  have h1 := (tendsto_multBary_add hw hlim n).comp (tendsto_idx_cofinite hw hs)
+  have h2 := h1.add ht
+  have h3 : Tendsto (fun k ↦ OCS.multBary m (OCS.multIdx m (s k) + n) - s k) atTop
+      (𝓝 ((n : ℝ) + θ)) := h2.congr fun k ↦ by
+    simp only [Function.comp, tt]
+    ring
+  rwa [add_comm] at h3
+
+theorem tendsto_gap (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) :
+    Tendsto (fun k ↦ OCS.multBary m (OCS.multIdx m (s k) + 1) -
+      OCS.multBary m (OCS.multIdx m (s k))) atTop (𝓝 1) :=
+  (Gaps.tendsto_multBary_succ_sub hw hlim).comp (tendsto_idx_cofinite hw hs)
+
+/-- The point `θ + 1/2 + s_k` stays at distance `≥ 1/4` from `Γ`. -/
+theorem eventually_infDist_ge (hw : OCS.IsMultWeight m a b)
+    (hlim : Tendsto m (cocompact ℝ) (𝓝 1))
+    {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {θ : ℝ}
+    (ht : Tendsto (tt m s) atTop (𝓝 θ)) :
+    ∀ᶠ k in atTop, 1 / 4 ≤ infDist (((θ + 1 / 2 : ℝ) : ℂ) + (s k : ℂ)) (OCS.multGammaC m) := by
+  have e1 : Tendsto (fun k ↦ θ + 1 / 2 - tt m s k) atTop (𝓝 (1 / 2)) := by
+    have := (tendsto_const_nhds (x := θ + 1 / 2)).sub ht
+    simpa using this
+  have e2 : Tendsto (fun k ↦ tt m s k + (OCS.multBary m (OCS.multIdx m (s k) + 1) -
+      OCS.multBary m (OCS.multIdx m (s k))) - θ - 1 / 2) atTop (𝓝 (1 / 2)) := by
+    have := ((ht.add (tendsto_gap hw hlim hs)).sub (tendsto_const_nhds (x := θ))).sub
+      (tendsto_const_nhds (x := (1 / 2 : ℝ)))
+    convert this using 2
+    ring
+  filter_upwards [(tendsto_order.1 e1).1 (1 / 4 : ℝ) (by norm_num),
+    (tendsto_order.1 e2).1 (1 / 4 : ℝ) (by norm_num)]
+    with k hk1 hk2
+  simp only [tt] at hk1 hk2
+  have hne : (OCS.multGammaC m).Nonempty := ⟨_, ⟨_, ⟨0, rfl⟩, rfl⟩⟩
+  rw [le_infDist hne]
+  rintro _ ⟨_, ⟨j, rfl⟩, rfl⟩
+  rw [Complex.dist_eq]
+  have : (((θ + 1 / 2 : ℝ) : ℂ) + (s k : ℂ)) - ((OCS.multBary m j : ℝ) : ℂ) =
+      ((θ + 1 / 2 + s k - OCS.multBary m j : ℝ) : ℂ) := by push_cast; ring
+  rw [this, Complex.norm_real, Real.norm_eq_abs]
+  have hmono := (OCS.strictMono_multBary hw).monotone
+  rcases le_or_gt j (OCS.multIdx m (s k)) with hj | hj
+  · have := hmono hj
+    rw [abs_of_nonneg (by linarith)]
+    linarith
+  · have := hmono (show OCS.multIdx m (s k) + 1 ≤ j by omega)
+    rw [abs_of_nonpos (by linarith)]
+    linarith
+
 end Translate
 
 end FF
