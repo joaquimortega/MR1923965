@@ -3,6 +3,7 @@ import FourierFrames.PW.PlancherelPolya
 import FourierFrames.Theorem1.Sufficiency.Interlace
 import FourierFrames.Theorem1.Sufficiency.Limit
 import FourierFrames.Theorem1.Sufficiency.LevelSet
+import FourierFrames.Theorem1.Sufficiency.Phase
 
 open MeasureTheory Metric Set Complex Filter Topology
 open scoped ENNReal NNReal ComplexConjugate
@@ -170,8 +171,10 @@ sides). -/
 theorem HEEqPW.phase_tendsto (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ)
     (hφ' : ∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x) :
-    Tendsto φ atTop atTop ∧ Tendsto φ atBot atBot := by
-  sorry
+    Tendsto φ atTop atTop ∧ Tendsto φ atBot atBot :=
+  phase_tendsto_aux hPW hE hEHB hEPW hφ hφ'
+    (let ⟨n, hn⟩ := (eventually_not_exceptional (HEEqPW.isStrictHB hEHB hEPW)).exists
+      ⟨_, hn⟩)
 
 /-- The phase `ψ = φ_E + φ_G` of `EG` is a continuous increasing bijection of `ℝ`
 (`G ∈ \overline{HB}` without real zeros, `H(E) = PW`). -/
@@ -179,8 +182,10 @@ theorem HEEqPW.phase_mul_bijective (hPW : PaleyWienerThm) (hE : TheoremE) {E G :
     (hEHB : IsHB E) (hGHB : IsHB G) (hEPW : HEEqPW E) (hG0 : ∀ x : ℝ, G x ≠ 0)
     {φE φG : ℝ → ℝ} (hφE : IsPhaseFunction E φE) (hφE' : ∀ x : ℝ, HasDerivAt φE (phaseDeriv E x) x)
     (hφG : IsPhaseFunction G φG) (hφG' : ∀ x : ℝ, HasDerivAt φG (phaseDeriv G x) x) :
-    StrictMono (fun x ↦ φE x + φG x) ∧ Function.Surjective (fun x ↦ φE x + φG x) := by
-  sorry
+    StrictMono (fun x ↦ φE x + φG x) ∧ Function.Surjective (fun x ↦ φE x + φG x) :=
+  phase_mul_bijective_aux hPW hE hEHB hGHB hEPW hG0 hφE hφE' hφG hφG'
+    (let ⟨n, hn⟩ := (eventually_not_exceptional (HEEqPW.isStrictHB hEHB hEPW)).exists
+      ⟨_, hn⟩)
 
 /-! ## Theorem 1, sufficiency (p. 795–797) -/
 
