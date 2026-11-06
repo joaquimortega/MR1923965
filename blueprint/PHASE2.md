@@ -11,8 +11,8 @@ the main theorems become unconditional (`theorem1_unconditional := theorem1 pale
 | `JohnNirenberg` | John–Nirenberg inequality | [JN61], [Ga81] | P2 | feasible: dyadic stopping time + Lebesgue differentiation (`blueprint/P2_DS_JN.md`) |
 | `TheoremD` | reproducing kernel of `H(E)` | [dB68, Thm 19] | P3 | to assess |
 | `TheoremE` | orthogonal sampling | [dB68, Thm 22] | P3 | to assess |
-| `TheoremF` | isometric measures | [dB60], [dB68, Thm 32] | P4 | to assess |
-| `TheoremC` | axiomatic de Branges spaces | [dB68, Thm 23] | P4 | to assess |
+| `TheoremF` | isometric measures | [dB60], [dB68, Thm 32] | P4 | feasible only as a long project (est. 5–8k lines, high risk: inner-function factorization, Blaschke division, Herglotz transform); `blueprint/P4_DeBrangesFC.md` |
+| `TheoremC` | axiomatic de Branges spaces | [dB68, Thm 23] | P4 | feasible (est. 2.5–4k lines, moderate risk; shares the `H²` Cauchy-formula machinery with Theorem D); `blueprint/P4_DeBrangesFC.md` |
 | `PavlovBMO` | CIS ⇒ `n_Γ - t ∈ BMO` | [Pa79], [HNP81] | P5 | **not feasible**: needs the Hilbert transform, Muckenhoupt weights and BMO conjugation, none in Mathlib (est. 6–10k lines; `blueprint/P5_Pavlov.md`). Kept as the cited hypothesis `hA` of `landau_inequality`. |
 
 Conventions: Lean files under `FourierFrames/Cited/`, one blueprint `blueprint/P*_*.md` per module,
