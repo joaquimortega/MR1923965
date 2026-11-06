@@ -72,7 +72,7 @@ theorem log_norm_aux {f : ℂ → ℂ} (hf : Differentiable ℂ f)
   obtain ⟨K₂, hK₂⟩ := abs_multU_le_aux hg.measurable hM
   set P : ℂ → ℂ := fun z ↦ potC' g z / (Real.pi : ℂ) with hP
   set Φ : ℂ → ℂ := fun z ↦ Complex.exp (Complex.I * φ 0) * f z * Complex.exp (-P z) with hΦ
-  have hPc : ContinuousOn P {z : ℂ | 0 ≤ z.im} := (continuousOn_potC' hg hM).div_const _
+  have hPc : ContinuousOn P {z : ℂ | 0 ≤ z.im} := (continuousOn_potC' hg.measurable hM).div_const _
   have hΦc : ContinuousOn Φ {z : ℂ | 0 ≤ z.im} := by
     refine ((continuousOn_const.mul hf.continuous.continuousOn).mul ?_)
     exact Complex.continuous_exp.comp_continuousOn hPc.neg

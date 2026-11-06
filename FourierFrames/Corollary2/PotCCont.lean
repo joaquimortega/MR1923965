@@ -129,17 +129,17 @@ theorem continuousWithinAt_sigma_integral {g : ℝ → ℝ} (hg : Measurable g) 
     exact this.continuousWithinAt
 
 
-theorem continuousOn_potC' {g : ℝ → ℝ} (hg : Continuous g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
+theorem continuousOn_potC' {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     ContinuousOn (potC' g) {z : ℂ | 0 ≤ z.im} := by
   intro z₀ hz₀
   have hre : Continuous fun z : ℂ ↦ (potC' g z).re := by
     have : (fun z : ℂ ↦ (potC' g z).re) = OCS.multU g 0 :=
-      funext fun z ↦ potC'_re hg.measurable hM z
-    rw [this]; exact continuous_multU_of_cont_bdd hg hM
+      funext fun z ↦ potC'_re hg hM z
+    rw [this]; exact continuous_multU_of_bdd_aux hg hM
   have him : ContinuousWithinAt (fun z : ℂ ↦ (potC' g z).im) {z : ℂ | 0 ≤ z.im} z₀ := by
     have : (fun z : ℂ ↦ (potC' g z).im) = fun z ↦ ∫ t, sigma z t * g t :=
-      funext fun z ↦ potC'_im hg.measurable hM z
-    rw [this]; exact continuousWithinAt_sigma_integral hg.measurable hM
+      funext fun z ↦ potC'_im hg hM z
+    rw [this]; exact continuousWithinAt_sigma_integral hg hM
   have h2 : ContinuousWithinAt (fun z : ℂ ↦ (((potC' g z).re : ℝ) : ℂ) +
       Complex.I * (((potC' g z).im : ℝ) : ℂ)) {z : ℂ | 0 ≤ z.im} z₀ :=
     (Complex.continuous_ofReal.continuousAt.comp_continuousWithinAt hre.continuousWithinAt).add

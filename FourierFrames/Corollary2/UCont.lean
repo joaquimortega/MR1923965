@@ -312,164 +312,304 @@ theorem continuousAt_integral_aF {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ}
       rw [win_eq_zero hz, sub_zero, one_mul]
 
 
-theorem win_add (x s : ℝ) : win x (s + x) = win 0 s := by
-  by_cases h : |s| ≤ 1
-  · rw [win_eq_one (by simpa using h), win_eq_one (by simpa using h)]
-  · push Not at h
-    rw [win_eq_zero (by simpa using h), win_eq_zero (by simpa using h)]
 
-/-- Piece `b` in the translated variable `s = t - Re z`. -/
-def bT (g : ℝ → ℝ) (z : ℂ) (s : ℝ) : ℝ :=
-  win 0 s * (Real.log ‖(s : ℂ) - (z.im : ℂ) * Complex.I‖ * g (s + z.re))
 
-theorem integral_bF_eq (g : ℝ → ℝ) (z : ℂ) : ∫ t, bF g z t = ∫ s, bT g z s := by
-  rw [← integral_add_right_eq_self (fun t ↦ bF g z t) z.re]
-  congr 1; funext s
-  unfold bF bT
-  rw [win_add]
-  congr 3
-  have : ((s + z.re : ℝ) : ℂ) - z = (s : ℂ) - (z.im : ℂ) * Complex.I := by
-    apply Complex.ext <;> simp
-  rw [this]
+/-- The window of the singular kernel: `-log |t - x|` on `|t - x| ≤ a`. -/
+def sing (x a : ℝ) (t : ℝ) : ℝ := (Icc (x - a) (x + a)).indicator (fun t ↦ -Real.log |t - x|) t
 
-theorem bT_sub (g : ℝ → ℝ) (z : ℂ) (t : ℝ) : bT g z (t - z.re) = bF g z t := by
-  unfold bT bF
-  have h1 := win_add z.re (t - z.re)
-  rw [sub_add_cancel] at h1
-  rw [sub_add_cancel, ← h1]
-  congr 3
-  have : (((t - z.re : ℝ) : ℂ) - (z.im : ℂ) * Complex.I) = (t : ℂ) - z := by
-    apply Complex.ext <;> simp
-  rw [this]
-
-theorem abs_log_norm_sub_im_le {s y Y : ℝ} (hs : |s| ≤ 1) (hs0 : s ≠ 0) (hy : |y| ≤ Y) :
-    |Real.log ‖(s : ℂ) - (y : ℂ) * Complex.I‖| ≤ |Real.log (|s|)| + Real.log (1 + Y) := by
-  have hY : 0 ≤ Y := (abs_nonneg _).trans hy
-  have h1 : |s| ≤ ‖(s : ℂ) - (y : ℂ) * Complex.I‖ := by
-    have := Complex.abs_re_le_norm ((s : ℂ) - (y : ℂ) * Complex.I)
-    simpa using this
-  have h2 : ‖(s : ℂ) - (y : ℂ) * Complex.I‖ ≤ 1 + Y := by
-    calc ‖(s : ℂ) - (y : ℂ) * Complex.I‖ ≤ ‖(s : ℂ)‖ + ‖(y : ℂ) * Complex.I‖ := norm_sub_le _ _
-      _ ≤ 1 + Y := by simp; linarith
-  have hpos : 0 < |s| := abs_pos.mpr hs0
-  have hlog1 : 0 ≤ Real.log (1 + Y) := Real.log_nonneg (by linarith)
-  by_cases hn : 1 ≤ ‖(s : ℂ) - (y : ℂ) * Complex.I‖
-  · rw [abs_of_nonneg (Real.log_nonneg hn)]
-    have := Real.log_le_log (by linarith) h2
-    linarith [abs_nonneg (Real.log (|s|))]
-  · push Not at hn
-    rw [abs_of_nonpos (Real.log_nonpos (by linarith) hn.le)]
-    have h3 : Real.log (|s|) ≤ Real.log ‖(s : ℂ) - (y : ℂ) * Complex.I‖ := Real.log_le_log hpos h1
-    have h4 : Real.log (|s|) ≤ 0 := Real.log_nonpos (abs_nonneg _) hs
-    rw [abs_of_nonpos h4]
+theorem sing_nonneg {x a : ℝ} (ha : a ≤ 1) (t : ℝ) : 0 ≤ sing x a t := by
+  unfold sing
+  by_cases h : t ∈ Icc (x - a) (x + a)
+  · rw [indicator_of_mem h]
+    have : |t - x| ≤ 1 := by
+      rw [abs_le]; constructor <;> linarith [h.1, h.2]
+    have := Real.log_nonpos (abs_nonneg _) this
     linarith
+  · rw [indicator_of_notMem h]
 
-/-- Bound for the translated piece `b`. -/
-def bBound (M Y : ℝ) (s : ℝ) : ℝ :=
-  (Icc (-1 : ℝ) 1).indicator (fun s ↦ (|Real.log ‖(s : ℂ) - 0‖| + Real.log (1 + Y)) * M) s
+theorem integral_sing {x a : ℝ} (ha : 0 < a) :
+    ∫ t, sing x a t = 2 * a * (1 - Real.log a) := by
+  unfold sing
+  rw [integral_indicator measurableSet_Icc, integral_Icc_eq_integral_Ioc,
+    ← intervalIntegral.integral_of_le (by linarith)]
+  have h1 : ∀ t : ℝ, -Real.log |t - x| = (fun u : ℝ ↦ -Real.log u) (t - x) := fun t ↦ by
+    simp [Real.log_abs]
+  simp_rw [h1]
+  rw [intervalIntegral.integral_comp_sub_right (fun u : ℝ ↦ -Real.log u) x]
+  simp only [sub_sub_cancel_left, add_sub_cancel_left]
+  rw [intervalIntegral.integral_neg, integral_log]
+  simp [Real.log_neg_eq_log]
+  ring
 
-theorem integrable_bBound (M Y : ℝ) : Integrable (bBound M Y) := by
-  unfold bBound
+
+theorem integrable_sing (x : ℝ) {a : ℝ} (ha : 0 ≤ a) : Integrable (sing x a) := by
+  unfold sing
   rw [integrable_indicator_iff measurableSet_Icc]
-  exact (((integrableOn_log_norm_sub 0 1).abs).add (integrableOn_const (by simp))).mul_const M
+  have h1 : IntervalIntegrable (fun t : ℝ ↦ Real.log (t - x)) volume (x - a) (x + a) := by
+    have := (intervalIntegral.intervalIntegrable_log' (a := x - a - x) (b := x + a - x)).comp_sub_right x
+    simpa only [sub_add_cancel] using this
+  have h2 := (intervalIntegrable_iff_integrableOn_Icc_of_le (by linarith : x - a ≤ x + a)).mp h1
+  refine h2.neg.congr_fun (fun t _ ↦ ?_) measurableSet_Icc
+  simp [Real.log_abs]
+
+/-- Pointwise: on the tail set the kernel is bounded by `M * sing`. -/
+theorem abs_bF_le_sing {g : ℝ → ℝ} {M : ℝ} (hM : ∀ t, |g t| ≤ M) {R : ℝ} {z : ℂ}
+    (hzR : ‖z‖ ≤ R) {C : ℝ} (hC : M * Real.log (1 + R) < C) (hC0 : 0 < C) (hM0 : 0 < M)
+    {t : ℝ} (ht : t ≠ z.re) (hS : C ≤ |bF g z t|) :
+    |bF g z t| ≤ M * sing z.re (Real.exp (-C / M)) t := by
+  have hR0 : 0 ≤ R := (norm_nonneg z).trans hzR
+  unfold bF at hS ⊢
+  have hw : win z.re t ≠ 0 := by
+    intro h; rw [h, zero_mul, abs_zero] at hS; linarith
+  have hwin := abs_sub_le_of_win_ne hw
+  rw [win_eq_one hwin, one_mul] at hS ⊢
+  have hlogt : C ≤ |Real.log ‖(t : ℂ) - z‖| * M := by
+    refine hS.trans ?_
+    rw [abs_mul]
+    exact mul_le_mul_of_nonneg_left (hM t) (abs_nonneg _)
+  have hs0 : 0 < ‖(t : ℂ) - z‖ := by
+    rcases (norm_nonneg ((t : ℂ) - z)).lt_or_eq with h | h
+    · exact h
+    · exfalso; rw [← h, Real.log_zero, abs_zero, zero_mul] at hlogt; linarith
+  have hx : |t - z.re| ≤ ‖(t : ℂ) - z‖ := by
+    have := Complex.abs_re_le_norm ((t : ℂ) - z)
+    simpa using this
+  have hup : ‖(t : ℂ) - z‖ ≤ 1 + R := by
+    calc ‖(t : ℂ) - z‖ = ‖((t : ℂ) - (z.re : ℂ)) + ((z.re : ℂ) - z)‖ := by ring_nf
+      _ ≤ ‖(t : ℂ) - (z.re : ℂ)‖ + ‖(z.re : ℂ) - z‖ := norm_add_le _ _
+      _ ≤ 1 + R := by
+          have h1 : ‖(t : ℂ) - (z.re : ℂ)‖ ≤ 1 := by
+            rw [← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]; exact hwin
+          have h2 : ‖(z.re : ℂ) - z‖ ≤ ‖z‖ := by
+            have : (z.re : ℂ) - z = -(z.im : ℂ) * Complex.I := by
+              apply Complex.ext <;> simp
+            rw [this, norm_mul, norm_neg, Complex.norm_real, Complex.norm_I, mul_one, Real.norm_eq_abs]
+            exact Complex.abs_im_le_norm z
+          linarith
+  have hneg : Real.log ‖(t : ℂ) - z‖ < 0 := by
+    by_contra hnn
+    push Not at hnn
+    rw [abs_of_nonneg hnn] at hlogt
+    have : Real.log ‖(t : ℂ) - z‖ ≤ Real.log (1 + R) := Real.log_le_log hs0 hup
+    nlinarith
+  rw [abs_of_neg hneg] at hlogt
+  have hle : ‖(t : ℂ) - z‖ ≤ Real.exp (-C / M) := by
+    rw [← Real.log_le_iff_le_exp hs0]
+    rw [le_div_iff₀ hM0]
+    linarith
+  have hmem : t ∈ Icc (z.re - Real.exp (-C / M)) (z.re + Real.exp (-C / M)) := by
+    have := abs_le.mp (hx.trans hle)
+    constructor <;> linarith [this.1, this.2]
+  have hpos : 0 < |t - z.re| := abs_pos.mpr (sub_ne_zero.mpr ht)
+  unfold sing
+  rw [indicator_of_mem hmem]
+  have hlt : Real.log |t - z.re| ≤ Real.log ‖(t : ℂ) - z‖ := Real.log_le_log hpos hx
+  rw [abs_mul]
+  calc |Real.log ‖(t : ℂ) - z‖| * |g t| ≤ |Real.log ‖(t : ℂ) - z‖| * M :=
+        mul_le_mul_of_nonneg_left (hM t) (abs_nonneg _)
+    _ = (-Real.log ‖(t : ℂ) - z‖) * M := by rw [abs_of_neg hneg]
+    _ ≤ (-Real.log |t - z.re|) * M := by gcongr
+    _ = M * -Real.log |t - z.re| := by ring
 
 
-theorem measurable_bT {g : ℝ → ℝ} (hg : Continuous g) (z : ℂ) : Measurable (bT g z) := by
-  unfold bT
-  refine (measurable_win 0).mul (Measurable.mul ?_ (hg.measurable.comp (measurable_id.add_const _)))
-  exact Real.measurable_log.comp (by fun_prop)
+theorem tendsto_decay (M : ℝ) : Tendsto (fun u : ℝ ↦ 2 * M * ((1 + u) * Real.exp (-u))) atTop (𝓝 0) := by
+  have h1 : Tendsto (fun u : ℝ ↦ Real.exp (-u)) atTop (𝓝 0) := Real.tendsto_exp_neg_atTop_nhds_zero
+  have h2 : Tendsto (fun u : ℝ ↦ u * Real.exp (-u)) atTop (𝓝 0) := by
+    simpa using Real.tendsto_pow_mul_exp_neg_atTop_nhds_zero 1
+  have := (h1.add h2)
+  simp only [add_zero] at this
+  have h3 : Tendsto (fun u : ℝ ↦ (1 + u) * Real.exp (-u)) atTop (𝓝 0) := by
+    refine this.congr fun u ↦ ?_
+    ring
+  simpa using h3.const_mul (2 * M)
 
-theorem abs_bT_le {g : ℝ → ℝ} {M : ℝ} (hM : ∀ t, |g t| ≤ M) {Y : ℝ} (hY0 : 0 ≤ Y) {z : ℂ}
-    (hz : |z.im| ≤ Y) : ∀ᵐ s ∂(volume : Measure ℝ), ‖bT g z s‖ ≤ bBound M Y s := by
-  filter_upwards [(Set.countable_singleton (0 : ℝ)).ae_notMem volume] with s hs0
-  have hs0' : s ≠ 0 := by simpa using hs0
-  unfold bBound bT
-  rw [Real.norm_eq_abs]
-  by_cases hs : s ∈ Icc (-1 : ℝ) 1
-  · rw [indicator_of_mem hs]
-    have hw : win 0 s = 1 := win_eq_one (by simpa using abs_le.mpr ⟨hs.1, hs.2⟩)
-    rw [hw, one_mul, abs_mul]
-    have := abs_log_norm_sub_im_le (abs_le.mpr ⟨hs.1, hs.2⟩) hs0' hz
-    have e : Real.log ‖(s : ℂ) - 0‖ = Real.log (|s|) := by simp
-    simp only [e]
-    have hl : 0 ≤ Real.log (1 + Y) := Real.log_nonneg (by linarith)
-    exact mul_le_mul this (hM _) (abs_nonneg _) (by positivity)
-  · rw [indicator_of_notMem hs]
-    have hw : win 0 s = 0 := by
-      have : 1 < |s| := by
-        by_contra hc
-        exact hs (abs_le.mp (not_lt.mp hc))
-      exact win_eq_zero (by simpa using this)
-    rw [hw]; simp
+theorem tail_eLpNorm {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (hM0 : 0 < M)
+    (R : ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ C : ℝ≥0, ∀ z : ℂ, ‖z‖ ≤ R →
+      eLpNorm ({t | C ≤ ‖bF g z t‖₊}.indicator (bF g z)) 1 volume ≤ ENNReal.ofReal ε := by
+  obtain ⟨U₀, hU₀⟩ := (tendsto_decay M).eventually (gt_mem_nhds hε) |> eventually_atTop.mp
+  set C₀ : ℝ := M * |Real.log (1 + R)| + M * |U₀| + 1 with hC₀
+  have hC₀pos : 0 < C₀ := by
+    have : 0 ≤ M * |Real.log (1 + R)| := by positivity
+    have : 0 ≤ M * |U₀| := by positivity
+    linarith
+  have hC₀log : M * Real.log (1 + R) < C₀ := by
+    have : M * Real.log (1 + R) ≤ M * |Real.log (1 + R)| :=
+      mul_le_mul_of_nonneg_left (le_abs_self _) hM0.le
+    have : 0 ≤ M * |U₀| := by positivity
+    linarith
+  have hu : U₀ ≤ C₀ / M := by
+    rw [le_div_iff₀ hM0]
+    have : M * |U₀| ≥ U₀ * M := by nlinarith [le_abs_self U₀]
+    have : 0 ≤ M * |Real.log (1 + R)| := by positivity
+    linarith
+  refine ⟨C₀.toNNReal, fun z hzR ↦ ?_⟩
+  have hCcoe : ((C₀.toNNReal : ℝ≥0) : ℝ) = C₀ := Real.coe_toNNReal _ hC₀pos.le
+  set a : ℝ := Real.exp (-C₀ / M) with ha
+  have ha0 : 0 < a := Real.exp_pos _
+  have ha1 : a ≤ 1 := by
+    rw [ha, Real.exp_le_one_iff]
+    exact div_nonpos_of_nonpos_of_nonneg (by linarith) hM0.le
+  have hdec : M * (2 * a * (1 - Real.log a)) ≤ ε := by
+    have := hU₀ (C₀ / M) hu
+    have e : M * (2 * a * (1 - Real.log a)) = 2 * M * ((1 + C₀ / M) * Real.exp (-(C₀ / M))) := by
+      rw [ha, Real.log_exp, neg_div]; ring
+    rw [e]; exact this.le
+  have hmeas : Measurable (bF g z) := measurable_bF hg z
+  set S : Set ℝ := {t | C₀.toNNReal ≤ ‖bF g z t‖₊} with hS
+  have hSm : MeasurableSet S := measurableSet_le measurable_const hmeas.nnnorm
+  rw [eLpNorm_one_eq_lintegral_enorm (hmeas.indicator hSm).aestronglyMeasurable]
+  have hint : Integrable (fun t ↦ M * sing z.re a t) := (integrable_sing z.re ha0.le).const_mul M
+  calc ∫⁻ t, ‖S.indicator (bF g z) t‖ₑ ≤ ∫⁻ t, ENNReal.ofReal (M * sing z.re a t) := by
+        refine lintegral_mono_ae ?_
+        filter_upwards [(Set.countable_singleton z.re).ae_notMem volume] with t ht
+        have htx : t ≠ z.re := by simpa using ht
+        by_cases hts : t ∈ S
+        · rw [indicator_of_mem hts]
+          have hCle : C₀ ≤ |bF g z t| := by
+            have h' := NNReal.coe_le_coe.mpr hts
+            rw [hCcoe, coe_nnnorm, Real.norm_eq_abs] at h'
+            exact h'
+          have := abs_bF_le_sing hM hzR (hC := hC₀log) hC₀pos hM0 htx hCle
+          rw [← ofReal_norm, Real.norm_eq_abs]
+          exact ENNReal.ofReal_le_ofReal this
+        · rw [indicator_of_notMem hts]; simp
+    _ = ENNReal.ofReal (∫ t, M * sing z.re a t) := by
+        rw [ofReal_integral_eq_lintegral_ofReal hint]
+        exact Eventually.of_forall fun t ↦ mul_nonneg hM0.le (sing_nonneg ha1 t)
+    _ ≤ ENNReal.ofReal ε := by
+        rw [integral_const_mul, integral_sing ha0]
+        exact ENNReal.ofReal_le_ofReal hdec
 
-theorem continuousAt_integral_bT {g : ℝ → ℝ} (hg : Continuous g) {M : ℝ} (hM : ∀ t, |g t| ≤ M)
-    (z₀ : ℂ) : ContinuousAt (fun z ↦ ∫ s, bT g z s) z₀ := by
-  set Y : ℝ := |z₀.im| + 1 with hY
+
+theorem bF_eq_zero_of_far {g : ℝ → ℝ} {z : ℂ} {t : ℝ} (h : 1 < |t - z.re|) : bF g z t = 0 := by
+  unfold bF; rw [win_eq_zero h, zero_mul]
+
+theorem integrable_bF {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (z : ℂ) :
+    Integrable (bF g z) := by
   have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM 0)
-  refine continuousAt_of_dominated (bound := bBound M Y) ?_ ?_ (integrable_bBound M Y) ?_
-  · exact Eventually.of_forall fun z ↦ (measurable_bT hg z).aestronglyMeasurable
-  · have : ∀ᶠ z in 𝓝 z₀, |z.im| ≤ Y := by
-      filter_upwards [ball_mem_nhds z₀ one_pos] with z hz
-      have h1 : ‖z - z₀‖ < 1 := by simpa [dist_eq_norm] using hz
-      have h2 : |z.im - z₀.im| ≤ ‖z - z₀‖ := by
-        simpa using Complex.abs_im_le_norm (z - z₀)
-      calc |z.im| = |(z.im - z₀.im) + z₀.im| := by ring_nf
-        _ ≤ |z.im - z₀.im| + |z₀.im| := abs_add_le _ _
-        _ ≤ Y := by rw [hY]; linarith
-    filter_upwards [this] with z hz
-    exact abs_bT_le hM (by rw [hY]; positivity) hz
-  · filter_upwards [(Set.countable_singleton (0 : ℝ)).ae_notMem volume] with s hs0
-    have hs0' : s ≠ 0 := by simpa using hs0
-    unfold bT
-    refine continuousAt_const.mul (ContinuousAt.mul ?_ ?_)
-    · refine (Real.continuousAt_log ?_).comp (f := fun z : ℂ ↦ ‖(s : ℂ) - (z.im : ℂ) * Complex.I‖) ?_
-      · intro h
-        have := norm_eq_zero.mp (by simpa using h)
-        have := congrArg Complex.re this
-        simp at this; exact hs0' this
-      · exact (continuous_norm.comp (by fun_prop : Continuous fun z : ℂ ↦
-          (s : ℂ) - (z.im : ℂ) * Complex.I)).continuousAt
-    · exact (hg.comp (by fun_prop : Continuous fun z : ℂ ↦ s + z.re)).continuousAt
+  set T : ℝ := |z.re| + 1 with hT
+  have hint : IntegrableOn (bF g z) (Icc (-T) T) := by
+    have hdom := ((integrableOn_log_norm_sub z T).abs).const_mul M
+    refine hdom.mono' (measurable_bF hg z).aestronglyMeasurable ?_
+    refine Eventually.of_forall fun t ↦ ?_
+    unfold bF
+    rw [Real.norm_eq_abs, abs_mul, abs_mul, abs_of_nonneg (win_nonneg _ _)]
+    calc win z.re t * (|Real.log ‖(t : ℂ) - z‖| * |g t|) ≤ 1 * (|Real.log ‖(t : ℂ) - z‖| * M) := by
+          gcongr
+          · exact win_le_one _ _
+          · exact hM t
+      _ = M * |Real.log ‖(t : ℂ) - z‖| := by ring
+  refine hint.integrable_of_forall_notMem_eq_zero fun t ht ↦ bF_eq_zero_of_far ?_
+  simp only [mem_Icc, not_and_or, not_le] at ht
+  rcases ht with h | h
+  · rw [abs_of_neg (by linarith [abs_nonneg z.re, le_abs_self z.re, neg_abs_le z.re])]
+    linarith [le_abs_self z.re, neg_abs_le z.re]
+  · rw [abs_of_pos (by linarith [abs_nonneg z.re, le_abs_self z.re])]
+    linarith [le_abs_self z.re, neg_abs_le z.re]
 
 
-theorem continuous_multU_of_cont_bdd {g : ℝ → ℝ} (hg : Continuous g) {M : ℝ}
+theorem tendsto_integral_bF {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M)
+    (hM0 : 0 < M) {R : ℝ} {z₀ : ℂ} (hz₀ : ‖z₀‖ ≤ R) (w : ℕ → ℂ) (hw : Tendsto w atTop (𝓝 z₀))
+    (hbd : ∀ n, ‖w n‖ ≤ R) :
+    Tendsto (fun n ↦ ∫ t, bF g (w n) t) atTop (𝓝 (∫ t, bF g z₀ t)) := by
+  have hR0 : 0 ≤ R := (norm_nonneg z₀).trans hz₀
+  set μ : Measure ℝ := volume.restrict (Icc (-(R + 1)) (R + 1)) with hμ
+  -- supports
+  have hsupp : ∀ z : ℂ, ‖z‖ ≤ R → ∀ t, t ∉ Icc (-(R + 1)) (R + 1) → bF g z t = 0 := by
+    intro z hz t ht
+    refine bF_eq_zero_of_far ?_
+    have hx : |z.re| ≤ R := (Complex.abs_re_le_norm z).trans hz
+    simp only [mem_Icc, not_and_or, not_le] at ht
+    have := abs_le.mp hx
+    rcases ht with h | h
+    · rw [abs_of_neg (by linarith)]; linarith
+    · rw [abs_of_pos (by linarith)]; linarith
+  have hint : ∀ z : ℂ, Integrable (bF g z) := integrable_bF hg hM
+  have hV := tendsto_Lp_finite_of_tendsto_ae (μ := μ) (p := 1) le_rfl ENNReal.one_ne_top
+    (f := fun n ↦ bF g (w n)) (g := bF g z₀)
+    (fun n ↦ (measurable_bF hg (w n)).aestronglyMeasurable)
+    (memLp_one_iff_integrable.mpr (hint z₀).integrableOn) ?_ ?_
+  · have hconv := tendsto_integral_of_L1' (μ := μ) (bF g z₀) (F := fun n ↦ bF g (w n))
+      (Eventually.of_forall fun n ↦ (hint (w n)).integrableOn) hV
+    have e : ∀ z : ℂ, ‖z‖ ≤ R → ∫ t, bF g z t ∂μ = ∫ t, bF g z t := fun z hz ↦
+      setIntegral_eq_integral_of_forall_compl_eq_zero (hsupp z hz)
+    simp only [e _ hz₀, e _ (hbd _)] at hconv
+    exact hconv
+  · refine unifIntegrable_of le_rfl ENNReal.one_ne_top
+      (fun n ↦ (measurable_bF hg (w n)).aestronglyMeasurable) ?_
+    intro ε hε
+    by_cases hεt : ε = ∞
+    · exact ⟨0, fun i ↦ by rw [hεt]; exact le_top⟩
+    · obtain ⟨C, hC⟩ := tail_eLpNorm hg hM hM0 R (ε := ε.toReal) (ENNReal.toReal_pos hε.ne' hεt)
+      refine ⟨C, fun i ↦ ?_⟩
+      refine (eLpNorm_mono_measure _ Measure.restrict_le_self).trans ?_
+      refine (hC (w i) (hbd i)).trans ?_
+      rw [ENNReal.ofReal_toReal hεt]
+  · -- almost everywhere convergence
+    have hnull : ∀ᵐ t ∂(volume : Measure ℝ), t ∉ ({z₀.re - 1, z₀.re + 1, z₀.re} : Set ℝ) :=
+      (Set.toFinite _).countable.ae_notMem volume
+    filter_upwards [ae_restrict_of_ae hnull] with t ht
+    simp only [mem_insert_iff, mem_singleton_iff, not_or] at ht
+    obtain ⟨h1, h2, h3⟩ := ht
+    unfold bF
+    have hwin : Tendsto (fun n ↦ win (w n).re t) atTop (𝓝 (win z₀.re t)) :=
+      ((continuousAt_win h1 h2).tendsto).comp ((Complex.continuous_re.tendsto z₀).comp hw)
+    have hne : (t : ℂ) - z₀ ≠ 0 := by
+      intro h; apply h3
+      have := congrArg Complex.re h
+      simpa [sub_eq_zero] using this
+    have hlog : Tendsto (fun n ↦ Real.log ‖(t : ℂ) - w n‖) atTop (𝓝 (Real.log ‖(t : ℂ) - z₀‖)) := by
+      have hc : Tendsto (fun n ↦ (t : ℂ) - w n) atTop (𝓝 ((t : ℂ) - z₀)) :=
+        tendsto_const_nhds.sub hw
+      exact ((Real.continuousAt_log (by simpa using hne)).tendsto).comp (hc.norm)
+    exact hwin.mul (hlog.mul_const _)
+
+
+theorem continuousAt_integral_bF {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M)
+    (z₀ : ℂ) : ContinuousAt (fun z ↦ ∫ t, bF g z t) z₀ := by
+  have hM' : ∀ t, |g t| ≤ |M| + 1 := fun t ↦ (hM t).trans (by linarith [le_abs_self M])
+  have hM0 : 0 < |M| + 1 := by positivity
+  set R : ℝ := ‖z₀‖ + 1 with hR
+  rw [ContinuousAt, Filter.tendsto_iff_seq_tendsto]
+  intro x hx
+  have hev : ∀ᶠ n in atTop, ‖x n‖ ≤ R := by
+    have := hx.eventually (ball_mem_nhds z₀ one_pos)
+    filter_upwards [this] with n hn
+    have h1 : ‖x n - z₀‖ < 1 := by simpa [dist_eq_norm] using hn
+    calc ‖x n‖ = ‖(x n - z₀) + z₀‖ := by ring_nf
+      _ ≤ ‖x n - z₀‖ + ‖z₀‖ := norm_add_le _ _
+      _ ≤ R := by rw [hR]; linarith
+  obtain ⟨N, hN⟩ := eventually_atTop.mp hev
+  have hw : Tendsto (fun n ↦ x (n + N)) atTop (𝓝 z₀) := hx.comp (tendsto_add_atTop_nat N)
+  have := tendsto_integral_bF hg hM' hM0 (R := R) (z₀ := z₀) (by rw [hR]; linarith) (fun n ↦ x (n + N)) hw
+    (fun n ↦ hN _ (by omega))
+  exact (tendsto_add_atTop_iff_nat (f := fun n ↦ ∫ t, bF g (x n) t) N).mp this
+
+theorem continuous_multU_of_bdd_aux {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ}
     (hM : ∀ t, |g t| ≤ M) : Continuous (OCS.multU g 0) := by
-  have hgm : Measurable g := hg.measurable
   rw [continuous_iff_continuousAt]
   intro z₀
   set R : ℝ := ‖z₀‖ + 1 with hR
-  set Y : ℝ := |z₀.im| + 1 with hY
   have hR0 : 0 ≤ R := by positivity
-  have hY0 : 0 ≤ Y := by positivity
-  have hnear : ∀ᶠ z in 𝓝 z₀, ‖z‖ ≤ R ∧ |z.im| ≤ Y := by
+  have hnear : ∀ᶠ z in 𝓝 z₀, ‖z‖ ≤ R := by
     filter_upwards [ball_mem_nhds z₀ one_pos] with z hz
     have h1 : ‖z - z₀‖ < 1 := by simpa [dist_eq_norm] using hz
-    refine ⟨?_, ?_⟩
-    · calc ‖z‖ = ‖(z - z₀) + z₀‖ := by ring_nf
-        _ ≤ ‖z - z₀‖ + ‖z₀‖ := norm_add_le _ _
-        _ ≤ R := by rw [hR]; linarith
-    · have h2 : |z.im - z₀.im| ≤ ‖z - z₀‖ := by
-        simpa using Complex.abs_im_le_norm (z - z₀)
-      calc |z.im| = |(z.im - z₀.im) + z₀.im| := by ring_nf
-        _ ≤ |z.im - z₀.im| + |z₀.im| := abs_add_le _ _
-        _ ≤ Y := by rw [hY]; linarith
+    calc ‖z‖ = ‖(z - z₀) + z₀‖ := by ring_nf
+      _ ≤ ‖z - z₀‖ + ‖z₀‖ := norm_add_le _ _
+      _ ≤ R := by rw [hR]; linarith
   have hsum : (fun z ↦ OCS.multU g 0 z) =ᶠ[𝓝 z₀]
-      fun z ↦ (∫ t, aF g z t) + (∫ s, bT g z s) + ∫ t, cF g z t := by
-    filter_upwards [hnear] with z ⟨hzR, hzY⟩
+      fun z ↦ (∫ t, aF g z t) + (∫ t, bF g z t) + ∫ t, cF g z t := by
+    filter_upwards [hnear] with z hzR
     have ha : Integrable (aF g z) :=
-      (integrable_aBound M hR0).mono' (measurable_aF hgm z).aestronglyMeasurable
+      (integrable_aBound M hR0).mono' (measurable_aF hg z).aestronglyMeasurable
         (ae_of_all _ fun t ↦ abs_aF_le hM hzR t)
     have hc : Integrable (cF g z) :=
-      (integrable_cBound M R).mono' (measurable_cF hgm z).aestronglyMeasurable
+      (integrable_cBound M R).mono' (measurable_cF hg z).aestronglyMeasurable
         (ae_of_all _ fun t ↦ abs_cF_le hM hzR t)
-    have hbT : Integrable (bT g z) :=
-      (integrable_bBound M Y).mono' (measurable_bT hg z).aestronglyMeasurable (abs_bT_le hM hY0 hzY)
-    have hb : Integrable (bF g z) := by
-      have := hbT.comp_sub_right z.re
-      refine this.congr (Eventually.of_forall fun t ↦ ?_)
-      exact bT_sub g z t
+    have hb : Integrable (bF g z) := integrable_bF hg hM z
     have hab : Integrable (fun t ↦ aF g z t + bF g z t) := ha.add hb
-    rw [multU_eq_integral, ← integral_bF_eq]
+    rw [multU_eq_integral]
     rw [← integral_add ha hb, ← integral_add hab hc]
     refine integral_congr_ae ?_
     filter_upwards [(Set.countable_singleton (0 : ℝ)).ae_notMem volume,
@@ -478,8 +618,8 @@ theorem continuous_multU_of_cont_bdd {g : ℝ → ℝ} (hg : Continuous g) {M : 
     have h1' : t ≠ z.re := by simpa using h1
     exact potKernel_mul_eq_abc g z h0' h1'
   refine ContinuousAt.congr ?_ hsum.symm
-  exact ((continuousAt_integral_aF hgm hM z₀).add (continuousAt_integral_bT hg hM z₀)).add
-    (continuousAt_integral_cF hgm hM z₀)
+  exact ((continuousAt_integral_aF hg hM z₀).add (continuousAt_integral_bF hg hM z₀)).add
+    (continuousAt_integral_cF hg hM z₀)
 
 
 end FF
