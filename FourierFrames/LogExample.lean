@@ -1,6 +1,7 @@
 import FourierFrames.Construction
 import FourierFrames.LogExample.Basic
 import FourierFrames.LogExample.Phase
+import FourierFrames.LogExample.Potential
 import FourierFrames.HB.Comparable
 import FourierFrames.Theorem1.Sufficiency
 
@@ -897,7 +898,73 @@ theorem abs_integral_log_mul_sub_one_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im �
 /-- Comparison in the strip: `|U(x + iy) - U(x + i)| ≤ 20 π` for `0 ≤ y ≤ 1`. -/
 theorem abs_multU_sub_multU_le {z : ℂ} (h0 : 0 ≤ z.im) (h1 : z.im ≤ 1) :
     |OCS.multU logDensity 0 z - OCS.multU logDensity 0 ((z.re : ℂ) + Complex.I)| ≤ 20 * Real.pi := by
-  sorry
+  set z' : ℂ := (z.re : ℂ) + Complex.I with hz'
+  have hre : z'.re = z.re := by simp [hz']
+  have him : z'.im = 1 := by simp [hz']
+  have hw : OCS.IsMultWeight logDensity (1 / 10) 20 := isMultWeight_logDensity
+  have i1 := OCS.integrable_multUIntegrand hw z
+  have i2 := OCS.integrable_multUIntegrand hw z'
+  have hg : Integrable (fun t : ℝ ↦ 10 * Real.log (1 + 1 / (t - z.re) ^ 2)) :=
+    (LogEx.integrable_log_one_add_inv_sq.comp_sub_right z.re).const_mul 10
+  have hdiff : OCS.multU logDensity 0 z - OCS.multU logDensity 0 z' =
+      ∫ t : ℝ, (OCS.multUIntegrand logDensity z t - OCS.multUIntegrand logDensity z' t) := by
+    rw [OCS.multU_eq, OCS.multU_eq, integral_sub i1 i2]; ring
+  have hbound : ∀ᵐ t : ℝ, ‖OCS.multUIntegrand logDensity z t - OCS.multUIntegrand logDensity z' t‖ ≤
+      10 * Real.log (1 + 1 / (t - z.re) ^ 2) := by
+    filter_upwards [OCS.ae_ne_real 0, OCS.ae_ne_real z.re] with t ht0 htx
+    have hs : 0 < (t - z.re) ^ 2 := by
+      have : t - z.re ≠ 0 := sub_ne_zero.2 htx
+      positivity
+    have hz1 : (t : ℂ) ≠ z := fun h ↦ htx (by simpa using congrArg Complex.re h)
+    have hz2 : (t : ℂ) ≠ z' := fun h ↦ htx (by simpa [hz'] using congrArg Complex.re h)
+    have hn1 : ‖(t : ℂ) - z‖ ^ 2 = (t - z.re) ^ 2 + z.im ^ 2 := by
+      rw [norm_sub_rev]; exact OCS.norm_ofReal_sub_sq z t
+    have hn2 : ‖(t : ℂ) - z'‖ ^ 2 = (t - z.re) ^ 2 + 1 := by
+      rw [norm_sub_rev, OCS.norm_ofReal_sub_sq z' t, hre, him]; ring
+    have hpos1 : 0 < ‖(t : ℂ) - z‖ := norm_pos_iff.2 (sub_ne_zero.2 hz1)
+    have hpos2 : 0 < ‖(t : ℂ) - z'‖ := norm_pos_iff.2 (sub_ne_zero.2 hz2)
+    have hL1 : Real.log ‖(t : ℂ) - z‖ = Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2 := by
+      rw [← hn1, Real.log_pow]; push_cast; ring
+    have hL2 : Real.log ‖(t : ℂ) - z'‖ = Real.log ((t - z.re) ^ 2 + 1) / 2 := by
+      rw [← hn2, Real.log_pow]; push_cast; ring
+    have hre' : (z / (t : ℂ)).re = (z' / (t : ℂ)).re := by
+      rw [Complex.div_ofReal_re, Complex.div_ofReal_re, hre]
+    have hdi : OCS.multUIntegrand logDensity z t - OCS.multUIntegrand logDensity z' t =
+        (Real.log ‖(t : ℂ) - z‖ - Real.log ‖(t : ℂ) - z'‖) * logDensity t := by
+      unfold OCS.multUIntegrand
+      rw [OCS.log_norm_one_sub_div z ht0 hz1, OCS.log_norm_one_sub_div z' ht0 hz2, hre']
+      ring
+    rw [hdi, hL1, hL2, norm_mul, Real.norm_eq_abs, Real.norm_eq_abs,
+      abs_of_nonneg ((logDensity_bounds t).1.trans' (by norm_num))]
+    have hy2 : z.im ^ 2 ≤ 1 := by nlinarith
+    have hy0 : 0 ≤ z.im ^ 2 := sq_nonneg _
+    have hA : Real.log ((t - z.re) ^ 2 + z.im ^ 2) ≤ Real.log ((t - z.re) ^ 2 + 1) :=
+      Real.log_le_log (by positivity) (by linarith)
+    have hB : Real.log ((t - z.re) ^ 2) ≤ Real.log ((t - z.re) ^ 2 + z.im ^ 2) :=
+      Real.log_le_log hs (by linarith)
+    have hC : Real.log (1 + 1 / (t - z.re) ^ 2) =
+        Real.log ((t - z.re) ^ 2 + 1) - Real.log ((t - z.re) ^ 2) := by
+      rw [← Real.log_div (by positivity) hs.ne']
+      congr 1; field_simp
+    have hm := (logDensity_bounds t).2
+    have hm0 : 0 ≤ logDensity t := (logDensity_bounds t).1.trans' (by norm_num)
+    have hd : |Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2 - Real.log ((t - z.re) ^ 2 + 1) / 2| ≤
+        Real.log (1 + 1 / (t - z.re) ^ 2) / 2 := by
+      rw [abs_le]; constructor <;> linarith
+    have hg0 : 0 ≤ Real.log (1 + 1 / (t - z.re) ^ 2) / 2 := by
+      have : 0 ≤ 1 / (t - z.re) ^ 2 := by positivity
+      have := Real.log_nonneg (show (1:ℝ) ≤ 1 + 1 / (t - z.re) ^ 2 by linarith)
+      linarith
+    calc _ ≤ (Real.log (1 + 1 / (t - z.re) ^ 2) / 2) * 20 := mul_le_mul hd hm hm0 hg0
+      _ = _ := by ring
+  calc |OCS.multU logDensity 0 z - OCS.multU logDensity 0 z'|
+      = ‖∫ t : ℝ, (OCS.multUIntegrand logDensity z t - OCS.multUIntegrand logDensity z' t)‖ := by
+        rw [hdiff, Real.norm_eq_abs]
+    _ ≤ ∫ t : ℝ, 10 * Real.log (1 + 1 / (t - z.re) ^ 2) :=
+        norm_integral_le_of_norm_le hg hbound
+    _ = 20 * Real.pi := by
+        rw [integral_const_mul, integral_sub_right_eq_self
+          (fun t ↦ Real.log (1 + 1 / t ^ 2)) z.re, LogEx.integral_log_one_add_inv_sq]; ring
 
 /-- **The sine-type estimate**: `U(z) = π Im z + κ Re z + O(1)` for `Im z ≥ 0`. -/
 theorem logDensity_U_estimate : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
