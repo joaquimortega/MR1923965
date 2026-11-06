@@ -204,6 +204,24 @@ for some `E ∈ \overline{HB}` with `H(E) = PW`. -/
 theorem completeInterpolating_zero_set (hPW : PaleyWienerThm) (hC : TheoremC) (hD : TheoremD)
     {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) :
     ∃ E : ℂ → ℂ, IsHB E ∧ HEEqPW E ∧ ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
-  sorry
+  have hs := isSampling_of_isCompleteInterpolating hPW hΛ hcis
+  obtain ⟨E₀, hEHB, hEPW, -, hnorm⟩ := exists_E hPW hC hs
+  have hE0 : ∀ x : ℝ, E₀ x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
+  obtain ⟨φ, hφ, -⟩ := exists_isPhaseFunction hEHB.1 hE0
+  obtain ⟨β, hβ⟩ := levelSet_eq_of_cis hPW hD hEHB hEPW hΛ hcis hnorm hφ
+  set θ : ℝ := β - Real.pi / 2 with hθ
+  have hEHB' := hEHB.rotate θ
+  have hEPW' := hEPW.rotate θ
+  have hstrict := HEEqPW.isStrictHB hEHB' hEPW'
+  have hE0' := HEEqPW.ne_zero_ofReal hEHB' hEPW'
+  refine ⟨_, hEHB', hEPW', fun z ↦ ?_⟩
+  rw [zero_set_single hstrict hE0' (hφ.rotate θ) z]
+  have : phaseLevel (fun x ↦ φ x - θ) (Real.pi / 2) = Λ := by
+    rw [hβ]
+    ext x
+    constructor
+    · rintro ⟨k, hk⟩; exact ⟨k, by simp only [hθ] at hk; linarith⟩
+    · rintro ⟨k, hk⟩; exact ⟨k, by simp only [hθ]; linarith⟩
+  rw [this]
 
 end FF
