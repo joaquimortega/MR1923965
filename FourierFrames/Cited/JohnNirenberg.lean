@@ -443,10 +443,107 @@ theorem jn_iter {h : ℝ → ℝ} (hh : LocallyIntegrable h) {M : ℝ} (hM : 0 <
     ∀ a b : ℝ, a < b →
       volume {t ∈ Ioc a b | 4 * M * k < |h t - intervalMean h a b|} ≤
         ENNReal.ofReal ((1 / 2) ^ k * (b - a)) := by
-  sorry
+  induction k with
+  | zero =>
+    intro a b hab
+    calc _ ≤ volume (Ioc a b) := measure_mono (fun t ht ↦ ht.1)
+      _ = ENNReal.ofReal ((1 / 2) ^ 0 * (b - a)) := by simp
+  | succ k ih =>
+    intro a b hab
+    obtain ⟨ι, hι, a', b', hbd, -, hsum, hmean, hgood⟩ := cz_step hh hM hosc hab
+    set m := intervalMean h a b with hm
+    set Z : Set ℝ := {t | ¬ (t ∈ Ioc a b → t ∉ (⋃ i, Ioc (a' i) (b' i)) → |h t - m| ≤ 2 * M)}
+      with hZdef
+    have hZ : volume Z = 0 := ae_iff.1 hgood
+    set F : ι → Set ℝ := fun i ↦ {t ∈ Ioc (a' i) (b' i) |
+      4 * M * k < |h t - intervalMean h (a' i) (b' i)|} with hF
+    have hsub : {t ∈ Ioc a b | 4 * M * ((k + 1 : ℕ) : ℝ) < |h t - m|} ⊆ Z ∪ ⋃ i, F i := by
+      intro t ⟨htI, htE⟩
+      by_cases hZt : t ∈ Z
+      · exact Or.inl hZt
+      · right
+        have hZ' : t ∈ Ioc a b → t ∉ (⋃ i, Ioc (a' i) (b' i)) → |h t - m| ≤ 2 * M := by
+          by_contra hc; exact hZt hc
+        by_cases hU : t ∈ ⋃ i, Ioc (a' i) (b' i)
+        · obtain ⟨i, hi⟩ := mem_iUnion.1 hU
+          refine mem_iUnion.2 ⟨i, hi, ?_⟩
+          have h1 := abs_sub_abs_le_abs_sub (h t - m) (intervalMean h (a' i) (b' i) - m)
+          have h2 : h t - m - (intervalMean h (a' i) (b' i) - m) =
+              h t - intervalMean h (a' i) (b' i) := by ring
+          rw [h2] at h1
+          have h3 := hmean i
+          push_cast at htE
+          nlinarith
+        · have := hZ' htI hU
+          push_cast at htE
+          have hk0 : (0 : ℝ) ≤ k := Nat.cast_nonneg k
+          nlinarith
+    calc volume {t ∈ Ioc a b | 4 * M * ((k + 1 : ℕ) : ℝ) < |h t - m|}
+        ≤ volume (Z ∪ ⋃ i, F i) := measure_mono hsub
+      _ ≤ volume Z + ∑' i, volume (F i) :=
+          (measure_union_le _ _).trans (by gcongr; exact measure_iUnion_le _)
+      _ = ∑' i, volume (F i) := by rw [hZ, zero_add]
+      _ ≤ ∑' i, ENNReal.ofReal ((1 / 2) ^ k * (b' i - a' i)) :=
+          ENNReal.tsum_le_tsum fun i ↦ ih _ _ (hbd i).2.1
+      _ = ENNReal.ofReal ((1 / 2) ^ k) * ∑' i, ENNReal.ofReal (b' i - a' i) := by
+          rw [← ENNReal.tsum_mul_left]
+          refine tsum_congr fun i ↦ ?_
+          rw [ENNReal.ofReal_mul (by positivity)]
+      _ ≤ ENNReal.ofReal ((1 / 2) ^ k) * ENNReal.ofReal ((b - a) / 2) := by gcongr
+      _ = ENNReal.ofReal ((1 / 2) ^ (k + 1) * (b - a)) := by
+          rw [← ENNReal.ofReal_mul (by positivity)]
+          congr 1; rw [pow_succ]; ring
 
 /-- **John–Nirenberg**, with `C = 2`, `c = log 2 / 4`. -/
 theorem johnNirenberg_holds : JohnNirenberg := by
-  sorry
+  refine ⟨2, Real.log 2 / 4, by norm_num, by positivity, ?_⟩
+  intro h hh M hM hosc a b hab s hs
+  set x : ℝ := s / (4 * M) with hx
+  have hx0 : 0 < x := by positivity
+  set k : ℕ := ⌈x⌉₊ - 1 with hkdef
+  have hceil : 1 ≤ ⌈x⌉₊ := Nat.one_le_iff_ne_zero.2 (Nat.ceil_pos.2 hx0).ne'
+  have hk1 : k + 1 = ⌈x⌉₊ := by omega
+  have hxk : x ≤ (k : ℝ) + 1 := by
+    have := Nat.le_ceil x
+    rw [← hk1] at this
+    exact_mod_cast this
+  have hkx : (k : ℝ) < x := by
+    have := Nat.ceil_lt_add_one hx0.le
+    have h2 : (⌈x⌉₊ : ℝ) = k + 1 := by exact_mod_cast hk1.symm
+    linarith
+  have hks : 4 * M * k < s := by
+    have : 4 * M * (k : ℝ) < 4 * M * x := by gcongr
+    have e : 4 * M * x = s := by rw [hx]; field_simp
+    linarith
+  have hsub : {t ∈ Icc a b | s ≤ |h t - intervalMean h a b|} ⊆
+      {a} ∪ {t ∈ Ioc a b | 4 * M * k < |h t - intervalMean h a b|} := by
+    intro t ⟨htI, hts⟩
+    by_cases hta : t = a
+    · exact Or.inl hta
+    · exact Or.inr ⟨⟨lt_of_le_of_ne htI.1 (Ne.symm hta), htI.2⟩, lt_of_lt_of_le hks hts⟩
+  have h1 := jn_iter hh hM hosc k a b hab
+  have hpow : ((1 : ℝ) / 2) ^ k ≤ 2 * Real.exp (-(Real.log 2 / 4 * s / M)) := by
+    have e1 : ((1 : ℝ) / 2) ^ k = 2 * ((1 : ℝ) / 2) ^ (k + 1) := by rw [pow_succ]; ring
+    have e2 : ((1 : ℝ) / 2) ^ (k + 1) ≤ ((1 : ℝ) / 2) ^ x := by
+      rw [← Real.rpow_natCast]
+      exact Real.rpow_le_rpow_of_exponent_ge (by norm_num) (by norm_num) (by push_cast; exact hxk)
+    have e3 : ((1 : ℝ) / 2) ^ x = Real.exp (-(Real.log 2 / 4 * s / M)) := by
+      rw [Real.rpow_def_of_pos (by norm_num), one_div, Real.log_inv]
+      congr 1
+      rw [hx]; field_simp
+    rw [e1]
+    have := mul_le_mul_of_nonneg_left (e2.trans e3.le) (by norm_num : (0 : ℝ) ≤ 2)
+    exact this
+  calc volume {t ∈ Icc a b | s ≤ |h t - intervalMean h a b|}
+      ≤ volume ({a} ∪ {t ∈ Ioc a b | 4 * M * k < |h t - intervalMean h a b|}) := measure_mono hsub
+    _ ≤ volume ({a} : Set ℝ) + volume {t ∈ Ioc a b | 4 * M * k < |h t - intervalMean h a b|} :=
+        measure_union_le _ _
+    _ ≤ 0 + ENNReal.ofReal ((1 / 2) ^ k * (b - a)) := by
+        rw [Real.volume_singleton]; gcongr
+    _ ≤ ENNReal.ofReal (2 * Real.exp (-(Real.log 2 / 4 * s / M)) * (b - a)) := by
+        rw [zero_add]
+        apply ENNReal.ofReal_le_ofReal
+        have : 0 < b - a := sub_pos.2 hab
+        gcongr
 
 end FF
