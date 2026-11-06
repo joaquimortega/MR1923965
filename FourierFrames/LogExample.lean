@@ -1246,7 +1246,10 @@ theorem integrableOn_log_ratio_div :
 theorem abs_integral_posLog_mul_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
     Integrable (fun t : ℝ ↦ Real.posLog |t| * logKernel z t) ∧
       |∫ t : ℝ, Real.posLog |t| * logKernel z t| ≤ C := by
-  sorry
+  have hH : IntegrableOn LogEx.Hrat (Ioi 0) := integrableOn_log_ratio_div
+  refine ⟨∫ s in Ioi (0 : ℝ), LogEx.Hrat s, fun z hz ↦ ?_⟩
+  have hy : 0 < z.im := by linarith
+  exact ⟨LogEx.integrable_posLog_kern hy, LogEx.abs_integral_posLog_kern_le hy hH⟩
 
 /-- `∫ |ρ| |K_z| ≤ C` for `Im z ≥ 1`, for `ρ` as in `abs_logW_add_posLog_le`. -/
 theorem integral_abs_rho_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →

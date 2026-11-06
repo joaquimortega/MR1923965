@@ -1,4 +1,5 @@
 import FourierFrames.Defs
+import OrtegaCerdaSeip.Lemma3.Potential
 
 /-!
 # Auxiliary integrals for `LogExample.lean`
@@ -358,5 +359,303 @@ theorem integrable_mul_kern {z : ℂ} (hy : 0 < z.im) {f : ℝ → ℝ} (hf : AE
       _ = (8 * a * c) * ((1 + |t|) ^ (1 / 2 : ℝ) * ((1 + |t|) ^ 2)⁻¹) := by ring
       _ = (8 * a * c) * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by rw [key]
       _ ≤ M * (1 + |t|) ^ (-(3 / 2 : ℝ)) := by gcongr; exact le_max_right _ _
+
+/-- The primitive `φ_z(t) = ½ log D(t) - log t`, `D(t) = (t - x)² + y²`. -/
+noncomputable def phiK (z : ℂ) (t : ℝ) : ℝ :=
+  Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2 - Real.log t
+
+theorem phiK_sub_neg (z : ℂ) (s : ℝ) :
+    phiK z s - phiK z (-s) =
+      (Real.log ((s - z.re) ^ 2 + z.im ^ 2) - Real.log ((-s - z.re) ^ 2 + z.im ^ 2)) / 2 := by
+  unfold phiK
+  rw [Real.log_neg_eq_log]
+  ring
+
+theorem log_add_sq_sub_le {P Q y2 : ℝ} (hQ : 0 < Q) (hPQ : Q ≤ P) (hy : 0 ≤ y2) :
+    0 ≤ Real.log (P + y2) - Real.log (Q + y2) ∧
+      Real.log (P + y2) - Real.log (Q + y2) ≤ Real.log P - Real.log Q := by
+  have hP : 0 < P := lt_of_lt_of_le hQ hPQ
+  constructor
+  · have := Real.log_le_log (by positivity) (by linarith : Q + y2 ≤ P + y2)
+    linarith
+  · rw [← Real.log_div (by positivity) (by positivity), ← Real.log_div hP.ne' hQ.ne']
+    apply Real.log_le_log (by positivity)
+    rw [div_le_div_iff₀ (by positivity) hQ]
+    nlinarith
+
+theorem abs_phiK_sub_neg_le {z : ℂ} {s : ℝ} (hs : 0 < s) (hne : s ≠ |z.re|) :
+    |phiK z s - phiK z (-s)| ≤ Real.log ((s + |z.re|) / abs (s - |z.re|)) := by
+  set ξ : ℝ := |z.re| with hξ
+  have hQ : 0 < (s - ξ) ^ 2 := by
+    have : s - ξ ≠ 0 := sub_ne_zero.2 hne
+    positivity
+  have hPQ : (s - ξ) ^ 2 ≤ (s + ξ) ^ 2 := by nlinarith [abs_nonneg z.re]
+  have hy2 : 0 ≤ z.im ^ 2 := sq_nonneg _
+  obtain ⟨h1, h2⟩ := log_add_sq_sub_le hQ hPQ hy2
+  have hRHS : Real.log ((s + ξ) / |s - ξ|) = (Real.log ((s + ξ) ^ 2) - Real.log ((s - ξ) ^ 2)) / 2 := by
+    have hsξ : 0 < s + ξ := by have := abs_nonneg z.re; linarith
+    have hab : 0 < |s - ξ| := abs_pos.2 (sub_ne_zero.2 hne)
+    rw [Real.log_div hsξ.ne' hab.ne', Real.log_pow, ← sq_abs (s - ξ), Real.log_pow]
+    push_cast; ring
+  rw [hRHS, phiK_sub_neg]
+  have hD : (-s - z.re) ^ 2 = (s + z.re) ^ 2 := by ring
+  rw [hD]
+  rw [abs_div, abs_two, div_le_div_iff_of_pos_right (by norm_num : (0:ℝ) < 2), abs_le]
+  rcases le_or_gt 0 z.re with hx | hx
+  · have hξx : z.re = ξ := (abs_of_nonneg hx).symm
+    rw [hξx]
+    constructor <;> linarith
+  · have hξx : z.re = -ξ := by rw [hξ, abs_of_neg hx]; ring
+    rw [hξx]
+    have e1 : (s - -ξ) ^ 2 = (s + ξ) ^ 2 := by ring
+    have e2 : (s + -ξ) ^ 2 = (s - ξ) ^ 2 := by ring
+    rw [e1, e2]
+    constructor <;> linarith
+
+/-- `H(σ) = log((1+σ)/|1-σ|)/σ`. -/
+noncomputable def Hrat (σ : ℝ) : ℝ := Real.log ((1 + σ) / |1 - σ|) / σ
+
+theorem Hrat_nonneg {σ : ℝ} (hσ : 0 < σ) : 0 ≤ Hrat σ := by
+  unfold Hrat
+  apply div_nonneg _ hσ.le
+  by_cases h : |1 - σ| = 0
+  · rw [h]; simp
+  · have hp : 0 < |1 - σ| := lt_of_le_of_ne (abs_nonneg _) (Ne.symm h)
+    apply Real.log_nonneg
+    rw [one_le_div hp]
+    rcases abs_cases (1 - σ) with ⟨h1, _⟩ | ⟨h1, _⟩ <;> linarith
+
+theorem Hrat_scale {ξ s : ℝ} (hξ : 0 < ξ) (hs : 0 < s) :
+    Real.log ((s + ξ) / |s - ξ|) / s = ξ⁻¹ * Hrat (ξ⁻¹ * s) := by
+  unfold Hrat
+  have e : (1 + ξ⁻¹ * s) / |1 - ξ⁻¹ * s| = (s + ξ) / |s - ξ| := by
+    have h1 : 1 + ξ⁻¹ * s = (s + ξ) / ξ := by field_simp; ring
+    have h2 : |1 - ξ⁻¹ * s| = |s - ξ| / ξ := by
+      have : 1 - ξ⁻¹ * s = (ξ - s) / ξ := by field_simp
+      rw [this, abs_div, abs_of_pos hξ, abs_sub_comm]
+    rw [h1, h2]
+    by_cases h : |s - ξ| = 0
+    · simp [h]
+    · field_simp
+  rw [e]
+  field_simp
+
+theorem integral_h_le {ξ : ℝ} (hξ : 0 ≤ ξ) (hH : IntegrableOn Hrat (Ioi 0)) :
+    IntegrableOn (fun s : ℝ ↦ Real.log ((s + ξ) / |s - ξ|) / s) (Ioi 0) ∧
+      ∫ s in Ioi (0 : ℝ), Real.log ((s + ξ) / |s - ξ|) / s ≤ ∫ s in Ioi (0 : ℝ), Hrat s := by
+  rcases hξ.eq_or_lt with h0 | hpos
+  · subst h0
+    have : ∀ s ∈ Ioi (0 : ℝ), Real.log ((s + 0) / |s - 0|) / s = 0 := by
+      intro s hs
+      have hs' : 0 < s := hs
+      simp [abs_of_pos hs', div_self hs'.ne']
+    refine ⟨?_, ?_⟩
+    · exact IntegrableOn.congr_fun integrableOn_zero (fun s hs ↦ (this s hs).symm) measurableSet_Ioi
+    · rw [setIntegral_congr_fun measurableSet_Ioi this]
+      simp only [integral_zero]
+      exact setIntegral_nonneg measurableSet_Ioi (fun σ hσ ↦ Hrat_nonneg hσ)
+  · have hscale : ∀ s ∈ Ioi (0 : ℝ), Real.log ((s + ξ) / |s - ξ|) / s = ξ⁻¹ * Hrat (ξ⁻¹ * s) :=
+      fun s hs ↦ Hrat_scale hpos hs
+    have hint : IntegrableOn (fun s : ℝ ↦ Hrat (ξ⁻¹ * s)) (Ioi 0) := by
+      rw [integrableOn_Ioi_comp_mul_left_iff Hrat 0 (inv_pos.2 hpos), mul_zero]; exact hH
+    refine ⟨?_, ?_⟩
+    · exact IntegrableOn.congr_fun (hint.const_mul ξ⁻¹) (fun s hs ↦ (hscale s hs).symm) measurableSet_Ioi
+    · rw [setIntegral_congr_fun measurableSet_Ioi hscale, integral_const_mul,
+        integral_comp_mul_left_Ioi Hrat 0 (inv_pos.2 hpos), mul_zero, inv_inv, smul_eq_mul,
+        ← mul_assoc, inv_mul_cancel₀ hpos.ne', one_mul]
+
+theorem continuousAt_phiK {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    ContinuousAt (phiK z) t :=
+  (hasDerivAt_phi hy ht).continuousAt
+
+theorem integrable_posLog_kern {z : ℂ} (hy : 0 < z.im) :
+    Integrable (fun t : ℝ ↦ Real.posLog |t| * kern z t) := by
+  refine integrable_mul_kern hy (f := fun t : ℝ ↦ Real.posLog |t|)
+    (Real.continuous_posLog.comp continuous_abs).aestronglyMeasurable (c := 2) (by norm_num)
+    (fun t ↦ ?_) (fun t ↦ ?_)
+  · rw [abs_of_nonneg Real.posLog_nonneg]
+    have := Real.posLog_le_abs |t|
+    rw [abs_abs] at this
+    linarith [abs_nonneg t]
+  · rw [abs_of_nonneg Real.posLog_nonneg]
+    have h1 := Real.posLog_le_log_one_add (abs_nonneg t)
+    have h2 : Real.log (1 + |t|) ≤ 2 * Real.sqrt (1 + |t|) := by
+      have h := Real.log_le_sub_one_of_pos (Real.sqrt_pos.2 (show 0 < 1 + |t| by positivity))
+      have h' : Real.log (Real.sqrt (1 + |t|)) = Real.log (1 + |t|) / 2 :=
+        Real.log_sqrt (by positivity)
+      linarith [Real.sqrt_nonneg (1 + |t|)]
+    rw [← Real.sqrt_eq_rpow]
+    linarith
+
+/-- Integration by parts for `log t · K_z(t)` on an interval avoiding `0`. -/
+theorem integral_log_mul_kern {z : ℂ} (hy : 0 < z.im) {a b : ℝ} (h0 : ∀ t ∈ Set.uIcc a b, t ≠ 0) :
+    ∫ t in a..b, Real.log t * kern z t =
+      Real.log b * phiK z b - Real.log a * phiK z a - ∫ t in a..b, t⁻¹ * phiK z t := by
+  apply intervalIntegral.integral_mul_deriv_eq_deriv_mul (u := Real.log) (u' := fun t ↦ t⁻¹)
+    (v := phiK z) (v' := kern z)
+  · intro t ht; exact Real.hasDerivAt_log (h0 t ht)
+  · intro t ht; exact hasDerivAt_phi hy (h0 t ht)
+  · exact (continuousOn_inv₀.mono (fun t ht ↦ h0 t ht)).intervalIntegrable
+  · exact ((kern_continuousOn hy).mono (fun t ht ↦ h0 t ht)).intervalIntegrable
+
+theorem integral_posLog_kern_eq {z : ℂ} (hy : 0 < z.im) {R : ℝ} (hR : 1 < R) :
+    ∫ t in (-R)..R, Real.posLog |t| * kern z t =
+      Real.log R * (phiK z R - phiK z (-R)) -
+        ∫ s in (1 : ℝ)..R, (phiK z s - phiK z (-s)) / s := by
+  have hg : ∀ a b : ℝ, IntervalIntegrable (fun t : ℝ ↦ Real.posLog |t| * kern z t) volume a b :=
+    fun a b ↦ (integrable_posLog_kern hy).intervalIntegrable
+  rw [← intervalIntegral.integral_add_adjacent_intervals (hg (-R) (-1)) (hg (-1) R),
+    ← intervalIntegral.integral_add_adjacent_intervals (hg (-1) 1) (hg 1 R)]
+  -- middle piece vanishes
+  have hmid : ∫ t in (-1 : ℝ)..1, Real.posLog |t| * kern z t = 0 := by
+    have : ∀ t ∈ Set.uIcc (-1 : ℝ) 1, Real.posLog |t| * kern z t = 0 := by
+      intro t ht
+      rw [Set.uIcc_of_le (by norm_num)] at ht
+      have : Real.posLog |t| = 0 := by
+        rw [Real.posLog_abs]; exact (Real.posLog_eq_zero_iff t).2 (abs_le.2 ht)
+      rw [this, zero_mul]
+    rw [intervalIntegral.integral_congr this]; simp
+  -- right piece
+  have hright : ∫ t in (1 : ℝ)..R, Real.posLog |t| * kern z t =
+      Real.log R * phiK z R - ∫ t in (1 : ℝ)..R, t⁻¹ * phiK z t := by
+    have h1 : ∫ t in (1 : ℝ)..R, Real.posLog |t| * kern z t =
+        ∫ t in (1 : ℝ)..R, Real.log t * kern z t := by
+      apply intervalIntegral.integral_congr
+      intro t ht
+      rw [Set.uIcc_of_le hR.le] at ht
+      have : 1 ≤ |t| := by rw [abs_of_nonneg (by linarith [ht.1])]; exact ht.1
+      simp only []
+      rw [Real.posLog_abs, Real.posLog_eq_log this]
+    rw [h1, integral_log_mul_kern hy (fun t ht ↦ by
+      rw [Set.uIcc_of_le hR.le] at ht; exact (by linarith [ht.1] : (0:ℝ) < t).ne'), Real.log_one]
+    ring
+  -- left piece
+  have hleft : ∫ t in (-R)..(-1 : ℝ), Real.posLog |t| * kern z t =
+      -(Real.log R * phiK z (-R)) - ∫ t in (-R)..(-1 : ℝ), t⁻¹ * phiK z t := by
+    have h1 : ∫ t in (-R)..(-1 : ℝ), Real.posLog |t| * kern z t =
+        ∫ t in (-R)..(-1 : ℝ), Real.log t * kern z t := by
+      apply intervalIntegral.integral_congr
+      intro t ht
+      rw [Set.uIcc_of_le (by linarith)] at ht
+      have : 1 ≤ |t| := by rw [abs_of_nonpos (by linarith [ht.2])]; linarith [ht.2]
+      simp only []
+      rw [Real.posLog_abs, Real.posLog_eq_log this]
+    rw [h1, integral_log_mul_kern hy (fun t ht ↦ by
+      rw [Set.uIcc_of_le (by linarith)] at ht; exact (by linarith [ht.2] : t < 0).ne),
+      Real.log_neg_eq_log, Real.log_neg_eq_log, Real.log_one]
+    ring
+  -- reflect the left integral
+  have hrefl : ∫ t in (-R)..(-1 : ℝ), t⁻¹ * phiK z t = -∫ s in (1 : ℝ)..R, s⁻¹ * phiK z (-s) := by
+    have := intervalIntegral.integral_comp_neg (a := 1) (b := R) (fun t : ℝ ↦ t⁻¹ * phiK z t)
+    rw [← this]
+    simp only [inv_neg, neg_mul]
+    rw [intervalIntegral.integral_neg]
+  have hpos : ∀ s ∈ Set.uIcc (1 : ℝ) R, s ≠ 0 := fun s hs ↦ by
+    rw [Set.uIcc_of_le hR.le] at hs; exact (by linarith [hs.1] : (0:ℝ) < s).ne'
+  have hi1 : IntervalIntegrable (fun s : ℝ ↦ s⁻¹ * phiK z s) volume 1 R := by
+    apply ContinuousOn.intervalIntegrable
+    intro s hs
+    exact ((continuousAt_inv₀ (hpos s hs)).mul (continuousAt_phiK hy (hpos s hs))).continuousWithinAt
+  have hi2 : IntervalIntegrable (fun s : ℝ ↦ s⁻¹ * phiK z (-s)) volume 1 R := by
+    apply ContinuousOn.intervalIntegrable
+    intro s hs
+    exact ((continuousAt_inv₀ (hpos s hs)).mul
+      ((continuousAt_phiK hy (neg_ne_zero.2 (hpos s hs))).comp continuousAt_neg)).continuousWithinAt
+  have hsplit : ∫ s in (1 : ℝ)..R, (phiK z s - phiK z (-s)) / s =
+      (∫ s in (1 : ℝ)..R, s⁻¹ * phiK z s) - ∫ s in (1 : ℝ)..R, s⁻¹ * phiK z (-s) := by
+    rw [← intervalIntegral.integral_sub hi1 hi2]
+    apply intervalIntegral.integral_congr
+    intro s _
+    simp only []
+    ring
+  rw [hleft, hmid, hright, hrefl, hsplit]
+  ring
+
+theorem abs_integral_phiK_le {z : ℂ} (hy : 0 < z.im) (hH : IntegrableOn Hrat (Ioi 0)) {R : ℝ}
+    (hR : 1 < R) :
+    |∫ s in (1 : ℝ)..R, (phiK z s - phiK z (-s)) / s| ≤ ∫ s in Ioi (0 : ℝ), Hrat s := by
+  set ξ : ℝ := |z.re| with hξ
+  obtain ⟨hhint, hhle⟩ := integral_h_le (abs_nonneg z.re) hH
+  set h : ℝ → ℝ := fun s ↦ Real.log ((s + ξ) / |s - ξ|) / s with hh
+  have hpos : ∀ s ∈ Set.uIcc (1 : ℝ) R, s ≠ 0 := fun s hs ↦ by
+    rw [Set.uIcc_of_le hR.le] at hs; exact (by linarith [hs.1] : (0:ℝ) < s).ne'
+  have hF : IntervalIntegrable (fun s : ℝ ↦ (phiK z s - phiK z (-s)) / s) volume 1 R := by
+    apply ContinuousOn.intervalIntegrable
+    intro s hs
+    exact (((continuousAt_phiK hy (hpos s hs)).sub
+      ((continuousAt_phiK hy (neg_ne_zero.2 (hpos s hs))).comp continuousAt_neg)).div
+        continuousAt_id (hpos s hs)).continuousWithinAt
+  have hhI : IntervalIntegrable h volume 1 R := by
+    rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hR.le]
+    exact hhint.mono_set (fun s hs ↦ lt_of_lt_of_le one_pos hs.1.le)
+  have hnn : ∀ s ∈ Ioi (0 : ℝ), 0 ≤ h s := by
+    intro s hs
+    have hs' : 0 < s := hs
+    -- `h s = ξ⁻¹ H(ξ⁻¹ s) ≥ 0` for `ξ > 0`, and `0` for `ξ = 0`
+    rcases (abs_nonneg z.re).eq_or_lt with h0 | hpos'
+    · have : ξ = 0 := h0.symm
+      simp only [hh, this, add_zero, sub_zero, abs_of_pos hs', div_self hs'.ne', Real.log_one,
+        zero_div, le_refl]
+    · simp only [hh]
+      rw [Hrat_scale hpos' hs']
+      exact mul_nonneg (inv_nonneg.2 hpos'.le) (Hrat_nonneg (by positivity))
+  calc |∫ s in (1 : ℝ)..R, (phiK z s - phiK z (-s)) / s|
+      = ‖∫ s in (1 : ℝ)..R, (phiK z s - phiK z (-s)) / s‖ := (Real.norm_eq_abs _).symm
+    _ ≤ ∫ s in (1 : ℝ)..R, ‖(phiK z s - phiK z (-s)) / s‖ :=
+        intervalIntegral.norm_integral_le_integral_norm hR.le
+    _ ≤ ∫ s in (1 : ℝ)..R, h s := by
+        apply intervalIntegral.integral_mono_ae_restrict hR.le hF.norm hhI
+        rw [Filter.EventuallyLE, ae_restrict_iff' measurableSet_Icc]
+        filter_upwards [OCS.ae_ne_real ξ] with s hs hsI
+        have hs1 : 0 < s := by linarith [hsI.1]
+        rw [Real.norm_eq_abs, abs_div, abs_of_pos hs1]
+        simp only [hh]
+        gcongr
+        exact abs_phiK_sub_neg_le hs1 hs
+    _ = ∫ s in Ioc (1 : ℝ) R, h s := intervalIntegral.integral_of_le hR.le
+    _ ≤ ∫ s in Ioi (0 : ℝ), h s := by
+        apply setIntegral_mono_set hhint
+        · exact (ae_restrict_iff' measurableSet_Ioi).2 (Filter.Eventually.of_forall hnn)
+        · exact Filter.Eventually.of_forall (fun s hs ↦ lt_of_lt_of_le one_pos hs.1.le)
+    _ ≤ ∫ s in Ioi (0 : ℝ), Hrat s := hhle
+
+theorem tendsto_log_phiK_diff {z : ℂ} (hy : 0 < z.im) :
+    Tendsto (fun R : ℝ ↦ Real.log R * (phiK z R - phiK z (-R))) atTop (𝓝 0) := by
+  set c : ℝ := z.re ^ 2 + z.im ^ 2 with hc
+  have h1 := tendsto_slope_log_quad (-2 * z.re) c
+  have h2 := tendsto_slope_log_quad (-2 * -z.re) c
+  have h3 : Tendsto (fun R : ℝ ↦ Real.log R / R) atTop (𝓝 0) := by
+    simpa using Real.isLittleO_log_id_atTop.tendsto_div_nhds_zero
+  have h4 := h3.mul ((h1.sub h2).div_const 2)
+  rw [zero_mul] at h4
+  refine h4.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with R hR
+  have e1 := log_sq_add_sq_eq (x := z.re) (y := z.im) hR hy z.re (Or.inl rfl)
+  have e2 := log_sq_add_sq_eq (x := z.re) (y := z.im) hR hy (-z.re) (Or.inr rfl)
+  rw [phiK_sub_neg]
+  have e3 : (-R - z.re) ^ 2 = (R - -z.re) ^ 2 := by ring
+  rw [e3, e1, e2]
+  field_simp
+  ring
+
+/-- **Hilbert-transform estimate for `log⁺|t|`** (`y > 0`): `|∫ log⁺|t| K_z(t) dt| ≤ ∫_0^∞ H`. -/
+theorem abs_integral_posLog_kern_le {z : ℂ} (hy : 0 < z.im) (hH : IntegrableOn Hrat (Ioi 0)) :
+    |∫ t : ℝ, Real.posLog |t| * kern z t| ≤ ∫ s in Ioi (0 : ℝ), Hrat s := by
+  have hint := integrable_posLog_kern hy
+  have hlim := intervalIntegral_tendsto_integral hint (tendsto_neg_atTop_atBot (G := ℝ)) tendsto_id
+  have hlim' : Tendsto (fun R : ℝ ↦ |∫ t in (-R)..R, Real.posLog |t| * kern z t|) atTop
+      (𝓝 |∫ t : ℝ, Real.posLog |t| * kern z t|) := (continuous_abs.tendsto _).comp hlim
+  have hup : Tendsto (fun R : ℝ ↦ |Real.log R * (phiK z R - phiK z (-R))| +
+      ∫ s in Ioi (0 : ℝ), Hrat s) atTop (𝓝 (∫ s in Ioi (0 : ℝ), Hrat s)) := by
+    have := ((tendsto_log_phiK_diff hy).abs).add_const (∫ s in Ioi (0 : ℝ), Hrat s)
+    simpa using this
+  refine le_of_tendsto_of_tendsto hlim' hup ?_
+  filter_upwards [eventually_gt_atTop 1] with R hR
+  rw [integral_posLog_kern_eq hy hR]
+  refine (abs_sub _ _).trans ?_
+  rw [abs_mul, abs_of_nonneg (Real.log_nonneg hR.le)] 
+  have := abs_integral_phiK_le hy hH hR
+  rw [← abs_of_nonneg (Real.log_nonneg hR.le), ← abs_mul]
+  linarith
 
 end FF.LogEx
