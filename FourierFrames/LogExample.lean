@@ -306,21 +306,56 @@ theorem logExample_count : ∃ C : ℝ, ∀ R : ℝ, 1 ≤ R →
 
 /-! ## §2  Translation invariance -/
 
+theorem sampleSum_image_add (s : ℝ) (Λ : Set ℝ) (f : ℂ → ℂ) :
+    sampleSum ((fun x : ℝ ↦ x + s) '' Λ) f = sampleSum Λ (fun z ↦ f (z - ((-s : ℝ) : ℂ))) := by
+  unfold sampleSum
+  rw [← (Equiv.Set.image (fun x : ℝ ↦ x + s) Λ (add_left_injective s)).tsum_eq]
+  apply tsum_congr
+  intro x
+  simp [Equiv.Set.image_apply]
+
+theorem tsum_image_add (s : ℝ) (Λ : Set ℝ) (a : ℝ → ℂ) :
+    ∑' y : ((fun x : ℝ ↦ x + s) '' Λ), ‖a y‖ₑ ^ 2 = ∑' x : Λ, ‖a (x + s)‖ₑ ^ 2 := by
+  rw [← (Equiv.Set.image (fun x : ℝ ↦ x + s) Λ (add_left_injective s)).tsum_eq]
+  apply tsum_congr
+  intro x
+  simp [Equiv.Set.image_apply]
+
 theorem isSampling_image_add (s : ℝ) {Λ : Set ℝ} (h : IsSampling Λ) :
     IsSampling ((fun x : ℝ ↦ x + s) '' Λ) := by
-  sorry
+  obtain ⟨A, B, hA, hAB⟩ := h
+  refine ⟨A, B, hA, fun f hf => ?_⟩
+  have := hAB _ (hf.comp_sub_ofReal (-s))
+  rw [pwNormSq_comp_sub_ofReal] at this
+  rwa [sampleSum_image_add]
 
 theorem isCompleteInterpolating_image_add (s : ℝ) {Λ : Set ℝ} (h : IsCompleteInterpolating Λ) :
     IsCompleteInterpolating ((fun x : ℝ ↦ x + s) '' Λ) := by
-  sorry
+  intro a ha
+  rw [tsum_image_add] at ha
+  obtain ⟨f, ⟨hf, hfa⟩, huniq⟩ := h (fun x ↦ a (x + s)) ha
+  refine ⟨fun z ↦ f (z - (s : ℂ)), ⟨hf.comp_sub_ofReal s, ?_⟩, ?_⟩
+  · rintro _ ⟨x, hx, rfl⟩
+    have := hfa x hx
+    simpa using this
+  · rintro g ⟨hg, hga⟩
+    have hg' := hg.comp_sub_ofReal (-s)
+    have := huniq (fun z ↦ g (z - ((-s : ℝ) : ℂ))) ⟨hg', fun x hx => by
+      have := hga (x + s) ⟨x, hx, rfl⟩
+      simpa using this⟩
+    funext z
+    have := congrFun this (z - s)
+    simpa using this
 
 theorem isSampling_of_image_add (s : ℝ) {Λ : Set ℝ} (h : IsSampling ((fun x : ℝ ↦ x + s) '' Λ)) :
     IsSampling Λ := by
-  sorry
+  have := isSampling_image_add (-s) h
+  rwa [Set.image_image, show (fun x : ℝ ↦ x + s + -s) = id from by funext x; simp, Set.image_id] at this
 
 theorem isCompleteInterpolating_of_image_add (s : ℝ) {Λ : Set ℝ}
     (h : IsCompleteInterpolating ((fun x : ℝ ↦ x + s) '' Λ)) : IsCompleteInterpolating Λ := by
-  sorry
+  have := isCompleteInterpolating_image_add (-s) h
+  rwa [Set.image_image, show (fun x : ℝ ↦ x + s + -s) = id from by funext x; simp, Set.image_id] at this
 
 /-! ## §3  The step density with barycentre sequence `Λ + 1/2` -/
 
