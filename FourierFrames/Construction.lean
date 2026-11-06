@@ -1,6 +1,7 @@
 import FourierFrames.HB.Phase
 import OrtegaCerdaSeip.Lemma3.Main
 import FourierFrames.Construction.Gaps
+import FourierFrames.Construction.Comparable
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -433,7 +434,7 @@ theorem norm_genA_comparable (hw : OCS.IsMultWeight m a b) :
     ∃ c₁ c₂ : ℝ, 0 < c₁ ∧ 0 < c₂ ∧ ∀ z : ℂ,
       c₁ * Real.exp (OCS.multU m 0 z) * min 1 (infDist z (OCS.multGammaC m)) ≤ ‖genA m z‖ ∧
       ‖genA m z‖ ≤ c₂ * Real.exp (OCS.multU m 0 z) * min 1 (infDist z (OCS.multGammaC m)) := by
-  sorry
+  exact Comparable.norm_multF_comparable hw
 
 /-- **Polynomial Hermite–Biehler**: if `a_0 < b_0 < a_1 < b_1 < … < a_n < b_n` are real then
 `∏ (z - b_k)/(z - a_k)` has positive imaginary part on `Im z > 0` (the arguments of the factors add
@@ -577,7 +578,35 @@ theorem norm_genA_comparable_of_hU (hw : OCS.IsMultWeight m a b) {κ : ℝ}
         ‖genA m z‖ ∧
       ‖genA m z‖ ≤
         c₂ * Real.exp (Real.pi * |z.im| + κ * z.re) * min 1 (infDist z (OCS.multGammaC m)) := by
-  sorry
+  obtain ⟨C, hC⟩ := hU
+  have hCall : ∀ z : ℂ, |OCS.multU m 0 z - (Real.pi * |z.im| + κ * z.re)| ≤ C := by
+    intro z
+    rcases le_total 0 z.im with h | h
+    · rw [abs_of_nonneg h]; have := hC z h; rwa [sub_sub] at this
+    · have := hC (conj z) (by simpa using h)
+      rw [multU_conj'] at this
+      simp only [Complex.conj_im, Complex.conj_re, mul_neg, sub_neg_eq_add] at this
+      rw [abs_of_nonpos h]
+      convert this using 2
+      ring
+  obtain ⟨c₁, c₂, hc₁, hc₂, hc⟩ := norm_genA_comparable hw
+  refine ⟨c₁ * Real.exp (-C), c₂ * Real.exp C, by positivity, by positivity, fun z ↦ ?_⟩
+  obtain ⟨h1, h2⟩ := hc z
+  have hb := abs_le.1 (hCall z)
+  have e1 : Real.exp (-C) * Real.exp (Real.pi * |z.im| + κ * z.re) ≤ Real.exp (OCS.multU m 0 z) := by
+    rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+  have e2 : Real.exp (OCS.multU m 0 z) ≤ Real.exp C * Real.exp (Real.pi * |z.im| + κ * z.re) := by
+    rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+  have hm : 0 ≤ min 1 (infDist z (OCS.multGammaC m)) := le_min zero_le_one infDist_nonneg
+  constructor
+  · refine le_trans ?_ h1
+    have : c₁ * (Real.exp (-C) * Real.exp (Real.pi * |z.im| + κ * z.re)) ≤
+        c₁ * Real.exp (OCS.multU m 0 z) := by gcongr
+    nlinarith [mul_le_mul_of_nonneg_right this hm]
+  · refine h2.trans ?_
+    have : c₂ * Real.exp (OCS.multU m 0 z) ≤
+        c₂ * (Real.exp C * Real.exp (Real.pi * |z.im| + κ * z.re)) := by gcongr
+    nlinarith [mul_le_mul_of_nonneg_right this hm]
 
 /-- **Normal-family limit of the translates of `A`.**  If `|s_k| → ∞`, a subsequence of the
 normalised translates `e^{-κ s_k} A(· + s_k)` converges locally uniformly to
