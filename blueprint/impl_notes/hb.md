@@ -15,8 +15,7 @@ Deviations from the blueprint:
 - `area` mean value: circle Cauchy-Schwarz then polar `lintegral`, rather than area average of `G` then Cauchy-Schwarz.
 - `memPW_of_memHE`: Fatou is only needed for `L^2(R)`; the exponential type bound uses `enorm_sq_le_of_lines` on a.e. lines in (-2,2)
   (line `s = 0` is a null set), so no estimate on the real axis is needed there.
-- `HEEqPW.phaseDeriv_mul_sq_ge/_le` keep the frozen unused hypothesis `hPW` in `_ge` (warning left on purpose, same for
-  `memHE_of_memPW`... no: `memPW_of_memHE` has unused `hPW` only in the frozen statement).
+- Unused-variable warnings for the frozen hypothesis `hPW` remain (`phaseDeriv_mul_sq_ge`, `memPW_of_memHE`), as instructed.
 
 Upstream usage (black boxes, possibly `sorry`): `exists_memPW_eval_ne_zero`, `MemPW.comp_sub_ofReal`, `MemPW.fstar`,
 `pwNormSq_ne_top`, `pw_norm_sq_le`, `pw_line_integral_le`, `pw_eval_lower`, `pwNormSq_fstar`.
