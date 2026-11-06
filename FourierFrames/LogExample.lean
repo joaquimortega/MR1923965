@@ -1120,7 +1120,82 @@ theorem integral_log_mul_sub_one_eq {z : ℂ} (hz : 0 < z.im) :
 /-- `∫_0^∞ log((1+σ)/|1-σ|) dσ/σ < ∞` (its value is `π²/2`). -/
 theorem integrableOn_log_ratio_div :
     IntegrableOn (fun σ : ℝ ↦ Real.log ((1 + σ) / |1 - σ|) / σ) (Ioi 0) := by
-  sorry
+  have hmeas : Measurable (fun σ : ℝ ↦ Real.log ((1 + σ) / |1 - σ|) / σ) := by fun_prop
+  have hnn : ∀ σ : ℝ, 0 < σ → 1 ≤ (1 + σ) / |1 - σ| ∨ |1 - σ| = 0 := by
+    intro σ hσ
+    by_cases h : |1 - σ| = 0
+    · exact Or.inr h
+    · left
+      have hp : 0 < |1 - σ| := lt_of_le_of_ne (abs_nonneg _) (Ne.symm h)
+      rw [one_le_div hp]
+      rcases abs_cases (1 - σ) with ⟨h1, _⟩ | ⟨h1, _⟩ <;> linarith
+  have hf0 : ∀ σ : ℝ, 0 < σ → 0 ≤ Real.log ((1 + σ) / |1 - σ|) := by
+    intro σ hσ
+    rcases hnn σ hσ with h | h
+    · exact Real.log_nonneg h
+    · rw [h]; simp
+  -- region (0, 2]
+  have hI : IntervalIntegrable (fun σ : ℝ ↦ 4 + 2 * Real.log 3 + 2 * |Real.log (1 - σ)|)
+      volume 0 2 := by
+    have h1 : IntervalIntegrable (fun σ : ℝ ↦ Real.log (1 - σ)) volume 0 2 := by
+      have := (intervalIntegral.intervalIntegrable_log' (a := (-1 : ℝ)) (b := 1)).comp_sub_left 1
+      have h2 := this.symm
+      norm_num at h2
+      exact h2
+    exact (intervalIntegrable_const.add (h1.abs.const_mul 2))
+  have hI' : IntegrableOn (fun σ : ℝ ↦ 4 + 2 * Real.log 3 + 2 * |Real.log (1 - σ)|) (Ioc 0 2) :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le (by norm_num)).1 hI
+  have hA : IntegrableOn (fun σ : ℝ ↦ Real.log ((1 + σ) / |1 - σ|) / σ) (Ioc 0 2) := by
+    refine Integrable.mono' hI' hmeas.aestronglyMeasurable ?_
+    rw [ae_restrict_iff' measurableSet_Ioc]
+    refine Filter.Eventually.of_forall fun σ hσ ↦ ?_
+    obtain ⟨hσ0, hσ2⟩ := hσ
+    have hlog3 : 0 ≤ Real.log 3 := Real.log_nonneg (by norm_num)
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg (hf0 σ hσ0) hσ0.le)]
+    by_cases h1 : σ = 1
+    · subst h1; simp; positivity
+    have hp : 0 < |1 - σ| := abs_pos.2 (sub_ne_zero.2 (Ne.symm h1))
+    have hlog : Real.log ((1 + σ) / |1 - σ|) = Real.log (1 + σ) - Real.log |1 - σ| :=
+      Real.log_div (by linarith) hp.ne'
+    have hA0 := hf0 σ hσ0
+    have hRHS : 4 ≤ 4 + 2 * Real.log 3 + 2 * |Real.log (1 - σ)| := by
+      have := abs_nonneg (Real.log (1 - σ)); linarith
+    rcases le_or_gt σ (1 / 2) with hs | hs
+    · have h1s : |1 - σ| = 1 - σ := abs_of_nonneg (by linarith)
+      have hx := Real.log_le_sub_one_of_pos (show 0 < (1 + σ) / |1 - σ| by positivity)
+      have : (1 + σ) / |1 - σ| - 1 ≤ 4 * σ := by
+        rw [h1s, div_sub_one (by linarith), div_le_iff₀ (by linarith)]
+        nlinarith
+      rw [div_le_iff₀ hσ0]
+      nlinarith
+    · have hl1 : Real.log (1 + σ) ≤ Real.log 3 := Real.log_le_log (by linarith) (by linarith)
+      have hl2 : -Real.log |1 - σ| ≤ |Real.log (1 - σ)| := by
+        rw [← Real.log_abs (1 - σ)]; exact neg_le_abs _
+      rw [div_le_iff₀ hσ0]
+      nlinarith [abs_nonneg (Real.log (1 - σ))]
+  -- region `(2, ∞)`
+  have hB : IntegrableOn (fun σ : ℝ ↦ Real.log ((1 + σ) / |1 - σ|) / σ) (Ioi 2) := by
+    have hg : IntegrableOn (fun σ : ℝ ↦ 4 * σ ^ (-2 : ℝ)) (Ioi 2) :=
+      (integrableOn_Ioi_rpow_of_lt (by norm_num) (by norm_num)).const_mul 4
+    refine Integrable.mono' hg hmeas.aestronglyMeasurable ?_
+    rw [ae_restrict_iff' measurableSet_Ioi]
+    refine Filter.Eventually.of_forall fun σ hσ ↦ ?_
+    have hσ2 : 2 < σ := hσ
+    have hσ0 : 0 < σ := by linarith
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg (hf0 σ hσ0) hσ0.le)]
+    have h1s : |1 - σ| = σ - 1 := by rw [abs_of_nonpos (by linarith)]; ring
+    have hx := Real.log_le_sub_one_of_pos (show 0 < (1 + σ) / |1 - σ| by
+      rw [h1s]; apply div_pos <;> linarith)
+    have : (1 + σ) / |1 - σ| - 1 ≤ 4 / σ := by
+      rw [h1s, div_sub_one (by linarith), div_le_div_iff₀ (by linarith) hσ0]
+      nlinarith
+    rw [Real.rpow_neg hσ0.le, show (2 : ℝ) = ((2 : ℕ) : ℝ) by norm_num, Real.rpow_natCast,
+      div_le_iff₀ hσ0]
+    have h4 : Real.log ((1 + σ) / |1 - σ|) ≤ 4 / σ := hx.trans this
+    refine h4.trans (le_of_eq ?_)
+    field_simp
+  rw [← Ioc_union_Ioi_eq_Ioi (show (0 : ℝ) ≤ 2 by norm_num)]
+  exact hA.union hB
 
 /-- The Hilbert-transform estimate for `log⁺|t|`: `|∫ log⁺|t| K_z(t) dt| ≤ C` for `Im z ≥ 1`. -/
 theorem abs_integral_posLog_mul_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
