@@ -1152,6 +1152,46 @@ theorem norm_compE_sq_bounds {N : ℕ} (hE : IsHB (compE m N)) (hw : OCS.IsMultW
     pow_le_pow_left₀ (norm_nonneg _) hstar 2
   constructor <;> nlinarith
 
+/-- Uniform separation of `Γ` and `Γ_B`. -/
+theorem exists_eta (hw : OCS.IsMultWeight m a b) {N : ℕ}
+    (hN : ∀ j : ℤ, N ≤ |j| → 3 / 4 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+    ∃ η : ℝ, 0 < η ∧ ∀ x ∈ OCS.multGammaC m,
+      ∀ y ∈ Set.range (fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)), η ≤ dist x y := by
+  have hN' : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j :=
+    fun j hj ↦ by linarith [hN j hj]
+  set f : ℤ → ℝ := fun k ↦ min (compBeta m N k - OCS.multBary m k)
+    (OCS.multBary m (k + 1) - compBeta m N k) with hf
+  have hfpos : ∀ k, 0 < f k := fun k ↦ by
+    obtain ⟨h1, h2⟩ := compBeta_interlace hw hN' k
+    exact lt_min (by linarith) (by linarith)
+  obtain ⟨u₁, u₂, hu₁, hu₂, hu⟩ := Comparable.finite_bounds
+    (S := ((Finset.Ioo (-(N : ℤ)) N : Finset ℤ) : Set ℤ)) (Finset.finite_toSet _) f
+    (fun k _ ↦ hfpos k)
+  refine ⟨min (1 / 4) u₁, lt_min (by norm_num) hu₁, ?_⟩
+  have hk : ∀ k : ℤ, min (1 / 4) u₁ ≤ f k := fun k ↦ by
+    by_cases hkS : k ∈ Finset.Ioo (-(N : ℤ)) N
+    · exact (min_le_right _ _).trans (hu k hkS).1
+    · refine (min_le_left _ _).trans (le_min ?_ ?_)
+      · rw [compBeta_of_not_lt hkS]; linarith
+      · rw [compBeta_of_not_lt hkS]
+        have : N ≤ |k| := by
+          by_contra h; push Not at h
+          exact hkS (Finset.mem_Ioo.2 (abs_lt.1 h))
+        linarith [hN k this]
+  rintro x ⟨_, ⟨j, rfl⟩, rfl⟩ y ⟨k, rfl⟩
+  rw [Complex.dist_eq]
+  rw [← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
+  have hmono := (OCS.strictMono_multBary hw).monotone
+  rcases le_or_gt j k with hjk | hjk
+  · have := hmono hjk
+    have h2 : f k ≤ compBeta m N k - OCS.multBary m k := min_le_left _ _
+    rw [abs_sub_comm, abs_of_pos (by linarith [(compBeta_interlace hw hN' k).1])]
+    linarith [hk k]
+  · have := hmono (show k + 1 ≤ j by omega)
+    have h2 : f k ≤ OCS.multBary m (k + 1) - compBeta m N k := min_le_right _ _
+    rw [abs_of_pos (by linarith [(compBeta_interlace hw hN' k).2])]
+    linarith [hk k]
+
 /-- **The phase construction of p. 801** (without phase asymptotics; replaces the first four
 clauses of the README's `exists_hb_of_density`).  `hshift` is the condition
 `U(z - 1/2) - U(z) = O(1)` on `Im z ≥ 0`, which is implied by `U - π Im z - κ Re z = O(1)` for some
@@ -1164,7 +1204,132 @@ theorem exists_hb_of_density (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a �
       (∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
         c * Real.exp (OCS.multU m 0 z) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (OCS.multU m 0 z)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) := by
-  sorry
+  have hw : OCS.IsMultWeight m a b := ⟨hm, ha, hlow, hup⟩
+  obtain ⟨N, hN34⟩ := Gaps.exists_gap_index_strong hw hlim
+  have hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j :=
+    fun j hj ↦ by linarith [hN34 j hj]
+  have hE := isHB_compE hw hN
+  obtain ⟨η, hη, hηd⟩ := exists_eta hw hN34
+  obtain ⟨C, hC⟩ := hshift
+  obtain ⟨cA₁, cA₂, hcA₁, hcA₂, hcA⟩ := norm_genA_comparable hw
+  obtain ⟨cB₁, cB₂, hcB₁, hcB₂, hcB⟩ := norm_compB_comparable hw hN
+  have hΓne : (OCS.multGammaC m).Nonempty := ⟨_, ⟨_, ⟨0, rfl⟩, rfl⟩⟩
+  have hΓBne : (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)).Nonempty := ⟨_, ⟨0, rfl⟩⟩
+  refine ⟨compE m N, hE, ?_, ?_, ?_⟩
+  · -- no real zeros
+    intro x hx
+    have hA : (genA m (x : ℂ)).im = 0 := by
+      have := genA_conj hw (x : ℂ)
+      rw [Complex.conj_ofReal] at this
+      exact Complex.conj_eq_iff_im.1 this.symm
+    have hB : (compB m N (x : ℂ)).im = 0 := by
+      have := compB_conj hw N (x : ℂ)
+      rw [Complex.conj_ofReal] at this
+      exact Complex.conj_eq_iff_im.1 this.symm
+    have hre := congrArg Complex.re hx
+    have him := congrArg Complex.im hx
+    simp only [compE, Complex.sub_re, Complex.mul_re, Complex.I_re, Complex.I_im, zero_mul,
+      one_mul, zero_sub, sub_neg_eq_add, Complex.zero_re, Complex.sub_im, Complex.mul_im,
+      zero_add, Complex.zero_im] at hre him
+    have hA0 : genA m (x : ℂ) = 0 := Complex.ext (by rw [Complex.zero_re]; linarith)
+      (by rw [Complex.zero_im]; exact hA)
+    have hB0 : compB m N (x : ℂ) = 0 := Complex.ext (by rw [Complex.zero_re]; linarith)
+      (by rw [Complex.zero_im]; exact hB)
+    obtain ⟨j, hj⟩ := (genA_eq_zero_iff hw _).1 hA0
+    obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw hN _).1 hB0
+    have := hηd _ ⟨_, ⟨j, rfl⟩, hj.symm⟩ _ ⟨k, hk.symm⟩
+    rw [dist_self] at this
+    linarith
+  · have hκ0 : 0 < min cA₁ (cB₁ * Real.exp (-C)) := lt_min hcA₁ (by positivity)
+    have hm0 : 0 < min 1 (η / 2) := lt_min one_pos (by positivity)
+    refine ⟨min cA₁ (cB₁ * Real.exp (-C)) * min 1 (η / 2), cA₂ + cB₂ * Real.exp C,
+      by positivity, fun z hz ↦ ?_⟩
+    obtain ⟨hA1, hA2⟩ := hcA z
+    obtain ⟨hB1, hB2⟩ := hcB z hz
+    have hCz := abs_le.1 (hC z hz)
+    set U := OCS.multU m 0 z with hU
+    set U1 := OCS.multU m 0 (z - 1 / 2) with hU1
+    have hEU : 0 < Real.exp U := Real.exp_pos _
+    have e1 : Real.exp U1 ≤ Real.exp C * Real.exp U := by
+      rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+    have e2 : Real.exp (-C) * Real.exp U ≤ Real.exp U1 := by
+      rw [← Real.exp_add]; exact Real.exp_le_exp.2 (by linarith)
+    set mΓ := min 1 (infDist z (OCS.multGammaC m)) with hmΓ
+    set mB := min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) with hmB
+    have hmΓ0 : 0 ≤ mΓ := le_min zero_le_one infDist_nonneg
+    have hmB0 : 0 ≤ mB := le_min zero_le_one infDist_nonneg
+    have hmΓ1 : mΓ ≤ 1 := min_le_left _ _
+    have hmB1 : mB ≤ 1 := min_le_left _ _
+    have hsq := norm_compE_sq_bounds hE hw hz
+    constructor
+    · -- lower bound
+      set κ := min cA₁ (cB₁ * Real.exp (-C)) with hκ
+      have hAl : κ * Real.exp U * mΓ ≤ ‖genA m z‖ := by
+        refine le_trans ?_ hA1
+        gcongr; exact min_le_left _ _
+      have hBl : κ * Real.exp U * mB ≤ ‖compB m N z‖ := by
+        refine le_trans ?_ hB1
+        calc κ * Real.exp U * mB ≤ (cB₁ * Real.exp (-C)) * Real.exp U * mB := by
+              gcongr; exact min_le_right _ _
+          _ = cB₁ * (Real.exp (-C) * Real.exp U) * mB := by ring
+          _ ≤ cB₁ * Real.exp U1 * mB := by gcongr
+      have hmax : min 1 (η / 2) ≤ max mΓ mB := by
+        by_contra hlt
+        push Not at hlt
+        have h1 : mΓ < min 1 (η / 2) := lt_of_le_of_lt (le_max_left _ _) hlt
+        have h2 : mB < min 1 (η / 2) := lt_of_le_of_lt (le_max_right _ _) hlt
+        have hd1 : infDist z (OCS.multGammaC m) < η / 2 := by
+          by_contra hh; push Not at hh
+          have : min (1 : ℝ) (η / 2) ≤ mΓ := by
+            rw [hmΓ]; exact min_le_min le_rfl hh
+          linarith
+        have hd2 : infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)) < η / 2 := by
+          by_contra hh; push Not at hh
+          have : min (1 : ℝ) (η / 2) ≤ mB := by
+            rw [hmB]; exact min_le_min le_rfl hh
+          linarith
+        have := Comparable.le_infDist_add_infDist hΓne hΓBne hηd z
+        linarith
+      set m₀ := min 1 (η / 2) with hm₀
+      have hAB : (κ * Real.exp U * m₀) ^ 2 ≤ ‖genA m z‖ ^ 2 + ‖compB m N z‖ ^ 2 := by
+        have hk : 0 ≤ κ * Real.exp U := by positivity
+        rcases le_max_iff.1 hmax with h | h
+        · have : κ * Real.exp U * m₀ ≤ ‖genA m z‖ :=
+            (mul_le_mul_of_nonneg_left h hk).trans hAl
+          nlinarith [sq_nonneg ‖compB m N z‖, norm_nonneg (genA m z), mul_nonneg hk hm0.le]
+        · have : κ * Real.exp U * m₀ ≤ ‖compB m N z‖ :=
+            (mul_le_mul_of_nonneg_left h hk).trans hBl
+          nlinarith [sq_nonneg ‖genA m z‖, norm_nonneg (compB m N z), mul_nonneg hk hm0.le]
+      by_contra hcon
+      push Not at hcon
+      have h0 := norm_nonneg (compE m N z)
+      nlinarith [hsq.1, mul_pos (mul_pos hκ0 hEU) hm0]
+    · -- upper bound
+      have hE1 : ‖compE m N z‖ ≤ ‖genA m z‖ + ‖compB m N z‖ := by
+        unfold compE
+        calc ‖genA m z - Complex.I * compB m N z‖ ≤ ‖genA m z‖ + ‖Complex.I * compB m N z‖ :=
+              norm_sub_le _ _
+          _ = _ := by simp
+      have hAu : ‖genA m z‖ ≤ cA₂ * Real.exp U := by
+        refine hA2.trans ?_
+        calc cA₂ * Real.exp U * mΓ ≤ cA₂ * Real.exp U * 1 := by gcongr
+          _ = _ := mul_one _
+      have hBu : ‖compB m N z‖ ≤ cB₂ * Real.exp C * Real.exp U := by
+        refine hB2.trans ?_
+        calc cB₂ * Real.exp U1 * mB ≤ cB₂ * Real.exp U1 * 1 := by gcongr
+          _ = cB₂ * Real.exp U1 := mul_one _
+          _ ≤ cB₂ * (Real.exp C * Real.exp U) := by gcongr
+          _ = _ := by ring
+      calc ‖compE m N z‖ ≤ _ := hE1
+        _ ≤ cA₂ * Real.exp U + cB₂ * Real.exp C * Real.exp U := add_le_add hAu hBu
+        _ = _ := by ring
+  · intro z
+    rw [show compE m N z + fstar (compE m N) z = 2 * genA m z by
+      rw [fstar_compE hw]; simp only [compE]; ring]
+    simp only [mul_eq_zero, two_ne_zero, false_or, genA_eq_zero_iff hw]
+    constructor
+    · rintro ⟨j, hj⟩; exact ⟨_, ⟨j, rfl⟩, hj⟩
+    · rintro ⟨γ, ⟨j, rfl⟩, hj⟩; exact ⟨j, hj⟩
 
 end Main
 

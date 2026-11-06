@@ -263,6 +263,18 @@ theorem min_one_infDist_congr {S T : Set ℂ} (hS : S.Nonempty) (hT : T.Nonempty
     · exact (min_le_left _ _).trans (h' y hy hyS)
   exact le_antisymm (key hT h') (key hS h)
 
+theorem le_infDist_add_infDist {S T : Set ℂ} (hS : S.Nonempty) (hT : T.Nonempty) {η : ℝ}
+    (h : ∀ x ∈ S, ∀ y ∈ T, η ≤ dist x y) (z : ℂ) : η ≤ infDist z S + infDist z T := by
+  by_contra hlt
+  push Not at hlt
+  have hε : 0 < η - (infDist z S + infDist z T) := by linarith
+  obtain ⟨x, hxS, hx⟩ := (Metric.infDist_lt_iff hS).1
+    (show infDist z S < infDist z S + (η - (infDist z S + infDist z T)) / 2 by linarith)
+  have h1 : η ≤ infDist x T := (le_infDist hT).2 fun y hy ↦ h x hxS y hy
+  have h2 := infDist_le_infDist_add_dist (x := x) (y := z) (s := T)
+  rw [dist_comm] at hx
+  linarith
+
 /-- `(z - β)/(z - a) → 1` as `z → ∞`. -/
 theorem tendsto_sub_div_sub (β a : ℂ) :
     Tendsto (fun z : ℂ ↦ (z - β) / (z - a)) (cocompact ℂ) (𝓝 1) := by

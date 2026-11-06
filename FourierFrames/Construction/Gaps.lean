@@ -330,6 +330,12 @@ theorem exists_gap_index (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocomp
   exists_index_of_cofinite
     ((tendsto_multBary_succ_sub hw hlim).eventually (lt_mem_nhds (by norm_num : (1 / 2 : ℝ) < 1)))
 
+theorem exists_gap_index_strong (hw : OCS.IsMultWeight m a b)
+    (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
+    ∃ N : ℕ, ∀ j : ℤ, N ≤ |j| → 3 / 4 < OCS.multBary m (j + 1) - OCS.multBary m j :=
+  exists_index_of_cofinite
+    ((tendsto_multBary_succ_sub hw hlim).eventually (lt_mem_nhds (by norm_num : (3 / 4 : ℝ) < 1)))
+
 end Gaps
 
 end FF
