@@ -115,7 +115,7 @@ theorem hopf_boundary {Θ g : ℂ → ℂ} {x₀ : ℝ} {c : ℂ} (hc : ‖c‖ 
       rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]
       simp only [Complex.add_re, Complex.add_im, Complex.one_re, Complex.one_im, Complex.mul_re,
         Complex.mul_im, ← Complex.ofReal_pow, Complex.ofReal_re, Complex.ofReal_im, zero_mul,
-        sub_zero, add_zero, zero_add, mul_zero]
+        sub_zero, add_zero, zero_add]
       rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply, pow_mul']
       ring
     have h5 : ‖1 + (t : ℂ) ^ n * u t‖ ^ 2 ≤ 1 := by
