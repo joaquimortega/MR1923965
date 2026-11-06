@@ -1,5 +1,5 @@
 
-import FourierFrames.Theorem2i.Estimates
+import FourierFrames.Theorem2i.Assembly
 
 /-!
 # M08 — Theorem 2 (i)
