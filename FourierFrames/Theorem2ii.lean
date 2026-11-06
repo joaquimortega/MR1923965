@@ -1,6 +1,8 @@
 import FourierFrames.Defs
 import FourierFrames.Lemma3Uniform
 import FourierFrames.Theorem2ii.Window
+import FourierFrames.Theorem2ii.UOne
+import FourierFrames.Theorem2ii.Ramp
 
 /-!
 # M09 — Theorem 2 (ii)
@@ -61,19 +63,54 @@ def testFn (a₁ a₂ : ℝ) (z : ℂ) : ℂ :=
 
 /-- `m = 1 + μ` is a multiplier weight with `a = 1/2`, `b = 1`
 (needs `1 ≤ a₁` and disjoint ramps `2 a₁ < a₂`). -/
+theorem rampMu_bounds {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) (t : ℝ) :
+    -(1 / 2) ≤ rampMu a₁ a₂ t ∧ rampMu a₁ a₂ t ≤ 0 := by
+  have ha₁ : 0 < a₁ := by linarith
+  have ha₂ : 0 < a₂ := by linarith
+  have hc₁ : (1 / 2) / a₁ ≤ 1 / 2 := by
+    rw [div_le_iff₀ ha₁]; linarith
+  have hc₁' : 0 < (1 / 2) / a₁ := by positivity
+  have hc₂ : (1 / 2) / a₂ ≤ 1 / 2 := by
+    rw [div_le_iff₀ ha₂]; linarith
+  have hc₂' : 0 < (1 / 2) / a₂ := by positivity
+  unfold rampMu
+  by_cases hA : t ∈ Icc a₁ (2 * a₁)
+  · have hB : t ∉ Icc a₂ (2 * a₂) := by
+      intro hB; linarith [hA.2, hB.1]
+    rw [indicator_of_mem hA, indicator_of_notMem hB]
+    simp only [Pi.one_apply]
+    constructor <;> nlinarith
+  · by_cases hB : t ∈ Icc a₂ (2 * a₂)
+    · rw [indicator_of_notMem hA, indicator_of_mem hB]
+      simp only [Pi.one_apply]
+      constructor <;> nlinarith
+    · rw [indicator_of_notMem hA, indicator_of_notMem hB]
+      simp
+
+theorem measurable_rampMu (a₁ a₂ : ℝ) : Measurable (rampMu a₁ a₂) := by
+  have h1 : Measurable ((Icc a₁ (2 * a₁)).indicator (1 : ℝ → ℝ)) :=
+    measurable_one.indicator measurableSet_Icc
+  have h2 : Measurable ((Icc a₂ (2 * a₂)).indicator (1 : ℝ → ℝ)) :=
+    measurable_one.indicator measurableSet_Icc
+  unfold rampMu
+  exact (measurable_const.mul h1).sub (measurable_const.mul h2)
+
 theorem dens_isMultWeight {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) :
-    OCS.IsMultWeight (dens a₁ a₂) (1 / 2) 1 := by
-  sorry
+    OCS.IsMultWeight (dens a₁ a₂) (1 / 2) 1 where
+  measurable := measurable_const.add (measurable_rampMu a₁ a₂)
+  pos := by norm_num
+  le t := by have := (rampMu_bounds h₁ h₂ t).1; unfold dens; linarith
+  ge t := by have := (rampMu_bounds h₁ h₂ t).2; unfold dens; linarith
 
 /-- `U_1(x) = 0` for real `x`: `∫ [log|1 - x/t| + (1 - χ_{[-1,1]}(t)) x/t] dt = 0`. -/
 theorem multUIntegrand_one_real (x : ℝ) :
     ∫ t : ℝ, OCS.multUIntegrand (fun _ ↦ (1 : ℝ)) (x : ℂ) t = 0 := by
-  sorry
+  rw [T2ii.multUIntegrand_one]; simp
 
 /-- `U_1(z) = π |Im z|`. -/
 theorem multUIntegrand_one (z : ℂ) :
-    ∫ t : ℝ, OCS.multUIntegrand (fun _ ↦ (1 : ℝ)) z t = Real.pi * |z.im| := by
-  sorry
+    ∫ t : ℝ, OCS.multUIntegrand (fun _ ↦ (1 : ℝ)) z t = Real.pi * |z.im| :=
+  T2ii.multUIntegrand_one z
 
 /-- `U_m(z) = π|Im z| + W(z) + κ Re z` for `m = dens a₁ a₂`. -/
 theorem multU_dens {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) (z : ℂ) :
@@ -83,8 +120,8 @@ theorem multU_dens {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂
 /-- **Ramp potential.**  For `a ≥ 1` and real `x`,
 `|(1/a) ∫_a^{2a} log|1 - x/t| dt - log max(1, |x|/a)| ≤ 4`. -/
 theorem rampPot_estimate {a : ℝ} (ha : 1 ≤ a) (x : ℝ) :
-    |(1 / a) * ∫ t in a..2 * a, Real.log ‖1 - (x : ℂ) / t‖ - Real.log (max 1 (|x| / a))| ≤ 4 := by
-  sorry
+    |(1 / a) * ∫ t in a..2 * a, Real.log ‖1 - (x : ℂ) / t‖ - Real.log (max 1 (|x| / a))| ≤ 4 :=
+  T2ii.rampPot_estimate (by linarith) x
 
 /-- **Envelope.**  `|W(x) - (1/2) log env(x)| ≤ 4` for real `x` (needs `1 ≤ a₁`, `2 a₁ < a₂`). -/
 theorem potW_estimate {a₁ a₂ : ℝ} (h₁ : 1 ≤ a₁) (h₂ : 2 * a₁ < a₂) (x : ℝ) :
