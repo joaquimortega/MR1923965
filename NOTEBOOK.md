@@ -131,14 +131,16 @@ theorem (blueprint README §3.7).
 
 ## Section 5: Corollary 2 and Theorem 2
 
-### N-17 (E) — p. 801: Meĭman's theorem as used — *open*
+### N-17 (E) — p. 801: Meĭman's theorem as used — *coordinator-checked; referee-pending*
 The text says: if `A` and `B` have interlacing zeros, then `A - iB` or `A + iB` is in
-`\overline{HB}`. Interlacing plus exponential type is not sufficient. `A = cos πz` and
-`B = e^{az} sin πz` with `a ≠ 0` have interlacing zeros, and on the imaginary axis neither
-combination satisfies the Hermite–Biehler inequality. For the specific `A`, `B` of the proof the
-conclusion holds: they are limits of real polynomials with interlacing zeros, for which the
-polynomial Hermite–Biehler theorem is elementary. The precise hypotheses of Meĭman's theorem in
-[Le80, p. 314] are to be checked.
+`\overline{HB}`. Interlacing plus exponential type is not sufficient: `A = cos πz` and
+`B = e^{az} sin πz` with `a ≠ 0` have interlacing zeros, and on the imaginary axis
+`|A ∓ iB|(iy)` vs `|A ∓ iB|(-iy)` compares `|cosh πy ± e^{iay} sinh πy|` with
+`|cosh πy ∓ e^{iay} sinh πy|`, whose order changes with the sign of `cos(ay)`. For the specific `A`, `B`
+of the proof the conclusion holds and is proved directly: the symmetric partial products are real
+polynomials with interlacing zeros, for which `Im(B_R/A_R) > 0` on `ℂ₊` (sum of arguments of the
+factors), and `\overline{HB}` is closed under locally uniform limits (Hurwitz). No choice of sign
+(`P ↦ -P`) is needed.
 
 ### N-18 (G) — p. 800–801: "We may assume `ω' ≃ 1`" — *open*
 `ω' = 1 + ψ' - φ_f'/π → 1` at infinity, but it may fail to be `≃ 1` on a compact set. A
@@ -266,6 +268,31 @@ along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
   E": the argument also needs that a complete interpolating sequence is sampling (open mapping
   theorem), Theorem D (orthogonality of the kernels at `Λ` forces `Λ` into one phase level set),
   completeness of the kernels, and a rotation `E ↦ e^{iθ}E`.
+
+### N-35 (T) — p. 801: details of the construction in Corollary 2 — *print-checked*
+- "two monomials `P` and `Q` of the same degree and with only real zeros": polynomials are meant
+  (a monomial `z^n` has only the zero `0`).
+- `A_k(z) = A(z - x_{2k})` looks at `A` near `-x_{2k}`; to compare with `cos πx` near `x_{2k}` the
+  translate must be `A(z + x_{2k})` (zeros `γ_j - x_{2k} ≈ j - 2k + 1/2`). Only `k → +∞` is treated;
+  `k → -∞` is analogous.
+- "`E(x) = |E(x)| e^{i(π(x + ψ(x)) - φ_f(x) + o(1))}`": with the convention `E(x) = |E(x)| e^{-iφ(x)}`
+  (p. 794) and (8), the exponent must be `-i(π(x + ψ(x)) - φ_f(x) + o(1))`.
+- The symmetric products `lim ∏_{|γ_k|<R}(1 - z/γ_k)` need not converge for a general density
+  `ω' ≃ 1`; the [OS99] function carries a factor `e^{-κz}` (as does `OCS.multF`), which is harmless.
+
+### N-36 (G) — pp. 800–801: the proof of Corollary 2 — *referee-pending*
+- **`|E(z)| ≃ e^{π Im z}`** is asserted ("and `|E(z)| ≃ e^{π Im z}` for `Im z ≥ 0`") but never derived.
+  It rests on the identity `log|f(z)| = (1/π) ∫ log|1 - z/t| φ_f'(t) dt + b Re z + c` on `Im z ≥ 0`
+  for `f ∈ \overline{HB}` with (7), which is not stated. With it, `|E| ≃ e^{U_ω} = e^{π Im z + U_ψ - log|f| + b Re z + O(1)}`,
+  and the linear term `b Re z` must be cancelled when `ω'` is modified on a compact set.
+- **"We may assume `ω'(x) ≃ 1`"** hides that modification: it must keep `∫ (ω' - ω'_{new}) = 0` and
+  cancel the linear term, and it changes `Λ(ψ)` by finitely many points.
+- **The normal-family step** needs `U_ω - π Im z` to be bounded (up to a linear term), which again
+  rests on the identity above; and the limits of the translates must be identified (Liouville).
+- **The perturbation argument** needs the zero set of `Ef + E^*f^*` to be separated (true: `φ_E'|E|²
+  ≃ 1`), and the "elementary fact" concerns moving finitely many points to new distinct positions
+  (removing points is not allowed: `ℤ ∖ {0}` is not sampling). It is proved by a normal-family
+  argument.
 
 ---
 
