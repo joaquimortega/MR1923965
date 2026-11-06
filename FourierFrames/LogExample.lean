@@ -1157,10 +1157,261 @@ theorem abs_logKernel_le {z : ℂ} (hz : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
   refine (Complex.abs_re_le_norm _).trans ?_
   rw [norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs]
 
+/-- The breakpoints of the step density `m`. -/
+def logBreak : Set ℝ := Set.range logPt ∪ Set.range logBary
+
+theorem countable_logBreak : logBreak.Countable :=
+  (Set.countable_range _).union (Set.countable_range _)
+
+theorem continuousAt_logDensity {t : ℝ} (ht : t ∉ logBreak) : ContinuousAt logDensity t := by
+  obtain ⟨h1, h2⟩ := logIdx_spec t
+  set j := logIdx t with hj
+  have hne1 : t ≠ logPt j := fun h ↦ ht (Or.inl ⟨j, h.symm⟩)
+  have hne2 : t ≠ logBary j := fun h ↦ ht (Or.inr ⟨j, h.symm⟩)
+  have hp1 : logPt j < t := lt_of_le_of_ne h1 (Ne.symm hne1)
+  rcases lt_or_gt_of_ne hne2 with h | h
+  · have : logDensity =ᶠ[𝓝 t] fun _ ↦ logWeightL j := by
+      filter_upwards [Ioo_mem_nhds hp1 h] with x hx
+      exact logDensity_of_Ico_left hx.1.le hx.2
+    exact continuousAt_const.congr this.symm
+  · have : logDensity =ᶠ[𝓝 t] fun _ ↦ logWeightR j := by
+      filter_upwards [Ioo_mem_nhds h h2] with x hx
+      exact logDensity_of_Ico_right hx.1.le hx.2
+    exact continuousAt_const.congr this.symm
+
+theorem hasDerivAt_logW {t : ℝ} (ht : t ∉ logBreak) : HasDerivAt logW (logDensity t - 1) t := by
+  have h := intervalIntegral.integral_hasDerivAt_right
+    (isMultWeight_logDensity.intervalIntegrable 0 t)
+    measurable_logDensity.stronglyMeasurable.stronglyMeasurableAtFilter
+    (continuousAt_logDensity ht)
+  exact h.sub (hasDerivAt_id' t)
+
+
+theorem log_norm_one_sub_div_eq {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    Real.log ‖1 - z / t‖ = LogEx.phiK z t := by
+  have hz1 : (t : ℂ) ≠ z := fun h ↦ by
+    have := congrArg Complex.im h
+    simp at this; linarith
+  rw [OCS.log_norm_one_sub_div z ht hz1]
+  have h := OCS.norm_ofReal_sub_sq z t
+  rw [norm_sub_rev] at h
+  have h1 : Real.log ‖(t : ℂ) - z‖ = Real.log ((t - z.re) ^ 2 + z.im ^ 2) / 2 := by
+    rw [← h, Real.log_pow]; push_cast; ring
+  unfold LogEx.phiK
+  rw [h1, sub_zero, Complex.norm_real, Real.norm_eq_abs, Real.log_abs]
+
+theorem hasDerivAt_log_norm_one_sub_div {z : ℂ} (hy : 0 < z.im) {t : ℝ} (ht : t ≠ 0) :
+    HasDerivAt (fun s : ℝ ↦ Real.log ‖1 - z / s‖) (LogEx.kern z t) t := by
+  refine (LogEx.hasDerivAt_phi hy ht).congr_of_eventuallyEq ?_
+  filter_upwards [isOpen_ne.mem_nhds ht] with s hs
+  exact log_norm_one_sub_div_eq hy hs
+
+theorem abs_logW_le_sqrt : ∃ c : ℝ, 0 ≤ c ∧ ∀ t : ℝ, |logW t| ≤ c * |t| ∧
+    |logW t| ≤ c * (1 + |t|) ^ (1 / 2 : ℝ) := by
+  obtain ⟨Cρ, hρ⟩ := abs_logW_add_posLog_le
+  have hC0 : 0 ≤ Cρ := by
+    have h := hρ 1
+    simp only [abs_one] at h
+    have hm : 0 < min (1 : ℝ) (1 / Real.sqrt (1 + 1)) := lt_min one_pos (by positivity)
+    by_contra hneg
+    push Not at hneg
+    have := mul_neg_of_neg_of_pos hneg hm
+    linarith [abs_nonneg (logW 1 + Real.posLog 1)]
+  refine ⟨19 + Cρ + 2, by positivity, fun t ↦ ⟨?_, ?_⟩⟩
+  · have := abs_logW_le t
+    nlinarith [abs_nonneg t]
+  · have h1 := hρ t
+    have h2 : min |t| (1 / Real.sqrt (1 + |t|)) ≤ 1 := by
+      refine (min_le_right _ _).trans ?_
+      rw [div_le_one (Real.sqrt_pos.2 (by positivity))]
+      exact Real.one_le_sqrt.2 (by linarith [abs_nonneg t])
+    have h3 : Real.posLog |t| ≤ 2 * Real.sqrt (1 + |t|) := by
+      have h1 := Real.posLog_le_log_one_add (abs_nonneg t)
+      have h := Real.log_le_sub_one_of_pos (Real.sqrt_pos.2 (show 0 < 1 + |t| by positivity))
+      have h' : Real.log (Real.sqrt (1 + |t|)) = Real.log (1 + |t|) / 2 :=
+        Real.log_sqrt (by positivity)
+      linarith [Real.sqrt_nonneg (1 + |t|)]
+    have h4 : 1 ≤ Real.sqrt (1 + |t|) := Real.one_le_sqrt.2 (by linarith [abs_nonneg t])
+    rw [← Real.sqrt_eq_rpow]
+    have h5 : |logW t| ≤ abs (logW t + Real.posLog |t|) + Real.posLog |t| := by
+      have := abs_sub (logW t + Real.posLog |t|) (Real.posLog |t|)
+      rw [add_sub_cancel_right, abs_of_nonneg (Real.posLog_nonneg (x := |t|))] at this
+      exact this
+    nlinarith [mul_le_mul_of_nonneg_left h2 hC0]
+
+theorem integrable_kern_mul_logW {z : ℂ} (hy : 0 < z.im) :
+    Integrable (fun t : ℝ ↦ logW t * LogEx.kern z t) := by
+  obtain ⟨c, hc, hb⟩ := abs_logW_le_sqrt
+  exact LogEx.integrable_mul_kern hy logW_lipschitz.continuous.aestronglyMeasurable hc
+    (fun t ↦ (hb t).1) (fun t ↦ (hb t).2)
+
+theorem continuous_Psi {z : ℂ} (hy : 0 < z.im) :
+    Continuous (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * logW t) := by
+  rw [continuous_iff_continuousAt]
+  intro t
+  by_cases ht : t = 0
+  · subst ht
+    -- continuity at `0`
+    set g : ℝ → ℝ := fun s ↦ s * Real.log ((s - z.re) ^ 2 + z.im ^ 2) / 2 - s * Real.log s with hg
+    have hgc : Continuous g := by
+      have h1 : Continuous fun s : ℝ ↦ s * Real.log ((s - z.re) ^ 2 + z.im ^ 2) :=
+        continuous_id.mul (Continuous.log (by fun_prop) (fun s ↦ by positivity))
+      exact (h1.div_const 2).sub Real.continuous_mul_log
+    have hg0 : g 0 = 0 := by simp [hg]
+    have hbound : ∀ s : ℝ, ‖Real.log ‖1 - z / s‖ * logW s‖ ≤ 19 * ‖g s‖ := by
+      intro s
+      by_cases hs : s = 0
+      · subst hs; simp [logW, OCS.multPrim_zero]
+      · have h1 : s * Real.log ‖1 - z / s‖ = g s := by
+          rw [log_norm_one_sub_div_eq hy hs]; simp only [hg, LogEx.phiK]; ring
+        rw [Real.norm_eq_abs, abs_mul]
+        have h2 := abs_logW_le s
+        have h3 : |Real.log ‖1 - z / s‖| * |s| = ‖g s‖ := by
+          rw [← h1, Real.norm_eq_abs, abs_mul, mul_comm]
+        calc |Real.log ‖1 - z / s‖| * |logW s| ≤ |Real.log ‖1 - z / s‖| * (19 * |s|) :=
+              mul_le_mul_of_nonneg_left h2 (abs_nonneg _)
+          _ = 19 * (|Real.log ‖1 - z / s‖| * |s|) := by ring
+          _ = 19 * ‖g s‖ := by rw [h3]
+    have hlim : Tendsto (fun s : ℝ ↦ Real.log ‖1 - z / s‖ * logW s) (𝓝 0) (𝓝 0) := by
+      refine squeeze_zero_norm hbound ?_
+      have := (hgc.norm.tendsto 0).const_mul 19
+      simpa [hg0] using this
+    have h0 : Real.log ‖1 - z / ((0 : ℝ) : ℂ)‖ * logW 0 = 0 := by simp [logW, OCS.multPrim_zero]
+    show Tendsto _ _ (𝓝 (Real.log ‖1 - z / ((0 : ℝ) : ℂ)‖ * logW 0))
+    rw [h0]; exact hlim
+  · exact ((hasDerivAt_log_norm_one_sub_div hy ht).continuousAt).mul
+      logW_lipschitz.continuous.continuousAt
+
+/-- The integrand of the integration by parts. -/
+noncomputable def ibpDeriv (z : ℂ) (t : ℝ) : ℝ :=
+  LogEx.kern z t * logW t + Real.log ‖1 - z / t‖ * (logDensity t - 1)
+
+theorem integrable_ibpDeriv {z : ℂ} (hy : 0 < z.im) : Integrable (ibpDeriv z) := by
+  have h1 := integrable_kern_mul_logW hy
+  have h2 := integrable_log_mul_sub_one hy
+  have h3 : Integrable (fun t : ℝ ↦ LogEx.kern z t * logW t) :=
+    h1.congr (Filter.Eventually.of_forall fun t ↦ mul_comm _ _)
+  exact h3.add h2
+
+theorem ftc_Psi {z : ℂ} (hy : 0 < z.im) {R : ℝ} (hR : 0 < R) :
+    ∫ t in (-R)..R, ibpDeriv z t =
+      Real.log ‖1 - z / R‖ * logW R - Real.log ‖1 - z / ((-R : ℝ) : ℂ)‖ * logW (-R) := by
+  have hcount : (logBreak ∪ {0}).Countable := countable_logBreak.union (Set.countable_singleton 0)
+  have := MeasureTheory.integral_eq_of_hasDerivAt_off_countable_of_le
+    (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * logW t) (ibpDeriv z) (by linarith : -R ≤ R) hcount
+    (continuous_Psi hy).continuousOn (fun t ht ↦ ?_)
+    ((integrable_ibpDeriv hy).intervalIntegrable)
+  · exact this
+  · have ht0 : t ≠ 0 := fun h ↦ ht.2 (Or.inr h)
+    have htB : t ∉ logBreak := fun h ↦ ht.2 (Or.inl h)
+    exact (hasDerivAt_log_norm_one_sub_div hy ht0).mul (hasDerivAt_logW htB)
+
+theorem tendsto_abs_log_quad_mul (b c C0 : ℝ) :
+    Tendsto (fun R : ℝ ↦ |Real.log (1 + b * R⁻¹ + c * R⁻¹ ^ 2)| * (Real.log R + C0)) atTop (𝓝 0) := by
+  have h1 := (LogEx.tendsto_slope_log_quad b c).abs
+  have h2 : Tendsto (fun R : ℝ ↦ Real.log R / R) atTop (𝓝 0) := by
+    simpa using Real.isLittleO_log_id_atTop.tendsto_div_nhds_zero
+  have h3 : Tendsto (fun R : ℝ ↦ C0 * R⁻¹) atTop (𝓝 0) := by
+    simpa using (tendsto_inv_atTop_zero (𝕜 := ℝ)).const_mul C0
+  have h4 := h1.mul (h2.add h3)
+  rw [add_zero, mul_zero] at h4
+  refine h4.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with R hR
+  rw [abs_mul, abs_of_pos hR]
+  field_simp
+
+theorem tendsto_Psi {z : ℂ} (hy : 0 < z.im) :
+    Tendsto (fun R : ℝ ↦ Real.log ‖1 - z / R‖ * logW R) atTop (𝓝 0) ∧
+    Tendsto (fun R : ℝ ↦ Real.log ‖1 - z / ((-R : ℝ) : ℂ)‖ * logW (-R)) atTop (𝓝 0) := by
+  obtain ⟨Cρ, hρ⟩ := abs_logW_add_posLog_le
+  set c : ℝ := z.re ^ 2 + z.im ^ 2 with hc
+  -- bound on `W` at `±R`
+  have hW : ∀ R : ℝ, 1 ≤ R → |logW R| ≤ Real.log R + |Cρ| ∧ |logW (-R)| ≤ Real.log R + |Cρ| := by
+    intro R hR
+    have hb : ∀ t : ℝ, |t| = R → |logW t| ≤ Real.log R + |Cρ| := by
+      intro t ht
+      have h1 := hρ t
+      have h2 : min |t| (1 / Real.sqrt (1 + |t|)) ≤ 1 := by
+        refine (min_le_right _ _).trans ?_
+        rw [div_le_one (Real.sqrt_pos.2 (by positivity))]
+        exact Real.one_le_sqrt.2 (by linarith [abs_nonneg t])
+      have h3 : Cρ * min |t| (1 / Real.sqrt (1 + |t|)) ≤ |Cρ| := by
+        calc _ ≤ |Cρ| * min |t| (1 / Real.sqrt (1 + |t|)) :=
+              mul_le_mul_of_nonneg_right (le_abs_self _) (le_min (abs_nonneg t) (by positivity))
+          _ ≤ |Cρ| * 1 := mul_le_mul_of_nonneg_left h2 (abs_nonneg _)
+          _ = |Cρ| := mul_one _
+      have h4 : Real.posLog |t| = Real.log R := by
+        rw [Real.posLog_abs, Real.posLog_eq_log (by rw [ht]; exact hR), ← Real.log_abs, ht]
+      have h5 : |logW t| ≤ abs (logW t + Real.posLog |t|) + Real.posLog |t| := by
+        have := abs_sub (logW t + Real.posLog |t|) (Real.posLog |t|)
+        rw [add_sub_cancel_right, abs_of_nonneg (Real.posLog_nonneg (x := |t|))] at this
+        exact this
+      linarith
+    exact ⟨hb R (abs_of_pos (by linarith)), hb (-R) (by rw [abs_neg, abs_of_pos (by linarith)])⟩
+  have hlim := (tendsto_abs_log_quad_mul (-2 * z.re) c |Cρ|).div_const 2
+  have hlim2 := (tendsto_abs_log_quad_mul (-2 * -z.re) c |Cρ|).div_const 2
+  rw [zero_div] at hlim hlim2
+  constructor
+  · refine squeeze_zero_norm' ?_ hlim
+    filter_upwards [eventually_ge_atTop 1] with R hR
+    have hRpos : 0 < R := by linarith
+    have hφ : Real.log ‖1 - z / R‖ =
+        Real.log (1 + (-2 * z.re) * R⁻¹ + c * R⁻¹ ^ 2) / 2 := by
+      rw [log_norm_one_sub_div_eq hy hRpos.ne']
+      unfold LogEx.phiK
+      rw [LogEx.log_sq_add_sq_eq (x := z.re) (y := z.im) hRpos hy z.re (Or.inl rfl)]
+      ring
+    rw [Real.norm_eq_abs, abs_mul, hφ, abs_div, abs_two]
+    calc |Real.log (1 + (-2 * z.re) * R⁻¹ + c * R⁻¹ ^ 2)| / 2 * |logW R|
+        ≤ |Real.log (1 + (-2 * z.re) * R⁻¹ + c * R⁻¹ ^ 2)| / 2 * (Real.log R + |Cρ|) :=
+          mul_le_mul_of_nonneg_left (hW R hR).1 (by positivity)
+      _ = |Real.log (1 + (-2 * z.re) * R⁻¹ + c * R⁻¹ ^ 2)| * (Real.log R + |Cρ|) / 2 := by ring
+  · refine squeeze_zero_norm' ?_ hlim2
+    filter_upwards [eventually_ge_atTop 1] with R hR
+    have hRpos : 0 < R := by linarith
+    have hφ : Real.log ‖1 - z / ((-R : ℝ) : ℂ)‖ =
+        Real.log (1 + (-2 * -z.re) * R⁻¹ + c * R⁻¹ ^ 2) / 2 := by
+      rw [log_norm_one_sub_div_eq hy (neg_ne_zero.2 hRpos.ne')]
+      unfold LogEx.phiK
+      have e : (-R - z.re) ^ 2 = (R - -z.re) ^ 2 := by ring
+      rw [e, LogEx.log_sq_add_sq_eq (x := z.re) (y := z.im) hRpos hy (-z.re) (Or.inr rfl),
+        Real.log_neg_eq_log]
+      ring
+    rw [Real.norm_eq_abs, abs_mul, hφ, abs_div, abs_two]
+    calc |Real.log (1 + (-2 * -z.re) * R⁻¹ + c * R⁻¹ ^ 2)| / 2 * |logW (-R)|
+        ≤ |Real.log (1 + (-2 * -z.re) * R⁻¹ + c * R⁻¹ ^ 2)| / 2 * (Real.log R + |Cρ|) :=
+          mul_le_mul_of_nonneg_left (hW R hR).2 (by positivity)
+      _ = |Real.log (1 + (-2 * -z.re) * R⁻¹ + c * R⁻¹ ^ 2)| * (Real.log R + |Cρ|) / 2 := by ring
+
+theorem integral_ibpDeriv_eq_zero {z : ℂ} (hy : 0 < z.im) : ∫ t : ℝ, ibpDeriv z t = 0 := by
+  have hf := integrable_ibpDeriv hy
+  have hlim := intervalIntegral_tendsto_integral hf (tendsto_neg_atTop_atBot (G := ℝ)) tendsto_id
+  obtain ⟨h1, h2⟩ := tendsto_Psi hy
+  have hlim2 : Tendsto (fun R : ℝ ↦ ∫ t in (-R)..R, ibpDeriv z t) atTop (𝓝 0) := by
+    have := h1.sub h2
+    rw [sub_zero] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with R hR
+    exact (ftc_Psi hy hR).symm
+  exact tendsto_nhds_unique hlim hlim2
+
+theorem integral_log_mul_sub_one_eq' {z : ℂ} (hz : 0 < z.im) :
+    ∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1) = -∫ t : ℝ, logW t * LogEx.kern z t := by
+  have h1 := integrable_log_mul_sub_one hz
+  have h2 : Integrable (fun t : ℝ ↦ LogEx.kern z t * logW t) :=
+    (integrable_kern_mul_logW hz).congr (Filter.Eventually.of_forall fun t ↦ mul_comm _ _)
+  have h0 := integral_ibpDeriv_eq_zero hz
+  unfold ibpDeriv at h0
+  rw [integral_add h2 h1] at h0
+  have e : ∫ t : ℝ, logW t * LogEx.kern z t = ∫ t : ℝ, LogEx.kern z t * logW t :=
+    integral_congr_ae (Filter.Eventually.of_forall fun t ↦ mul_comm _ _)
+  rw [e]
+  linarith
+
 /-- Integration by parts: `V(z) = -∫ W(t) K_z(t) dt`. -/
 theorem integral_log_mul_sub_one_eq {z : ℂ} (hz : 0 < z.im) :
     ∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1) = -∫ t : ℝ, logW t * logKernel z t := by
-  sorry
+  exact integral_log_mul_sub_one_eq' hz
 
 /-- `∫_0^∞ log((1+σ)/|1-σ|) dσ/σ < ∞` (its value is `π²/2`). -/
 theorem integrableOn_log_ratio_div :
