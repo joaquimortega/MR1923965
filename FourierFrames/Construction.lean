@@ -2,6 +2,7 @@ import FourierFrames.HB.Phase
 import OrtegaCerdaSeip.Lemma3.Main
 import FourierFrames.Construction.Gaps
 import FourierFrames.Construction.Comparable
+import FourierFrames.Construction.PolyHB
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -442,7 +443,7 @@ up to a number in `(0, π)`). -/
 theorem im_prod_div_pos {n : ℕ} {a b : Fin (n + 1) → ℝ}
     (hab : ∀ k, a k < b k) (hba : ∀ k : Fin n, b k.castSucc < a k.succ) {z : ℂ} (hz : 0 < z.im) :
     0 < (∏ k, ((z - b k) / (z - a k))).im := by
-  sorry
+  exact im_prod_div_pos' hab hba hz
 
 end CompanionLemmas
 
@@ -467,11 +468,86 @@ def polyB (m : ℝ → ℝ) (N R : ℕ) (z : ℂ) : ℂ :=
 def polyExp (m : ℝ → ℝ) (R : ℕ) : ℝ :=
   (∑ j ∈ Finset.Icc (-(R : ℤ)) R, 1 / OCS.multBary m j) - OCS.multKappa m
 
+theorem multBary_ne_zero (hw : OCS.IsMultWeight m a b) (j : ℤ) : OCS.multBary m j ≠ 0 :=
+  fun h ↦ OCS.zero_notMem_multGamma hw ⟨j, h⟩
+
+theorem one_sub_div_eq (hw : OCS.IsMultWeight m a b) (j : ℤ) (w : ℂ) :
+    1 - w / (OCS.multBary m j : ℂ) = (-1 / (OCS.multBary m j : ℂ)) * (w - OCS.multBary m j) := by
+  have : (OCS.multBary m j : ℂ) ≠ 0 := by exact_mod_cast multBary_ne_zero hw j
+  field_simp
+  ring
+
+theorem Ioo_subset_Icc {N R : ℕ} (hNR : N ≤ R) :
+    Finset.Ioo (-(N : ℤ)) N ⊆ Finset.Icc (-(R : ℤ)) R := by
+  intro j hj
+  rw [Finset.mem_Ioo] at hj
+  rw [Finset.mem_Icc]
+  omega
+
+theorem polyA_eq_prod (hw : OCS.IsMultWeight m a b) (R : ℕ) (z : ℂ) :
+    polyA m R z = ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+      ((-1 / (OCS.multBary m j : ℂ)) * (z - OCS.multBary m j)) := by
+  unfold polyA
+  exact Finset.prod_congr rfl fun j _ ↦ one_sub_div_eq hw j z
+
+theorem compBeta_of_not_lt {N : ℕ} {j : ℤ} (hj : j ∉ Finset.Ioo (-(N : ℤ)) N) :
+    compBeta m N j = OCS.multBary m j + 1 / 2 := by
+  have : ¬ (|j| < N) := by
+    rw [abs_lt]; intro h; exact hj (Finset.mem_Ioo.2 h)
+  simp [compBeta, this]
+
+theorem polyB_eq_prod (hw : OCS.IsMultWeight m a b) {N R : ℕ} (hNR : N ≤ R) (z : ℂ) :
+    polyB m N R z = ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+      ((-1 / (OCS.multBary m j : ℂ)) * (z - (compBeta m N j : ℂ))) := by
+  unfold polyB
+  rw [← Finset.prod_sdiff (Ioo_subset_Icc hNR), mul_comm]
+  congr 1
+  refine Finset.prod_congr rfl fun j hj ↦ ?_
+  rw [Finset.mem_sdiff] at hj
+  rw [compBeta_of_not_lt hj.2, one_sub_div_eq hw]
+  push_cast
+  ring
+
 /-- For `R ≥ N`: `polyB · Q = polyA(· - 1/2) · P`, i.e. `B_R = A_R(z - 1/2) P/Q`. -/
 theorem polyB_mul_Q (hw : OCS.IsMultWeight m a b) {N R : ℕ} (hNR : N ≤ R) (z : ℂ) :
     polyB m N R z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) =
       polyA m R (z - 1 / 2) * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) := by
-  sorry
+  unfold polyB polyA
+  have hsub := Ioo_subset_Icc hNR
+  rw [← Finset.prod_sdiff hsub (f := fun j : ℤ ↦ (1 - (z - 1 / 2) / (OCS.multBary m j : ℂ)))]
+  have e : ∀ j ∈ Finset.Ioo (-(N : ℤ)) N, (1 - (z - 1 / 2) / (OCS.multBary m j : ℂ)) =
+      (-1 / (OCS.multBary m j : ℂ)) * (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) := by
+    intro j _
+    rw [one_sub_div_eq hw]
+    push_cast
+    ring_nf
+  rw [Finset.prod_congr rfl e]
+  set X := ∏ j ∈ Finset.Icc (-(R : ℤ)) R \ Finset.Ioo (-(N : ℤ)) N,
+    (1 - (z - 1 / 2) / (OCS.multBary m j : ℂ))
+  rw [Finset.prod_mul_distrib, Finset.prod_mul_distrib]
+  ring
+
+theorem prod_Icc_eq_prod_fin (R : ℕ) (f : ℤ → ℂ) :
+    ∏ j ∈ Finset.Icc (-(R : ℤ)) R, f j = ∏ k : Fin (2 * R + 1), f ((k : ℕ) - (R : ℤ)) := by
+  symm
+  refine Finset.prod_bij (fun k _ ↦ ((k : ℕ) : ℤ) - R) (fun k _ ↦ ?_) (fun k _ l _ h ↦ ?_)
+    (fun j hj ↦ ?_) (fun _ _ ↦ rfl)
+  · rw [Finset.mem_Icc]; have := k.isLt; omega
+  · apply Fin.ext; omega
+  · rw [Finset.mem_Icc] at hj
+    exact ⟨⟨(j + R).toNat, by omega⟩, Finset.mem_univ _, by simp only; omega⟩
+
+theorem polyA_conj (hw : OCS.IsMultWeight m a b) (R : ℕ) (z : ℂ) :
+    polyA m R (conj z) = conj (polyA m R z) := by
+  rw [polyA_eq_prod hw, polyA_eq_prod hw, map_prod]
+  refine Finset.prod_congr rfl fun j _ ↦ ?_
+  simp [map_sub, map_div₀, Complex.conj_ofReal]
+
+theorem polyB_conj (hw : OCS.IsMultWeight m a b) {N R : ℕ} (hNR : N ≤ R) (z : ℂ) :
+    polyB m N R (conj z) = conj (polyB m N R z) := by
+  rw [polyB_eq_prod hw hNR, polyB_eq_prod hw hNR, map_prod]
+  refine Finset.prod_congr rfl fun j _ ↦ ?_
+  simp [map_sub, map_div₀, Complex.conj_ofReal]
 
 /-- `A_R` and `B_R` have interlacing real zeros (`γ_j < β_j < γ_{j+1}`) and equal leading
 coefficients, so for every `λ > 0`, `A_R - i λ B_R ∈ \overline{HB}` (`im_prod_div_pos`). -/
@@ -479,7 +555,45 @@ theorem isHB_polyA_sub_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {R : ℕ}
     (hNR : N ≤ R) {lam : ℝ} (hlam : 0 < lam) :
     IsHB (fun z ↦ polyA m R z - Complex.I * lam * polyB m N R z) := by
-  sorry
+  have hAd : Differentiable ℂ (polyA m R) := by
+    intro z
+    rw [show polyA m R = fun z ↦ ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+      ((-1 / (OCS.multBary m j : ℂ)) * (z - OCS.multBary m j)) from
+      funext (polyA_eq_prod hw R)]
+    fun_prop
+  have hBd : Differentiable ℂ (polyB m N R) := by
+    intro z
+    rw [show polyB m N R = fun z ↦ ∏ j ∈ Finset.Icc (-(R : ℤ)) R,
+      ((-1 / (OCS.multBary m j : ℂ)) * (z - (compBeta m N j : ℂ))) from
+      funext (polyB_eq_prod hw hNR)]
+    fun_prop
+  have hc : ∀ j : ℤ, (-1 / (OCS.multBary m j : ℂ)) ≠ 0 := fun j ↦ by
+    have : (OCS.multBary m j : ℂ) ≠ 0 := by exact_mod_cast multBary_ne_zero hw j
+    simp [this]
+  have hA0 : ∀ z : ℂ, 0 < z.im → polyA m R z ≠ 0 := by
+    intro z hz
+    rw [polyA_eq_prod hw, Finset.prod_ne_zero_iff]
+    intro j _
+    refine mul_ne_zero (hc j) ?_
+    intro h
+    have := congrArg Complex.im h
+    simp at this; linarith
+  have him : ∀ z : ℂ, 0 < z.im → 0 < (polyB m N R z / polyA m R z).im := by
+    intro z hz
+    have hq : polyB m N R z / polyA m R z =
+        ∏ j ∈ Finset.Icc (-(R : ℤ)) R, ((z - (compBeta m N j : ℂ)) / (z - OCS.multBary m j)) := by
+      rw [polyB_eq_prod hw hNR, polyA_eq_prod hw, ← Finset.prod_div_distrib]
+      refine Finset.prod_congr rfl fun j _ ↦ ?_
+      rw [mul_div_mul_left _ _ (hc j)]
+    rw [hq, prod_Icc_eq_prod_fin]
+    refine im_prod_div_pos' (n := 2 * R) (a := fun k ↦ OCS.multBary m ((k : ℕ) - (R : ℤ)))
+      (b := fun k ↦ compBeta m N ((k : ℕ) - (R : ℤ))) (fun k ↦ ?_) (fun k ↦ ?_) hz
+    · exact (compBeta_interlace hw hN _).1
+    · have := (compBeta_interlace hw hN (((k : ℕ) : ℤ) - R)).2
+      simp only [Fin.val_succ, Fin.val_castSucc]
+      convert this using 3
+      push_cast; ring
+  exact isHB_of_im_div_pos hAd hBd (polyA_conj hw R) (polyB_conj hw hNR) hA0 him hlam
 
 /-- `e^{β + c_R z} A_R(z) → A(z)` locally uniformly (symmetric partial products of the genus-one
 product `OCS.multF`). -/
