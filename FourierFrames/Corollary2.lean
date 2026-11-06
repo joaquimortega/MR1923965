@@ -3,6 +3,7 @@ import FourierFrames.Perturbation
 import FourierFrames.Theorem1.Sufficiency
 import FourierFrames.HB.Comparable
 import FourierFrames.Corollary2.Affine
+import FourierFrames.Corollary2.Kernel
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -42,24 +43,29 @@ section Potentials
 
 /-- `U_ψ` is the potential `OCS.multU` of the density `ψ'` (same integrand, constant `0`). -/
 theorem UPsi_eq_multU (ψ : ℝ → ℝ) (z : ℂ) : UPsi ψ z = OCS.multU (deriv ψ) 0 z := by
-  sorry
+  simp [UPsi, OCS.multU]
 
 /-- The integrand of `multU` is integrable for every bounded measurable density (for weights this is
 `OCS.integrable_multUIntegrand`; a bounded `g` is `(g + K) - K` with `g + K ≥ 1`). -/
 theorem integrable_multU_integrand_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ}
     (hM : ∀ t, |g t| ≤ M) (z : ℂ) :
     Integrable fun t : ℝ ↦
-      (Real.log ‖1 - z / t‖ + (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * (z / t).re) * g t := by
-  sorry
+      (Real.log ‖1 - z / t‖ + (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * (z / t).re) * g t :=
+  integrable_potKernel_mul hg hM z
 
 theorem multU_add {g h : ℝ → ℝ} (hg : Measurable g) (hh : Measurable h) {M : ℝ}
     (hgM : ∀ t, |g t| ≤ M) (hhM : ∀ t, |h t| ≤ M) (z : ℂ) :
     OCS.multU (fun t ↦ g t + h t) 0 z = OCS.multU g 0 z + OCS.multU h 0 z := by
-  sorry
+  simp only [multU_eq_integral, mul_add]
+  exact integral_add (integrable_potKernel_mul hg hgM z) (integrable_potKernel_mul hh hhM z)
 
 theorem multU_const_mul {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (c : ℝ)
     (z : ℂ) : OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
-  sorry
+  have _ := hg
+  have _ := hM
+  simp only [multU_eq_integral]
+  rw [← integral_const_mul]
+  congr 1; funext t; ring
 
 /-- The potential of Lebesgue measure: `U_1(z) = π |Im z|`.  (Compute
 `∫_{-T}^{T} log|1 - z/t| dt` with the antiderivative of `½ log(u² + y²)` and let `T → ∞`;
