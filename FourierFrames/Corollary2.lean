@@ -7,6 +7,7 @@ import FourierFrames.Corollary2.Kernel
 import FourierFrames.Corollary2.Density
 import FourierFrames.Corollary2.LogInt
 import FourierFrames.Corollary2.Reflection
+import FourierFrames.Corollary2.PotC
 
 /-!
 # M07 — Corollary 2 (p. 800)
@@ -121,7 +122,7 @@ def potC (g : ℝ → ℝ) (z : ℂ) : ℂ :=
 
 theorem potC_re {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (z : ℂ) :
     (potC g z).re = OCS.multU g 0 z := by
-  sorry
+  exact potC'_re hg hM z
 
 theorem differentiableOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
     DifferentiableOn ℂ (potC g) {z : ℂ | 0 < z.im} := by
@@ -136,7 +137,7 @@ theorem continuousOn_potC {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : 
 theorem potC_im_ofReal {g φ : ℝ → ℝ} (hg : Continuous g) {M : ℝ} (hM : ∀ t, |g t| ≤ M)
     (hφ : ∀ x, HasDerivAt φ (g x) x) (x : ℝ) :
     (potC g (x : ℂ)).im = -Real.pi * (φ x - φ 0) := by
-  sorry
+  exact potC'_im_ofReal hg hM hφ x
 
 /-- **Schwarz reflection** (via Morera on discs and the rectangle theorem for functions continuous
 on a closed half-disc): `H` continuous on `Im z ≥ 0`, holomorphic on `Im z > 0`, with `Im H = c`
