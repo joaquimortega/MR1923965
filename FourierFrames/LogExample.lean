@@ -1,5 +1,6 @@
 import FourierFrames.Construction
 import FourierFrames.LogExample.Basic
+import FourierFrames.LogExample.Phase
 import FourierFrames.HB.Comparable
 import FourierFrames.Theorem1.Sufficiency
 
@@ -866,6 +867,23 @@ theorem phaseLevel_eq_of_zero_set {E : ℂ → ℂ} {φ : ℝ → ℝ} {Γ : Set
   · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
   · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
 
+theorem enorm_sq_eq_ofReal (z : ℂ) : ‖z‖ₑ ^ 2 = ENNReal.ofReal (‖z‖ ^ 2) := by
+  rw [ENNReal.ofReal_pow (norm_nonneg _), ofReal_norm]
+
+theorem norm_sAlpha_eq (E : ℂ → ℂ) (x : ℝ) :
+    ‖Complex.exp (Complex.I * ((Real.pi / 2 : ℝ) : ℂ)) * E x -
+      Complex.exp (-(Complex.I * ((Real.pi / 2 : ℝ) : ℂ))) * fstar E x‖ = 2 * |(E x).re| := by
+  have h1 : Complex.exp (Complex.I * ((Real.pi / 2 : ℝ) : ℂ)) = Complex.I := by
+    rw [mul_comm, Complex.exp_mul_I]
+    simp
+  have h2 : Complex.exp (-(Complex.I * ((Real.pi / 2 : ℝ) : ℂ))) = -Complex.I := by
+    rw [Complex.exp_neg, h1, Complex.inv_I]
+  rw [h1, h2, fstar_ofReal]
+  have : Complex.I * E x - -Complex.I * conj (E x) = Complex.I * ((2 * (E x).re : ℝ) : ℂ) := by
+    rw [neg_mul, sub_neg_eq_add, ← mul_add, Complex.add_conj]
+  rw [this, norm_mul, Complex.norm_I, one_mul, Complex.norm_real, Real.norm_eq_abs, abs_mul]
+  simp
+
 /-- `E + E^*` is not in `H(E)`: `|E + E^*| = 2|E||cos φ|` is not square integrable on `ℝ`,
 because `φ' ≃ 1`. -/
 theorem not_memHE_sAlpha (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ} {φ : ℝ → ℝ}
@@ -874,7 +892,93 @@ theorem not_memHE_sAlpha (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ
       c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) :
     ¬ MemHE E (fun z ↦ Complex.exp (Complex.I * ((Real.pi / 2 : ℝ) : ℂ)) * E z -
       Complex.exp (-(Complex.I * ((Real.pi / 2 : ℝ) : ℂ))) * fstar E z) := by
-  sorry
+  intro hS
+  set S : ℂ → ℂ := fun z ↦ Complex.exp (Complex.I * ((Real.pi / 2 : ℝ) : ℂ)) * E z -
+      Complex.exp (-(Complex.I * ((Real.pi / 2 : ℝ) : ℂ))) * fstar E z with hSdef
+  obtain ⟨c, Cc, hc, hcC⟩ := hcomp
+  have hEreal : ∀ x : ℝ, c ≤ ‖E x‖ ∧ ‖E x‖ ≤ Cc := fun x ↦ by
+    have := hcC (x : ℂ) (by simp)
+    simpa using this
+  have hCc : 0 < Cc := lt_of_lt_of_le hc ((hEreal 0).1.trans (hEreal 0).2)
+  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hHB hEPW
+  obtain ⟨Cφ, hle⟩ := HEEqPW.phaseDeriv_mul_sq_le hPW hE hHB hEPW
+  have hCφ : 0 < Cφ := lt_of_lt_of_le hcφ ((hge 0).trans (hle 0))
+  have hderiv : ∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x := IsPhaseFunction.hasDerivAt hHB.1 h0 hφ
+  have hpos : ∀ x : ℝ, 0 < ‖E x‖ := fun x ↦ norm_pos_iff.2 (h0 x)
+  have hNpos : ∀ x : ℝ, 0 < ‖E x‖ ^ 2 := fun x ↦ by have := hpos x; positivity
+  have hm1 : ∀ x : ℝ, cφ / Cc ^ 2 ≤ phaseDeriv E x := fun x ↦ by
+    have h2 : ‖E x‖ ^ 2 ≤ Cc ^ 2 := by
+      have := (hEreal x).2; nlinarith [hpos x]
+    calc cφ / Cc ^ 2 ≤ cφ / ‖E x‖ ^ 2 := div_le_div_of_nonneg_left hcφ.le (hNpos x) h2
+      _ ≤ phaseDeriv E x := by rw [div_le_iff₀ (hNpos x)]; linarith [hge x]
+  have hM1 : ∀ x : ℝ, phaseDeriv E x ≤ Cφ / c ^ 2 := fun x ↦ by
+    have h2 : c ^ 2 ≤ ‖E x‖ ^ 2 := by
+      have := (hEreal x).1; nlinarith
+    calc phaseDeriv E x ≤ Cφ / ‖E x‖ ^ 2 := by rw [le_div_iff₀ (hNpos x)]; linarith [hle x]
+      _ ≤ Cφ / c ^ 2 := div_le_div_of_nonneg_left hCφ.le (by positivity) h2
+  have hcont : Continuous (fun x : ℝ ↦ phaseDeriv E x) := by
+    have hEc : Continuous E := hHB.1.continuous
+    have hdc : Continuous (deriv E) := (hHB.1.contDiff (n := 1)).continuous_deriv le_rfl
+    unfold phaseDeriv
+    refine (Complex.continuous_im.comp ?_).neg
+    exact (hdc.comp Complex.continuous_ofReal).div (hEc.comp Complex.continuous_ofReal) h0
+  have hM1pos : 0 < Cφ / c ^ 2 := by positivity
+  -- lower bound for the `L²` mass on `[0, T]`
+  have hlow : ∀ T : ℝ, 0 ≤ T →
+      ENNReal.ofReal (4 * c ^ 2 * (((cφ / Cc ^ 2) * T / 2 - 1 / 2) / (Cφ / c ^ 2))) ≤ pwNormSq S := by
+    intro T hT
+    have hI := LogEx.integral_cos_sq_phase_ge hderiv hcont hM1pos hm1 hM1 hT
+    have hcos : Continuous (fun x : ℝ ↦ Real.cos (φ x) ^ 2) :=
+      (Real.continuous_cos.comp hφ.1).pow 2
+    calc ENNReal.ofReal (4 * c ^ 2 * (((cφ / Cc ^ 2) * T / 2 - 1 / 2) / (Cφ / c ^ 2)))
+        ≤ ENNReal.ofReal (∫ x in Ioc (0 : ℝ) T, 4 * c ^ 2 * Real.cos (φ x) ^ 2) := by
+          apply ENNReal.ofReal_le_ofReal
+          rw [← intervalIntegral.integral_of_le hT, intervalIntegral.integral_const_mul]
+          have : 0 < 4 * c ^ 2 := by positivity
+          exact (mul_le_mul_of_nonneg_left hI this.le)
+      _ = ∫⁻ x in Ioc (0 : ℝ) T, ENNReal.ofReal (4 * c ^ 2 * Real.cos (φ x) ^ 2) := by
+          rw [ofReal_integral_eq_lintegral_ofReal]
+          · exact ((continuous_const.mul hcos).continuousOn.integrableOn_Icc).mono_set Ioc_subset_Icc_self
+          · exact Filter.Eventually.of_forall fun x ↦ by positivity
+      _ ≤ ∫⁻ x in Ioc (0 : ℝ) T, ‖S x‖ₑ ^ 2 := by
+          apply lintegral_mono
+          intro x
+          dsimp only
+          rw [enorm_sq_eq_ofReal]
+          apply ENNReal.ofReal_le_ofReal
+          have hn := norm_sAlpha_eq E x
+          have hre : (E x).re = ‖E x‖ * Real.cos (φ x) := re_eq_norm_mul_cos hφ x
+          have : ‖S x‖ = 2 * (‖E x‖ * |Real.cos (φ x)|) := by
+            rw [hSdef]; simp only []; rw [hn, hre, abs_mul, abs_of_nonneg (norm_nonneg _)]
+          rw [this]
+          have h1 : c ^ 2 ≤ ‖E x‖ ^ 2 := by have := (hEreal x).1; nlinarith
+          have h2 : |Real.cos (φ x)| ^ 2 = Real.cos (φ x) ^ 2 := sq_abs _
+          calc 4 * c ^ 2 * Real.cos (φ x) ^ 2 ≤ 4 * ‖E x‖ ^ 2 * Real.cos (φ x) ^ 2 := by
+                gcongr
+            _ = (2 * (‖E x‖ * |Real.cos (φ x)|)) ^ 2 := by rw [mul_pow, mul_pow, h2]; ring
+      _ ≤ pwNormSq S := setLIntegral_le_lintegral _ _
+  have hfin : pwNormSq S ≠ ⊤ := pwNormSq_ne_top ((hEPW.1 S).1 hS)
+  -- choose `T` large
+  set K : ℝ := 4 * c ^ 2 * ((cφ / Cc ^ 2) / 2 / (Cφ / c ^ 2)) with hK
+  set K' : ℝ := 4 * c ^ 2 * ((1 / 2) / (Cφ / c ^ 2)) with hK'
+  have hKpos : 0 < K := by positivity
+  set T : ℝ := ((pwNormSq S).toReal + K') / K + 1 with hT
+  have hT0 : 0 ≤ T := by
+    have : 0 ≤ ((pwNormSq S).toReal + K') / K := by
+      apply div_nonneg _ hKpos.le
+      have : 0 ≤ K' := by positivity
+      positivity
+    linarith
+  have hlow' := hlow T hT0
+  have hval : 4 * c ^ 2 * (((cφ / Cc ^ 2) * T / 2 - 1 / 2) / (Cφ / c ^ 2)) = K * T - K' := by
+    rw [hK, hK']; ring
+  have hgt : (pwNormSq S).toReal < K * T - K' := by
+    have : K * T = (pwNormSq S).toReal + K' + K := by
+      rw [hT]; field_simp
+    linarith
+  rw [hval] at hlow'
+  have := (ENNReal.lt_ofReal_iff_toReal_lt hfin).2 hgt
+  exact absurd hlow' (not_le.2 this)
 
 theorem eq_zero_of_pwNormSq_eq_zero {f : ℂ → ℂ} (hf : MemPW f) (h : pwNormSq f = 0) :
     ∀ z, f z = 0 := by
