@@ -1,5 +1,6 @@
 import FourierFrames.HB.Phase
 import OrtegaCerdaSeip.Lemma3.Main
+import FourierFrames.Construction.Gaps
 
 /-!
 # M07 — The phase construction `E = A - iB` (p. 801)
@@ -34,7 +35,10 @@ namespace FF
 /-- `z ↦ e^{β + c z}` (`c` real) is in `\overline{HB}`: `|e^{β + c z̄}| = |e^{β + c z}|`. -/
 theorem isHB_cexp_real_linear (β : ℂ) (c : ℝ) :
     IsHB (fun z : ℂ ↦ Complex.exp (β + c * z)) := by
-  sorry
+  refine ⟨by fun_prop, fun z _ ↦ Complex.exp_ne_zero _, fun z _ ↦ le_of_eq ?_⟩
+  simp only [Complex.norm_exp, Complex.add_re, Complex.mul_re, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.conj_re, Complex.conj_im]
+  simp
 
 /-! ## Gaps of `Γ` and the position of `γ_j` inside `I_j` -/
 
@@ -45,31 +49,26 @@ variable {m : ℝ → ℝ} {a b : ℝ}
 /-- If `m → 1` then `|I_j| → 1`, `γ_j - x_j → 1/2` and hence `γ_{j+1} - γ_j → 1` as `|j| → ∞`. -/
 theorem tendsto_multBary_sub_multPt (hw : OCS.IsMultWeight m a b)
     (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
-    Tendsto (fun j : ℤ ↦ OCS.multBary m j - OCS.multPt m j) cofinite (𝓝 (1 / 2)) := by
-  sorry
+    Tendsto (fun j : ℤ ↦ OCS.multBary m j - OCS.multPt m j) cofinite (𝓝 (1 / 2)) := Gaps.tendsto_multBary_sub_multPt hw hlim
 
 theorem tendsto_multBary_succ_sub (hw : OCS.IsMultWeight m a b)
     (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
-    Tendsto (fun j : ℤ ↦ OCS.multBary m (j + 1) - OCS.multBary m j) cofinite (𝓝 1) := by
-  sorry
+    Tendsto (fun j : ℤ ↦ OCS.multBary m (j + 1) - OCS.multBary m j) cofinite (𝓝 1) := Gaps.tendsto_multBary_succ_sub hw hlim
 
 /-- `M(γ_j) = j + 1/2 + o(1)`. -/
 theorem tendsto_multPrim_multBary (hw : OCS.IsMultWeight m a b)
     (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
-    Tendsto (fun j : ℤ ↦ OCS.multPrim m (OCS.multBary m j) - (j + 1 / 2)) cofinite (𝓝 0) := by
-  sorry
+    Tendsto (fun j : ℤ ↦ OCS.multPrim m (OCS.multBary m j) - (j + 1 / 2)) cofinite (𝓝 0) := Gaps.tendsto_multPrim_multBary hw hlim
 
 /-- `M(x + τ) - M(x) → τ` uniformly in `|τ| ≤ T` as `|x| → ∞`. -/
 theorem tendsto_multPrim_sub (hw : OCS.IsMultWeight m a b)
     (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) (T : ℝ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ x : ℝ, X ≤ |x| → ∀ τ : ℝ, |τ| ≤ T →
-      |OCS.multPrim m (x + τ) - OCS.multPrim m x - τ| ≤ ε := by
-  sorry
+      |OCS.multPrim m (x + τ) - OCS.multPrim m x - τ| ≤ ε := Gaps.tendsto_multPrim_sub hw hlim T
 
 /-- There is `N` such that `γ_{j+1} - γ_j > 1/2` for `|j| ≥ N`, i.e. `γ_j + 1/2 ∈ (γ_j, γ_{j+1})`. -/
 theorem exists_gap_index (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) :
-    ∃ N : ℕ, ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j := by
-  sorry
+    ∃ N : ℕ, ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j := Gaps.exists_gap_index hw hlim
 
 end Gaps
 
