@@ -1,9 +1,10 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # P3 — an entire Pick function is linear
 
-See `blueprint/P3_DeBrangesDE.md`, §6.  This file does not depend on any project file.
+See `blueprint/P3_DeBrangesDE.md`, §6.  This file uses no project lemma (it imports `Defs` only for
+Mathlib).
 
 **Lemma L.**  If `h` is entire, real on `ℝ` (`h(z̄) = conj h(z)`) and `Im h ≥ 0` on `ℂ₊`, then
 `h(z) = p z + q` with `p ≥ 0`, `q ∈ ℝ`.  Proof: Poisson formula on the circle `|ζ| = R` for the
