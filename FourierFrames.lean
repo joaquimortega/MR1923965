@@ -21,3 +21,7 @@ import FourierFrames.Corollary2
 import FourierFrames.LogExample
 import FourierFrames.Theorem2i
 import FourierFrames.Theorem2ii
+import FourierFrames.Cited.DSPerturbation
+import FourierFrames.Cited.JohnNirenberg
+import FourierFrames.Cited.PaleyWiener
+import FourierFrames.Cited.DeBrangesFC
