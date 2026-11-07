@@ -3,7 +3,8 @@
 All 27 `sorry`s of `FourierFrames/Theorem2ii.lean` are proved. The only `sorryAx` that remains in
 `#print axioms FF.theorem2_ii` comes from the upstream `lemma3_estimate_uniform`
 (`FourierFrames/Lemma3Uniform.lean`, other implementer). The unused-variable warning for `hPW` in
-`theorem2_ii` is left as instructed. `check_statements.py scaffold-reviewed` passes.
+`theorem2_ii` is left as instructed (*later:* `hPW` was removed in the lint pass and `theorem2_ii` is unconditional,
+NOTEBOOK I-03; `lemma3_estimate_uniform` is now proved). `check_statements.py scaffold-reviewed` passes.
 
 Helper files (all under `FourierFrames/Theorem2ii/`):
 `Window.lean` (window lemma), `UOne.lean` (`U_1 = π|Im z|`), `Ramp.lean` (ramp estimate),

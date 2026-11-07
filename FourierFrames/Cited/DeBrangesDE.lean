@@ -16,7 +16,7 @@ Main results `theoremD_holds : TheoremD` and `theoremE_holds : TheoremE`.  See
 * `Cited/DeBrangesDE/Orthogonal.lean` — the system `{K(γ,·)}`, Bessel, the entire function `h = D/S`,
 * `Cited/DeBrangesDE/Complete.lean` — completeness of the system and Theorem E.
 
-The two assembly proofs below are complete modulo the `sorry`s of the subfiles.
+The two assembly proofs below are complete; the subfiles are proved (no `sorry`).
 -/
 
 open MeasureTheory Set Complex Filter Topology

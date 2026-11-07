@@ -372,10 +372,8 @@ theorem compB_conj (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
   exact compB_conj_aux hw N z
 
 /-- The zero set of `B` is `{β_j}`, all simple. -/
-theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z = 0 ↔ ∃ j : ℤ, z = (compBeta m N j : ℂ) := by
-  have _ := hN
   have hFd : Differentiable ℂ (fun w ↦ genA m (w - 1 / 2)) := fun z ↦
     ((differentiable_genA hw) (z - 1 / 2)).comp z (differentiableAt_id.sub_const _)
   have hFs : ∀ t, genA m (t - 1 / 2) = 0 → deriv (fun w ↦ genA m (w - 1 / 2)) t ≠ 0 := by
@@ -550,11 +548,9 @@ theorem compB_simple (hw : OCS.IsMultWeight m a b) {N : ℕ}
 
 /-- `B(z) = A(z - 1/2) P(z) / Q(z)` off the zeros of `Q`; in particular `B(z) / A(z - 1/2) → 1`
 as `|z| → ∞` away from `ℝ`-neighbourhoods of `Γ + 1/2`. -/
-theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) =
       genA m (z - 1 / 2) * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) := by
-  have _ := hN
   have h := compD_mul_Q hw N z
   unfold compQ at h
   unfold compB
@@ -765,8 +761,7 @@ theorem differentiable_polyB (m : ℝ → ℝ) (N R : ℕ) : Differentiable ℂ 
   fun_prop
 
 /-- `e^{β + c_R z} e^{-c_R/2} B_R(z) → B(z)` locally uniformly. -/
-theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) (N : ℕ) :
     TendstoLocallyUniformly
       (fun (R : ℕ) (z : ℂ) ↦ Complex.exp (OCS.multBeta m 0 + polyExp m R * z) *
         Real.exp (-polyExp m R / 2) * polyB m N R z)
@@ -786,7 +781,7 @@ theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
         (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))) =
         fun z ↦ P z * ((genA m) ∘ (fun z : ℂ ↦ z - 1 / 2)) z := by
       funext z
-      rw [compB_mul_Q hw hN z]
+      rw [compB_mul_Q hw N z]
       simp only [Function.comp, hP]
       ring
     rw [hlimeq]
@@ -834,11 +829,10 @@ theorem infDist_compZ₁ (z : ℂ) :
   rw [sub_add_cancel] at this
   exact this
 
-theorem range_compBeta_eq (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+theorem range_compBeta_eq (hw : OCS.IsMultWeight m a b) (N : ℕ) :
     (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ)) = {t | compB m N t = 0} := by
   ext t
-  simp only [Set.mem_range, Set.mem_ofPred_eq, compB_eq_zero_iff hw hN t]
+  simp only [Set.mem_range, Set.mem_ofPred_eq, compB_eq_zero_iff hw N t]
   constructor
   · rintro ⟨j, rfl⟩; exact ⟨j, rfl⟩
   · rintro ⟨j, rfl⟩; exact ⟨j, rfl⟩
@@ -959,10 +953,10 @@ theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
   obtain ⟨ρ₀, hfar⟩ := exists_far m N
   have hK : IsCompact (closedBall (0 : ℂ) ρ₀) := isCompact_closedBall _ _
   obtain ⟨u₁, u₂, hu₁, hu₂, hu⟩ := expU_bounds_on_compact hw hK
-  have hne : ∃ t, compB m N t = 0 := ⟨(compBeta m N 0 : ℂ), (compB_eq_zero_iff hw hN _).2 ⟨0, rfl⟩⟩
+  have hne : ∃ t, compB m N t = 0 := ⟨(compBeta m N 0 : ℂ), (compB_eq_zero_iff hw N _).2 ⟨0, rfl⟩⟩
   obtain ⟨e₁, e₂, he₁, he₂, he⟩ := Comparable.comparable_on_compact (differentiable_compB hw N)
     (fun t ht ↦ compB_simple hw hN ht) hne hK
-  rw [← range_compBeta_eq hw hN] at he
+  rw [← range_compBeta_eq hw N] at he
   refine ⟨min (c₁ / 2) (e₁ / u₂), max (3 * c₂ / 2) (e₂ / u₁), lt_min (by positivity) (by positivity),
     lt_max_of_lt_left (by positivity), fun z _ ↦ ?_⟩
   set wB := min 1 (infDist z (Set.range fun j : ℤ ↦ ((compBeta m N j : ℝ) : ℂ))) with hwB
@@ -978,7 +972,7 @@ theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
       have := (hSig j hj).2
       rw [sub_eq_zero.1 h, sub_self, norm_zero] at this
       linarith
-    have hBQ := compB_mul_Q hw hN z
+    have hBQ := compB_mul_Q hw N z
     set P := ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ))
     set Q := ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))
     have hBeq : compB m N z = genA m (z - 1 / 2) * (P / Q) := by
@@ -1055,7 +1049,7 @@ theorem norm_compB_comparable (hw : OCS.IsMultWeight m a b) {N : ℕ}
 theorem exists_real_genA_ne_zero_compB_eq_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
     ∃ x : ℝ, genA m (x : ℂ) ≠ 0 ∧ compB m N (x : ℂ) = 0 := by
-  refine ⟨compBeta m N 0, ?_, (compB_eq_zero_iff hw hN _).2 ⟨0, rfl⟩⟩
+  refine ⟨compBeta m N 0, ?_, (compB_eq_zero_iff hw N _).2 ⟨0, rfl⟩⟩
   rw [Ne, genA_eq_zero_iff hw]
   rintro ⟨j, hj⟩
   have hj' : compBeta m N 0 = OCS.multBary m j := by exact_mod_cast hj
@@ -1071,7 +1065,7 @@ theorem isHB_genA_sub_lam_compB (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hlam : 0 < lam) :
     IsHB (fun z ↦ genA m z - Complex.I * lam * compB m N z) := by
   have hA := tendsto_polyA hw
-  have hB := tendsto_polyB hw hN
+  have hB := tendsto_polyB hw N
   have hBc : Continuous (compB m N) := (differentiable_compB hw N).continuous
   have h1 := Limits.tendstoLU_const_mul (e := fun _ : ℂ ↦ Complex.I * lam) (by fun_prop) hB hBc
   have h2 := hA.sub h1
@@ -1238,7 +1232,7 @@ theorem exists_hb_of_density (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a �
     have hB0 : compB m N (x : ℂ) = 0 := Complex.ext (by rw [Complex.zero_re]; linarith)
       (by rw [Complex.zero_im]; exact hB)
     obtain ⟨j, hj⟩ := (genA_eq_zero_iff hw _).1 hA0
-    obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw hN _).1 hB0
+    obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw N _).1 hB0
     have := hηd _ ⟨_, ⟨j, rfl⟩, hj.symm⟩ _ ⟨k, hk.symm⟩
     rw [dist_self] at this
     linarith
@@ -1360,7 +1354,7 @@ theorem no_common_zero (hw : OCS.IsMultWeight m a b) {N : ℕ}
     (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {z : ℂ}
     (hA : genA m z = 0) (hB : compB m N z = 0) : False := by
   obtain ⟨j, hj⟩ := (genA_eq_zero_iff hw z).1 hA
-  obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw hN z).1 hB
+  obtain ⟨k, hk⟩ := (compB_eq_zero_iff hw N z).1 hB
   have hjk : (OCS.multBary m j : ℂ) = (compBeta m N k : ℂ) := hj.symm.trans hk
   have : OCS.multBary m j = compBeta m N k := by exact_mod_cast hjk
   obtain ⟨h1, h2⟩ := compBeta_interlace hw hN k
@@ -1514,8 +1508,7 @@ theorem sin_add_I_cos (w : ℂ) :
 
 /-- The translates of `B` along a sequence `|s_k| → ∞` along which the translates of `A`
 converge. -/
-theorem tendsto_compB_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {κ : ℝ}
+theorem tendsto_compB_translate (hw : OCS.IsMultWeight m a b) (N : ℕ) {κ : ℝ}
     {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {Finf : ℂ → ℂ} (hFinf : Continuous Finf)
     (hA : TendstoLocallyUniformly
       (fun k z ↦ genA m (z + s k) * Complex.exp (-((κ * s k : ℝ) : ℂ))) Finf atTop) :
@@ -1548,7 +1541,7 @@ theorem tendsto_compB_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
     have := (hSig j hj).2
     rw [sub_eq_zero.1 h, sub_self, norm_zero] at this
     linarith
-  have hBQ := compB_mul_Q hw hN y
+  have hBQ := compB_mul_Q hw N y
   have hBeq : compB m N y = genA m (y - 1 / 2) *
       ((∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (y - (compBeta m N j : ℂ))) /
         ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (y - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ))) := by
@@ -1559,8 +1552,7 @@ theorem tendsto_compB_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
   ring
 
 /-- Translates of `E_κ` converge to `i c e^{-iπ(z - θ)}`. -/
-theorem tendsto_compEκ_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) {κ : ℝ}
+theorem tendsto_compEκ_translate (hw : OCS.IsMultWeight m a b) (N : ℕ) {κ : ℝ}
     {s : ℕ → ℝ} (hs : Tendsto (fun k ↦ |s k|) atTop atTop) {c θ : ℝ}
     (hA : TendstoLocallyUniformly
       (fun k z ↦ genA m (z + s k) * Complex.exp (-((κ * s k : ℝ) : ℂ)))
@@ -1570,7 +1562,7 @@ theorem tendsto_compEκ_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
   set Finf : ℂ → ℂ := fun z ↦ (c : ℂ) * Complex.exp ((κ : ℂ) * z) * Complex.sin (Real.pi * (z - θ))
     with hFinf
   have hFc : Continuous Finf := by rw [hFinf]; fun_prop
-  have hB := tendsto_compB_translate hw hN hs hFc hA
+  have hB := tendsto_compB_translate hw N hs hFc hA
   have hBc : Continuous (fun z ↦ Finf (z - 1 / 2)) := hFc.comp (by fun_prop)
   have h1 := Limits.tendstoLU_const_mul (e := fun _ : ℂ ↦ Complex.I * ((Real.exp (κ / 2) : ℝ) : ℂ))
     (by fun_prop) hB hBc
@@ -1617,7 +1609,6 @@ theorem tendsto_compEκ_translate (hw : OCS.IsMultWeight m a b) {N : ℕ}
 theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
@@ -1630,7 +1621,7 @@ theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompac
   obtain ⟨ψ, hψ, c, θ, hc, hT⟩ := genA_translate_limit hw hlim hU hs
   set s' : ℕ → ℝ := fun k ↦ s ((ψ k : ℕ) : ℝ) with hs'
   have hs'' : Tendsto (fun k ↦ |s' k|) atTop atTop := hs.comp hψ.tendsto_atTop
-  have hE := tendsto_compEκ_translate hw hN hs'' hT
+  have hE := tendsto_compEκ_translate hw N hs'' hT
   -- restrict to the real segment `[-2, 2]`
   have hKc : IsCompact (Complex.ofReal '' Icc (-2 : ℝ) 2) :=
     isCompact_Icc.image Complex.continuous_ofReal
@@ -1762,7 +1753,7 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
     · rintro ⟨k, hk⟩; exact ⟨k, by rw [hk]; ring⟩
     · rintro ⟨n, hn⟩; exact ⟨n, by rw [hn]; ring⟩
   -- `φ` is onto
-  have hrig := phase_rigidity hw hlim hU hN hφ (Real.pi / 2) (by positivity)
+  have hrig := phase_rigidity hw hlim hU hφ (Real.pi / 2) (by positivity)
   obtain ⟨X, hX⟩ := hrig
   have hstep : ∀ s : ℝ, X ≤ |s| → Real.pi / 2 ≤ φ (s + 1) - φ s := fun s hs ↦ by
     have := hX s hs 1 (by simp)
@@ -1836,7 +1827,6 @@ theorem phase_asymptotics (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocom
     {κ : ℝ}
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) {k₀ : ℤ}
     (hk₀ : ∀ j : ℤ, φ (OCS.multBary m j) = Real.pi / 2 + Real.pi * (j + k₀)) :
     Tendsto (fun x : ℝ ↦ φ x - Real.pi * OCS.multPrim m x) (cocompact ℝ)
@@ -1844,7 +1834,7 @@ theorem phase_asymptotics (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocom
   rw [Metric.tendsto_nhds]
   intro ε hε
   have hpi := Real.pi_pos
-  obtain ⟨X₁, hX₁⟩ := phase_rigidity hw hlim hU hN hφ (ε / 4) (by positivity)
+  obtain ⟨X₁, hX₁⟩ := phase_rigidity hw hlim hU hφ (ε / 4) (by positivity)
   obtain ⟨X₂, hX₂⟩ := Gaps.tendsto_multPrim_sub hw hlim 2 (ε / (4 * Real.pi)) (by positivity)
   have hev3 : ∀ᶠ j in cofinite, |OCS.multPrim m (OCS.multBary m j) - (j + 1 / 2)| <
       ε / (4 * Real.pi) := by
@@ -2022,7 +2012,7 @@ theorem exists_hb_of_density_phase (hm : Measurable m) (ha : 0 < a) (hlow : ∀ 
   obtain ⟨φ, hφ, hφd⟩ := exists_isPhaseFunction hE.1 h0
   obtain ⟨hmono, k₀, hk₀⟩ := phase_levels hw hlim hUC hN hφ
   refine ⟨compEκ m κ N, hE, h0, ?_, ?_, φ, hφ, hφd, hmono, Real.pi * k₀,
-    phase_asymptotics hw hlim hUC hN hφ hk₀⟩
+    phase_asymptotics hw hlim hUC hφ hk₀⟩
   · -- bounds `|E_κ| ≃ e^{π Im z}`
     obtain ⟨m₀, hm₀, hmax⟩ := exists_max_ge hw hN34
     obtain ⟨cA₁, cA₂, hcA₁, hcA₂, hcA⟩ := norm_genA_comparable_of_hU hw hUC

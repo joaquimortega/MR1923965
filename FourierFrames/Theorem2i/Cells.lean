@@ -59,11 +59,10 @@ theorem RegData.pairwise_cell (h : RegData ψ t C M) :
   have : t (a + 1) ≤ t b := h.mono.monotone (by omega)
   linarith [hx.2, hx'.1]
 
-theorem RegData.hasSum_UPsi (h : RegData ψ t C M) {z : ℂ} (hz : 0 ≤ z.im) :
+theorem RegData.hasSum_UPsi (h : RegData ψ t C M) (z : ℂ) :
     HasSum (fun n : ℕ => ∫ s in cell t (n + 1),
         (Real.log ‖1 - z / s‖ + (1 - (Icc (-1 : ℝ) 1).indicator 1 s) * (z / s).re) * deriv ψ s)
       (UPsi ψ z) := by
-  have _ := hz
   have hint := h.integrable_upsiInt z
   have h1 := hasSum_integral_iUnion (μ := volume) (f := upsiInt ψ z)
     (s := fun n : ℕ => cell t (n + 1)) (fun n => measurableSet_Ioc) h.pairwise_cell
@@ -135,7 +134,7 @@ theorem RegData.cellTerm_eq (h : RegData ψ t C M) {z : ℂ} (n : ℕ) :
 theorem RegData.hasSum_cellTerm (h : RegData ψ t C M) {z : ℂ} (hz : 0 ≤ z.im) :
     HasSum (fun n : ℕ => cellTerm ψ t C (n + 1) z)
       (UPsi ψ z - Real.log ‖fProd ψ t C z‖) := by
-  have := (h.hasSum_UPsi hz).sub (h.hasSum_log_fProd hz)
+  have := (h.hasSum_UPsi z).sub (h.hasSum_log_fProd hz)
   convert this using 1
   funext n
   exact h.cellTerm_eq n

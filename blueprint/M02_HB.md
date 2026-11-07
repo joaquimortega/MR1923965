@@ -1,17 +1,25 @@
 # M02 — Hermite–Biehler class, phase functions, de Branges spaces, the "evident fact" of p. 799
 
-**Lean files** (all in namespace `FF`, plain files importing `FourierFrames.Defs`):
+**Lean files** (all in namespace `FF`):
 `FourierFrames/HB/H2.lean` (Hardy-space toolkit), `FourierFrames/HB/Basic.lean` (`f^*`, `\overline{HB}`),
-`FourierFrames/HB/Phase.lean` (phase functions), `FourierFrames/HB/DeBranges.lean` (`H(E)`; contains the
-temporary upstream-interface section), `FourierFrames/HB/Comparable.lean` (main statement
-`heEqPW_of_comparable`). Import chain: `Defs ← Basic ← Phase ← DeBranges ← Comparable`, `H2` is imported by
-`DeBranges`. All files compile (only `declaration uses 'sorry'` warnings).
+`FourierFrames/HB/Phase.lean` (phase functions), `FourierFrames/HB/DeBranges.lean` (`H(E)`),
+`FourierFrames/HB/Comparable.lean` (main statement `heEqPW_of_comparable`); helper files
+`HB/Hopf.lean` (`hopf_trig`, `hopf_boundary`: Hopf-type boundary lemma for `φ' > 0`) and
+`HB/MeanValue.lean` (`circle_lintegral_ge`, `area_ge`, `lintegral_strip`). Imports: `Basic ← Defs`;
+`Phase ← Basic, Hopf`; `H2 ← Defs, MeanValue`; `DeBranges ← Phase, H2, PW.Complete`;
+`Comparable ← DeBranges, MeanValue`.
+
+**Status (final).** All proved, no `sorry`. Lean blocks show the statements; where the implemented
+route differs from the text it is marked *Implemented:* (source: `impl_notes/hb.md`). The module
+docstrings of the code cite the sections of an earlier numbering: `HB/DeBranges.lean` says "§6–§8"
+(it holds §7–§10), `HB/Comparable.lean` says "§9" (it is §11), `HB/Phase.lean` says "§4–§5" (it
+also holds §6).
 
 **Paper pages:** §2 (pp. 793–794: `\overline{HB}`, `H(E)`, phase, Theorems C–F), used in §3 (pp. 795–796) and §4 (p. 799).
 
 **Depends on.** M00 (`Defs.lean`: `fstar`, `IsH2Upper`, `IsHB`, `IsStrictHB`, `MemHE`, `heNormSq`, `HEEqPW`,
 `IsPhaseFunction`, `phaseDeriv`, `phaseLevel`, `orthWeight`, `TheoremE`, `PaleyWienerThm`). M01 (names as in the
-README interface list; the exact signatures used are copied in the temporary section of `DeBranges.lean`):
+README interface list; imported, see `IMPORTS.md`):
 `exists_memPW_eval_ne_zero`, `MemPW.comp_sub_ofReal`, `pwNormSq_comp_sub_ofReal`, `MemPW.fstar`,
 `pwNormSq_ne_top`, `pw_norm_sq_le`, `pw_line_integral_le`, `pw_eval_lower`.
 
@@ -31,10 +39,11 @@ repairs; nothing is dropped):
 | `IsStrictHB.phaseDeriv_pos` | also the stronger `IsHB.phaseDeriv_pos_of_exists_lt` (strict at *one* point suffices) and `IsHB.isStrictHB_or_fstar_eq` (dichotomy), `IsPhaseFunction.strictMono_of_isStrictHB`. |
 | `MemHE.mul_isHB` | no hypothesis `IsHB E` needed (only `IsHB F`). |
 | `HEEqPW.isStrictHB`, `.ne_zero_ofReal` | extra hypothesis `IsHB E` (necessary: `H(E)` makes no sense otherwise, and the proofs use `E ≠ 0` on `ℂ₊`). No `hPW` needed. |
-| `HEEqPW.phaseDeriv_mul_sq_ge/_le` | `∃ c > 0, ∀ x, c ≤ phaseDeriv E x * ‖E x‖^2` and `∃ C, ∀ x, … ≤ C`; hypotheses `hPW`, `hE : TheoremE`, `IsHB E`, `HEEqPW E`. |
+| `HEEqPW.phaseDeriv_mul_sq_ge/_le` | `∃ c > 0, ∀ x, c ≤ phaseDeriv E x * ‖E x‖^2` and `∃ C, ∀ x, … ≤ C`; hypotheses `hE : TheoremE`, `IsHB E`, `HEEqPW E`, and `hPW` for `_le` only (`_ge` does not use it, NOTEBOOK I-03). |
 | `memHE_sAlpha_unique` | needs only `IsHB E` (strictness not needed); `sAlpha E α` is a new `def` (the function of Theorem E). |
 | `zero_set_eq_phaseLevel` | `z ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φF t) (π/2)`. |
 | — | New: `H2.lean` (Hardy toolkit: closure properties, area mean-value inequality, pointwise `H²` bound, Liouville for `L²` on lines, blow-up at a real zero). M03/M04 may use these freely. |
+| — | Added at assembly: `IsStrictHB.mul_isHB`, `IsHB.rotate` (`HB/Basic.lean`), `IsPhaseFunction.rotate` (`HB/Phase.lean`), `HEEqPW.exists_phase_data` (the data of §10 for one phase function, `HB/DeBranges.lean`), `countable_real_zeros` (`HB/DeBranges.lean`). |
 
 Where Mathlib lacks theory we prove it from scratch (as demanded): the three analytic facts about `H²` that are
 used — (A) closure properties; (B) pointwise bounds `|g(z)|² ≲ ‖g‖²/Im z` (§1.3–1.4); (C) no nonzero entire function
@@ -126,6 +135,10 @@ Proof (two steps; `r > 0`, `G` differentiable on the closed ball).
 By polar coordinates (`Complex.integral_comp_polarCoord_symm`, `Mathlib/Analysis/SpecialFunctions/PolarCoord.lean`; the
 disc corresponds to `Ioo 0 r ×ˢ Ioo (-π) π`, a null set is discarded) the left side is `∫_{B(c,r)} G dA`. Hence
 `G(c) = (π r²)⁻¹ ∫_{B(c,r)} G dA`. (Integrability: `G` continuous on the compact closed ball.)
+
+*Implemented:* Cauchy–Schwarz on circles first (`circle_lintegral_ge`), then polar coordinates
+(`MeanValue.area_ge`), instead of (a) then (b). The same inequality is proved independently as
+`enorm_sq_le_lintegral_ball` in `PW/PlancherelPolya.lean` (duplication).
 
 *(b) Cauchy–Schwarz.* `‖G(c)‖ ≤ (π r²)⁻¹ ∫_B ‖G‖ ≤ (π r²)⁻¹ (∫_B ‖G‖²)^{1/2} (π r²)^{1/2}`
 (`norm_integral_le_integral_norm`, then Hölder/Cauchy–Schwarz for `1` and `‖G‖`: `integral_mul_le_Lp_mul_Lq_of_nonneg`
@@ -345,18 +358,10 @@ Proof. Let `ρ = phaseDeriv E`, continuous by §4.1. Put
 `Φ(x) = φ₀ + ∫₀^x ρ(t) dt`, `φ₀ = −arg(E 0)`.
 (1) `HasDerivAt Φ (ρ x) x` for all `x` (`Continuous.integral_hasStrictDerivAt` or `intervalIntegral.integral_hasDerivAt_right`,
 using continuity). In particular `Φ` is continuous.
-(2) Define for real `x`: `u(x) = E(x) e^{iΦ(x)}` (`ℂ`-valued) and `n(x) = ‖E(x)‖ > 0`.
- Write `q(x) = E'(x)/E(x)` (`E' = deriv E`). Then
- * `HasDerivAt (x ↦ E ↑x) (E' x) x` (`HasDerivAt.comp_ofReal` applied to `(hE.differentiableAt).hasDerivAt`);
- * `HasDerivAt (x ↦ e^{iΦ(x)}) (i ρ(x) e^{iΦ(x)}) x` (chain rule, `HasDerivAt.cexp`, `HasDerivAt.ofReal_comp`);
- * hence `u' = (E' + i ρ E) e^{iΦ} = E (q + iρ) e^{iΦ}`, and `q + iρ = q − i Im q = Re q`, so **`u' = (Re q) · u`**;
- * `‖E‖² ` has derivative `2⟪E x, E'⟫_ℝ = 2 Re(conj(E) E')` (`HasDerivAt.norm_sq`, `Complex.inner`), so
-   `n' = Re(conj E · E')/‖E‖ = ‖E‖ Re(E'/E)` (`HasDerivAt.sqrt`, or `HasDerivAt.norm`-type lemma;
-   `conj E · E' = ‖E‖² E'/E`): **`n' = (Re q) · n`**.
-(3) Hence `N = u/n` satisfies `N' = (u' n − u n')/n² = 0` (`HasDerivAt.div`), so `N` is constant
-(`is_const_of_deriv_eq_zero`, with `Differentiable ℝ N`): `N(x) = N(0) = E(0) e^{iφ₀}/‖E 0‖ = 1` because
-`E 0 = ‖E 0‖ e^{i arg E 0}` (`Complex.norm_mul_exp_arg_mul_I`) and `φ₀ = −arg E 0`.
-(4) So `E(x) e^{iΦ(x)} = ‖E(x)‖`, i.e. `E x = ‖E x‖ · exp(−(I Φ x))`: `IsPhaseFunction E Φ`.
+(2) *Implemented* (`HB/Phase.lean`; `|E|` is never differentiated): with `R(x) = ∫₀ˣ Re(E'/E)`,
+`M(x) = E(x) e^{iΦ(x) − R(x)}` has derivative `0`, because `E'/E + iρ − Re(E'/E) = 0`
+(`HasDerivAt.comp_ofReal`, `HasDerivAt.cexp`). So `M` is constant, `M(0) = |E(0)|`, and
+`E(x) = |E(0)| e^{R(x)} e^{−iΦ(x)}`; taking norms, `E(x) = ‖E(x)‖ e^{−iΦ(x)}`: `IsPhaseFunction E Φ`.
 
 ```lean
 /-- **Uniqueness up to `2π ℤ`.** -/
@@ -408,6 +413,12 @@ theorem IsHB.phaseDeriv_nonneg {F : ℂ → ℂ} (hF : IsHB F) {x : ℝ} (hx : F
     0 ≤ phaseDeriv F x := by
   sorry
 ```
+*Implemented:* both `φ' ≥ 0` and the strict case come from the dichotomy
+`IsHB.phaseDeriv_pos_or_eventuallyEq` (`HB/Phase.lean`): either `E^* = cE` near `x`, so `φ'(x) = 0`, or
+`φ'(x) > 0`. It is proved from the normal form of `E^*/E − c` at `x` and `hopf_boundary`
+(`HB/Hopf.lean`). The `D(y)` argument below is a valid alternative for `≥ 0`, but it is not
+formalized and cannot give strictness (`D(y) ≈ −y³` is possible).
+
 Proof. Let `a = F(x) ≠ 0`, `b = F'(x)`. Let `D(y) = ‖F^*(x+iy)‖² − ‖F(x+iy)‖²`, `y ∈ ℝ`.
 * `D(0) = 0` since `F^*(x) = ā` (`fstar_ofReal`), `‖ā‖ = ‖a‖`.
 * `D(y) ≤ 0` for `y ≥ 0`: for `y > 0` this is `‖F^*(z)‖ = ‖F(z̄)‖ ≤ ‖F(z)‖` (`IsHB.norm_fstar_le`), `z = x+iy`.
@@ -607,7 +618,8 @@ complement (`Set.Countable.dense_compl`). So **`Xᶜ` is dense**.
 *Extension to all `x`.* `{x | c ≤ κ x}` and `{x | κ x ≤ π/c₁}` are closed (continuity of `κ`) and contain the dense set `Xᶜ`, hence equal `ℝ`
 (`Dense.closure_eq`, `closure_minimal`). This is the avoidance of the exceptional `α` by continuity (README §3.1).
 **Scaffolds:** `HEEqPW.phaseDeriv_mul_sq_ge` states `∃ c > 0, ∀ x, c ≤ κ x`; `_le` states `∃ C, ∀ x, κ x ≤ C` (with `C = π/c₁`).
-(*Paper:* "`1 = sup_{‖f‖² ≤ 1}|f(x)|² ≃ … = K_E(x,x) = (1/π)φ_E'|E|²`" — the first `|f(x)|` is missing its square (p. 796) and the identification `K_E(x,x)` uses Theorem D, which for strict `E` without real zeros is avoided here, see README §3.1.)
+Only the upper bound uses `hPW` (the pointwise bound); `_ge` has no `hPW` argument (NOTEBOOK I-03).
+(*Paper:* "`1 = sup_{‖f‖² ≤ 1}|f(x)|² ≃ … = K_E(x,x) = (1/π)φ_E'|E|²`" — the middle `sup |f(x)|` is missing its square (p. 796, NOTEBOOK N-05) and the identification `K_E(x,x)` uses Theorem D, which for strict `E` without real zeros is avoided here, see README §3.1.)
 
 ## 11. The "evident fact" of p. 799
 
@@ -636,7 +648,7 @@ Proof. Let `f ∈ PW`, `N = pwNormSq f < ∞` (`pwNormSq_ne_top`).
 
 ```lean
 /-- `H(E) ⊆ PW` with `‖f‖²_{PW} ≤ C² ‖f‖²_E`. -/
-theorem memPW_of_memHE (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
+theorem memPW_of_memHE {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
     (hcomp : ∀ z : ℂ, 0 ≤ z.im →
       c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im))
     {f : ℂ → ℂ} (hf : MemHE E f) :
@@ -651,9 +663,10 @@ no boundary-value theory is needed since `f` and `E` are entire.) As `‖E x‖ 
 `MemLp (fun x : ℝ ↦ f x) 2` (`f` continuous, hence a.e.-strongly measurable; `memLp_two_iff_integrable_sq_norm`, `ofReal_integral_eq_lintegral_ofReal` or
 `MeasureTheory.memLp_two_iff…`). Also `pwNormSq f ≤ ofReal(C²) heNormSq E f`.
 **Step 2 (all lines in `|s| ≤ 2`).** Put `K₀ = C² e^{4π} M`. For `0 < s ≤ 2`: `‖E(x+is)‖ ≤ C e^{πs} ≤ C e^{2π}`, so
-`L(f, s) ≤ C² e^{4π} L(G₁, s) ≤ K₀`. For `s = 0`: `L(f,0) ≤ C² M₁ ≤ K₀`. For `−2 ≤ s < 0`: `‖f(x+is)‖ = ‖f^*(x − is)‖` and
+`L(f, s) ≤ C² e^{4π} L(G₁, s) ≤ K₀`. For `−2 ≤ s < 0`: `‖f(x+is)‖ = ‖f^*(x − is)‖` and
 `‖E(x−is)‖ ≤ C e^{2π}` (`−s ∈ (0,2]`), so `L(f, s) = L(f^*, −s) ≤ C² e^{4π} L(G₂, −s) ≤ K₀` (translation invariance of the sum over `x`; the change `x ↦ x` is trivial
 since `fstar` conjugates but does not move the real coordinate: `f^*(x − is) = conj f(x + is)`).
+*Implemented:* only the lines `0 < |s| < 2` are used; `s = 0` is a null set (`HB/Comparable.lean`).
 **Step 3 (bounded on `|Im z| ≤ 1`).** `enorm_sq_le_of_lines` (§1.3) with `r = 1` (the strip `(Im z − 1, Im z + 1) ⊆ (−2,2)`): `‖f z‖ₑ² ≤ ofReal(2/π) K₀ =: K₁`.
 **Step 4 (`|Im z| ≥ 1`).** For `y = Im z ≥ 1`: `IsH2Upper.enorm_sq_le` gives `‖G₁ z‖² ≤ 4M/(π y) ≤ 4M/π` and
 `‖f z‖ = ‖G₁ z‖‖E z‖ ≤ 2 √(M/π) C e^{π y}`. For `y ≤ −1`: `‖f z‖ = ‖f^*(z̄)‖ = ‖G₂(z̄)‖‖E(z̄)‖ ≤ 2√(M/π) C e^{π|y|}`.
@@ -711,7 +724,8 @@ None are necessary. Observations (no action required):
 
 ## 14. Mathlib names checked (v4.35.0)
 `DifferentiableAt.conj_conj`, `deriv_conj_conj` (`Analysis/Calculus/Deriv/Star.lean`); `HasDerivAt.norm_sq` (`InnerProductSpace/Calculus.lean`);
-`IsLocalMaxOn.hasFDerivWithinAt_nonpos`, `mem_posTangentConeAt_of_segment_subset` (`LocalExtr/Basic.lean`);
+`IsLocalMaxOn.hasFDerivWithinAt_nonpos`, `mem_posTangentConeAt_of_segment_subset` (`LocalExtr/Basic.lean`) (these three are
+not used by the implementation, see §4 and §5.1);
 `Complex.eqOn_of_isPreconnected_of_isMaxOn_norm`, `Complex.norm_le_of_forall_mem_frontier_norm_le` (`AbsMax.lean`);
 `TendstoLocallyUniformlyOn.differentiableOn` (`Complex/LocallyUniformLimit.lean`);
 `AnalyticAt.eventually_eq_zero_or_eventually_ne_zero`, `AnalyticAt.exists_eventuallyEq_pow_smul_nonzero_iff`,

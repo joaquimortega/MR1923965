@@ -11,6 +11,7 @@ Deviations / remarks
 - Remaining linter warnings are unused-variable / unused-section-variable warnings on frozen statements
   (`sampInner_self`, `sampInner_conj_symm`, `sampInner_smul_left`, `samp_H1`, `samp_H3`: hs/hf/hg unused;
   `entSum_eq`: hΛ, hcs unused; `summable_norm_herglotz` is fine). They cannot be removed without changing statements.
+  *Later:* all removed in the lint pass (NOTEBOOK I-03), with the approval recorded in `scripts/check_statements.py`.
 - `herglotzEnt_eq` / `exists_herglotz_const`: as warned in the blueprint, `(c := ...)` must be given explicitly
   to `entSum_eq` to avoid whnf timeouts.
 - No upstream problems found. Upstream `IsSeparated.finite_inter_Icc` (PW/Basic) and `pw_complete`, `pw_norm_sq_le`,

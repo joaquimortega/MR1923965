@@ -76,7 +76,7 @@ theorem delta_bound {r θ x y u : ℝ} (hr : 0 < r) (hθ0 : 0 < θ) (hθ1 : θ �
   have := abs_le.1 t1
   constructor <;> nlinarith [sq_nonneg e, sq_nonneg b, mul_nonneg hy hb0]
 
-theorem zPt_re_im (_h : RegData ψ t C M) {n : ℕ} (_hn : 1 ≤ n) :
+theorem zPt_re_im (n : ℕ) :
     (zPt ψ t C n).re = rCentre ψ t n * Real.cos (cAngle ψ t C * cellLen t n / rCentre ψ t n) ∧
     (zPt ψ t C n).im = -(rCentre ψ t n * Real.sin (cAngle ψ t C * cellLen t n / rCentre ψ t n)) := by
   have e : -(Complex.I * (((cAngle ψ t C * cellLen t n / rCentre ψ t n : ℝ)) : ℂ)) =
@@ -123,7 +123,7 @@ theorem B_far (h : RegData ψ t C M) {n : ℕ} (hn : 1 ≤ n) {ρ₁ : ℝ} (hρ
     have := Real.pi_lt_four
     linarith
   have hrθ : r * θ = c * d := by rw [hθ]; field_simp
-  obtain ⟨hre0, him0⟩ := zPt_re_im h hn
+  obtain ⟨hre0, him0⟩ := zPt_re_im (ψ := ψ) (t := t) (C := C) n
   have hre : (zPt ψ t C n).re = r * Real.cos θ := hre0
   have him : (zPt ψ t C n).im = -(r * Real.sin θ) := him0
   have hu2 : (z.re - r) ^ 2 + z.im ^ 2 = u ^ 2 := (norm_sub_ofReal_sq z r).symm

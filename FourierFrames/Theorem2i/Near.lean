@@ -27,9 +27,7 @@ theorem integrableOn_log_norm_sub (z : ℂ) (a b : ℝ) :
   · have : (fun s : ℝ => Real.log ‖(s : ℂ) - z‖) = fun s => Real.log |s - z.re| := by
       funext s; rw [norm_sub_real z s hz]
     rw [this]
-    rcases le_or_gt a b with hab | hab
-    · exact integrableOn_log_abs_sub z.re hab
-    · simp [Ioc_eq_empty_of_le hab.le]
+    exact integrableOn_log_abs_sub z.re a b
   · have hc : ContinuousOn (fun s : ℝ => Real.log ‖(s : ℂ) - z‖) (Icc a b) := by
       refine ContinuousOn.log (by fun_prop) fun s _ => ?_
       intro h0
@@ -168,7 +166,7 @@ theorem RegData.abs_cellTerm_near_gen (h : RegData ψ t C M) (hK : DensBound ψ 
       rw [← hUe]; simp only [hL']; linarith
     rwa [MeasureTheory.integral_const_mul, hint, mul_one] at hmono
   have hlogabs : IntegrableOn (fun s : ℝ => Real.log |s - z.re|) (Ioc (t (n - 1)) (t n)) :=
-    D2.integrableOn_log_abs_sub z.re hab.le
+    D2.integrableOn_log_abs_sub z.re _ _
   have hlow : -(2 * K) - Real.log (k + 1) ≤ B := by
     set E := Real.log ((k + 1) * d) with hE
     have hlogp : IntegrableOn (fun s : ℝ => Real.log |s - z.re| * deriv ψ s)

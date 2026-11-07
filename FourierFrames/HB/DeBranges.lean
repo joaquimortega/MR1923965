@@ -213,7 +213,7 @@ theorem HEEqPW.exists_phase_data {E : ℂ → ℂ} (hHB : IsHB E) (h : HEEqPW E)
 
 /-- Lower bound: `φ_E'(x) |E(x)|² ≥ c > 0` on `ℝ` when `H(E) = PW`
 (`c = π / (C₁ ‖g‖²_{PW})`, `C₁` the upper norm-equivalence constant, `g(0) = 1`). -/
-theorem HEEqPW.phaseDeriv_mul_sq_ge (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem HEEqPW.phaseDeriv_mul_sq_ge (hE : TheoremE) {E : ℂ → ℂ}
     (hHB : IsHB E) (h : HEEqPW E) :
     ∃ c : ℝ, 0 < c ∧ ∀ x : ℝ, c ≤ phaseDeriv E x * ‖E x‖ ^ 2 := by
   have hnz := HEEqPW.ne_zero_ofReal hHB h

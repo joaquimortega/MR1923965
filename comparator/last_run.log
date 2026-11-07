@@ -1,0 +1,44 @@
+Resolving dependencies
+Building FFChallenge
+⚠ [9047/9048] Replayed FFChallenge
+warning: FFChallenge.lean:330:8: declaration uses `sorry`
+warning: FFChallenge.lean:336:8: declaration uses `sorry`
+warning: FFChallenge.lean:344:8: declaration uses `sorry`
+warning: FFChallenge.lean:351:8: declaration uses `sorry`
+warning: FFChallenge.lean:359:8: declaration uses `sorry`
+warning: FFChallenge.lean:367:8: declaration uses `sorry`
+warning: FFChallenge.lean:374:8: declaration uses `sorry`
+warning: FFChallenge.lean:383:8: declaration uses `sorry`
+warning: FFChallenge.lean:391:8: declaration uses `sorry`
+warning: FFChallenge.lean:397:8: declaration uses `sorry`
+warning: FFChallenge.lean:404:8: declaration uses `sorry`
+warning: FFChallenge.lean:413:8: declaration uses `sorry`
+warning: FFChallenge.lean:427:8: declaration uses `sorry`
+warning: FFChallenge.lean:436:8: declaration uses `sorry`
+warning: FFChallenge.lean:445:8: declaration uses `sorry`
+warning: FFChallenge.lean:454:8: declaration uses `sorry`
+warning: FFChallenge.lean:458:8: declaration uses `sorry`
+warning: FFChallenge.lean:462:8: declaration uses `sorry`
+warning: FFChallenge.lean:466:8: declaration uses `sorry`
+warning: FFChallenge.lean:470:8: declaration uses `sorry`
+warning: FFChallenge.lean:474:8: declaration uses `sorry`
+warning: FFChallenge.lean:479:8: declaration uses `sorry`
+warning: FFChallenge.lean:486:8: declaration uses `sorry`
+warning: FFChallenge.lean:493:8: declaration uses `sorry`
+warning: FFChallenge.lean:500:8: declaration uses `sorry`
+warning: FFChallenge.lean:506:8: declaration uses `sorry`
+warning: FFChallenge.lean:512:8: declaration uses `sorry`
+warning: FFChallenge.lean:520:8: declaration uses `sorry`
+warning: FFChallenge.lean:527:8: declaration uses `sorry`
+warning: FFChallenge.lean:532:8: declaration uses `sorry`
+warning: FFChallenge.lean:540:8: declaration uses `sorry`
+warning: FFChallenge.lean:548:8: declaration uses `sorry`
+warning: FFChallenge.lean:555:8: declaration uses `sorry`
+Build completed successfully (9048 jobs).
+Exporting #[Quot, Quot.mk, Quot.lift, Quot.ind, FF.isFourierFrame_iff_isSampling, FF.heEqPW_of_comparable, FF.theorem1_necessity, FF.theorem1_sufficiency, FF.theorem1, FF.completeInterpolating_zero_set, FF.corollary1, FF.landau_inequality, FF.logExample_isCompleteInterpolating, FF.logExample_count, FF.landau_sharp, FF.corollary2, FF.theorem2_i, FF.theorem2_i_of_densityBound, FF.theorem2_ii, FF.paleyWiener_holds, FF.johnNirenberg_holds, FF.theoremD_holds, FF.theoremE_holds, FF.dsPerturbation_holds, FF.isFourierFrame_iff_isSampling_unconditional, FF.heEqPW_of_comparable_unconditional, FF.theorem1_sufficiency_unconditional, FF.theorem1_necessity_of_theoremCF, FF.theorem1_of_theoremCF, FF.completeInterpolating_zero_set_of_theoremC, FF.corollary1_of_theoremCF, FF.landau_inequality_of_theoremCF_pavlov, FF.logExample_isCompleteInterpolating_unconditional, FF.landau_sharp_unconditional, FF.corollary2_unconditional, FF.theorem2_i_unconditional, FF.theorem2_i_of_densityBound_unconditional, propext, Quot.sound, Classical.choice, Nat.add, Nat.sub, Nat.mul, Nat.pow, Nat.gcd, Nat.div, Nat.mod, Nat.beq, Nat.ble, Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft, Nat.shiftRight, String.ofList, Char.ofNat, List, eagerReduce, Nat, String, String.mk, Char, optParam, autoParam, semiOutParam, outParam] from FFChallenge
+Building FFSolution
+Build completed successfully (9152 jobs).
+Exporting #[Quot, Quot.mk, Quot.lift, Quot.ind, FF.isFourierFrame_iff_isSampling, FF.heEqPW_of_comparable, FF.theorem1_necessity, FF.theorem1_sufficiency, FF.theorem1, FF.completeInterpolating_zero_set, FF.corollary1, FF.landau_inequality, FF.logExample_isCompleteInterpolating, FF.logExample_count, FF.landau_sharp, FF.corollary2, FF.theorem2_i, FF.theorem2_i_of_densityBound, FF.theorem2_ii, FF.paleyWiener_holds, FF.johnNirenberg_holds, FF.theoremD_holds, FF.theoremE_holds, FF.dsPerturbation_holds, FF.isFourierFrame_iff_isSampling_unconditional, FF.heEqPW_of_comparable_unconditional, FF.theorem1_sufficiency_unconditional, FF.theorem1_necessity_of_theoremCF, FF.theorem1_of_theoremCF, FF.completeInterpolating_zero_set_of_theoremC, FF.corollary1_of_theoremCF, FF.landau_inequality_of_theoremCF_pavlov, FF.logExample_isCompleteInterpolating_unconditional, FF.landau_sharp_unconditional, FF.corollary2_unconditional, FF.theorem2_i_unconditional, FF.theorem2_i_of_densityBound_unconditional, propext, Quot.sound, Classical.choice, Nat.add, Nat.sub, Nat.mul, Nat.pow, Nat.gcd, Nat.div, Nat.mod, Nat.beq, Nat.ble, Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft, Nat.shiftRight, String.ofList, Char.ofNat, List, eagerReduce, Nat, String, String.mk, Char, optParam, autoParam, semiOutParam, outParam] from FFSolution
+Running Lean default kernel on solution
+Lean default kernel accepts the solution
+Your solution is okay!

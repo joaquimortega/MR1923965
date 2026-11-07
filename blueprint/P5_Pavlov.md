@@ -48,7 +48,8 @@ Let Γ be separated and CIS for PW. Steps, with every analytic fact used:
    harmonic conjugate on the line is `arg G(x+i)`. One needs (i) the Poisson representation of `log|G|` in
    `ℑz>0` (Cartwright class: `G(z)e^{iπz}∈ H^∞`-ish after division by the exponential factor; `log|G(x+iy)|=πy+P_y[log|G(·+i)|]`-type
    formula, needs Nevanlinna/Smirnov factorization), (ii) the argument principle linking `arg G(x+i)` and
-   `π n_Γ(x)`: `|π n_Γ(x) - arg_x G(x+i)| ≤ C` (each zero changes arg by `π ± O(1)`, uses separation), and (iii)
+   `π n_Γ(x)`: `|π n_Γ(x) - arg_x G(x+i)| ≤ C` (each zero changes arg by `π ± O(1)`, uses separation; *wrong as
+   justified, see §7, R7-18*), and (iii)
    **the Hilbert transform maps BMO into BMO** modulo constants (Fefferman–Stein; or since `log w∈BMO` is
    `L^p_loc` by John–Nirenberg, apply CZ to the localized + tail decomposition). Then
    `π h(x) = ±H[log|G(·+i)|](x) + bounded + linear term cancelled by the type π`, so `h∈BMO`.
@@ -64,7 +65,7 @@ comparable *as norms on `PW`*, not as weights). Then `n_Γ(t)=φ_E(t)/π+O(1)` a
 and `H(E)=PW` again gives that `|E|^{-2}` satisfies a Muckenhoupt-type condition *for the Paley–Wiener projection*, which must still be
 converted into `A₂` via steps 3–4 and into BMO of `φ_E - πt = arg`-conjugate via 6. So (B) does not avoid the harmonic-analysis core;
 it only replaces step 2 by Theorems C/D (already hypotheses) at the price of depending on P3/P4 (still sorry'd). Not cheaper. Route (A) is the standard
-one and what HNP81 do.
+one and what HNP81 do. (*R7-17:* cheaper on the periphery, identical on the core; see §7.)
 
 ## 3. Alternative: a direct proof of the BMO estimate
 
@@ -90,3 +91,37 @@ than BMO and does not suffice for John–Nirenberg exponential integrability nee
 ## 6. Requested changes to M00
 
 None. Keep `hA : PavlovBMO` as an explicit hypothesis in the final theorems (or the paper-level theorems stay conditional on it).
+
+## 7. Referee corrections (R7)
+
+From `reviews/R7_Cited.md`, Part 3 (2026-11-07). R7 confirms the statement (`PavlovBMO` is the forward half
+of Theorem A weakened to `h ∈ BMO`, all the Claim uses), the Mathlib inventory, and the verdict: not
+feasible, keep `hA`.
+
+1. **Route B is undersold, but the core remains (R7-17).** Replace "Not cheaper" in §2 by: *cheaper on the
+   periphery (counting function, `φ' ≍ |E|^{-2}`, both available), identical on the core (`A₂`, Poisson
+   representation, BMO conjugation).*
+   - With `completeInterpolating_zero_set`, `Γ` is exactly a level set `{φ_E ∈ α + πℤ}` of a continuous
+     increasing phase, so `|n_Γ(t) − (φ_E(t) − φ_E(0))/π| ≤ 1`. This removes step 2 (the generating
+     function) of route A and step 6(ii).
+   - `φ'_E ≍ |E|^{-2}` follows from `K_E(x,x) ≍ K_PW(x,x) = 1` and `φ'|E|² = πK_E(x,x)`; the project has it
+     as `HEEqPW.phaseDeriv_mul_sq_ge`/`_le` (`HB/DeBranges.lean`).
+   - What remains: `|E|² ∈ A₂(ℝ)` from the norm equivalence (necessity half of Hunt–Muckenhoupt–Wheeden, in
+     Lyubarskii–Seip form); `log|E| ∈ BMO`; the representation `φ_E(x) − πx = −H̃[log|E|](x) + c` (Cartwright
+     class, boundary theory in `ℂ₊`); conjugation on BMO.
+   - The coupling of the third item cannot be bypassed: information on `φ'` alone, even `φ' ∈ A₂`, does not
+     give BMO. Example: `v(t) = 1 + ½ sin log(1 + |t|)` is bounded above and below (so in `A₂`), but
+     `∫_0^t (v − 1)` is `t` times an oscillating factor and is not in BMO. What forces BMO is that
+     `log φ' = −2 log|E| + O(1)` and `φ − πx` are harmonic conjugates; asking for "`|E|²` comparable to a
+     weight with bounded conjugate behaviour" is the hard direction of Helson–Szegő.
+   - Route B also makes `PavlovBMO` conditional on `hC`, `hD`. Net cost at least 4–5k lines; 6–10k for
+     route A is the right order. Replacing `hA` by a weaker `Prop` (the two-sided bound
+     `osc_I h ≤ A log|I| + B`) would assume Landau-type estimates and empty the Claim; not recommended.
+2. **Route A, step 6(ii) is wrong as justified (R7-18).** Exactly,
+   `d/dx arg G(x + i) = −Σ_γ 1/((x − γ)² + 1) = −π P_1[dn_Γ](x)`, so `arg G(x + i) = −π P_1[n_Γ](x) + c` and
+   `π n_Γ + arg G(x + i) = π(h − P_1[h]) + c`. The per-zero `O(1)` errors have a tail `~ Σ 1/(x − γ)`, a
+   conditionally convergent Hilbert-type sum, not `O(1)`. The bound holds a posteriori once `h ∈ BMO`, so
+   using it inside the proof is circular; this is why Theorem A is phrased with `P_1[h]`. Route A needs an
+   extra lemma: for separated `Γ`, `P_1[h] ∈ BMO ⇒ h ∈ BMO`. Route B avoids the step (item 1). The weight
+   sentence of step 3 ("`|G(x+i)|^{-2}`-type weight (the correct weight is `|G(x+i)|²` …)") is garbled and
+   should be rewritten if route A is ever used.

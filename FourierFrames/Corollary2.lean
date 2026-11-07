@@ -65,10 +65,8 @@ theorem multU_add {g h : ℝ → ℝ} (hg : Measurable g) (hh : Measurable h) {M
   simp only [multU_eq_integral, mul_add]
   exact integral_add (integrable_potKernel_mul hg hgM z) (integrable_potKernel_mul hh hhM z)
 
-theorem multU_const_mul {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (c : ℝ)
-    (z : ℂ) : OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
-  have _ := hg
-  have _ := hM
+theorem multU_const_mul (g : ℝ → ℝ) (c : ℝ) (z : ℂ) :
+    OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
   simp only [multU_eq_integral]
   rw [← integral_const_mul]
   congr 1; funext t; ring
@@ -400,7 +398,7 @@ theorem exists_good_density {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) {f : �
     have e2 := multU_add (g := fun t ↦ 1 + ψ' t) (h := fun t ↦ (-(1 / Real.pi)) * g t)
       (measurable_const.add hψ'c.measurable) (measurable_const.mul hgc.measurable) hu12 hu3 z
     have e3 := multU_add (g := fun _ ↦ (1 : ℝ)) (h := ψ') measurable_const hψ'c.measurable hu1 hu2 z
-    have e4 := multU_const_mul hgc.measurable hMg (-(1 / Real.pi)) z
+    have e4 := multU_const_mul g (-(1 / Real.pi)) z
     beta_reduce at e1 e2 e3
     rw [hmf, e1, e2, e3, e4]
   -- the potential

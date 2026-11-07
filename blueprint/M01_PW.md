@@ -1,7 +1,7 @@
 # M01 — Paley–Wiener space toolkit
 
 **Lean files:** `FourierFrames/PW/Basic.lean`, `PW/Bounds.lean`, `PW/PlancherelPolya.lean`,
-`PW/Complete.lean` (all compile with `sorry` only).
+`PW/Complete.lean` (all proved, no `sorry`).
 **Paper:** §1 (p. 790, definition of `PW`, the Paley–Wiener reduction); Plancherel–Pólya used on
 p. 796 (display (4), "`C` independent of `α`") and in the limit `α → π/2`, p. 797; Bernstein-type
 estimates used on p. 796–797; the "evident fact" p. 799 (M02).
@@ -10,35 +10,30 @@ estimates used on p. 796–797; the "evident fact" p. 799 (M02).
 (`OrtegaCerdaSeip/Bernstein/Sinc.lean`: `csinc`, `differentiable_csinc`,
 `norm_csinc_le_exp_abs_im`, `norm_csinc_le_div`, `norm_csinc_ofReal_le_one`) and
 `OCS.exists_tendstoLocallyUniformlyOn_of_ultrafilter` (`Bernstein/NormalFamily.lean`).
-**Used by:** M02 (`MemPW.fstar`, `mul_div_sub`, `isH2Upper_mul_exp`, `pw_deriv_bound`, …),
-M03 (Plancherel–Pólya, `pw_complete`, `mul_div_sub`, evaluation continuity), M04 (tail version,
-`pw_deriv_bound`, `pw_eval_lower`), M07/M08/M09 (normal family), M10.
+**Used by:** M02 (`MemPW.fstar`, `pw_norm_sq_le`, `pw_line_integral_le`, `pw_eval_lower`,
+`exists_memPW_eval_ne_zero`), M03 (Plancherel–Pólya, `pw_complete`, `mul_div_sub`, evaluation
+continuity), M04 (`plancherelPolya`, `plancherelPolya_tail`, `plancherelPolya_tail_union`,
+`pw_deriv_bound`, `pw_complete` in `Corollary1/ClosedGraph.lean`), M07 (`Perturbation.lean`:
+`pw_normal_family`, `mul_div_sub`, `plancherelPolya`), M10, P2 (`DSPerturbation`).
+
+**Status (final).** All statements below are proved. Lean blocks show the statements (docstrings
+as in the code); where the implemented route differs from the text it is marked *Implemented:*
+(source: `impl_notes/pw.md`). Proved but unused anywhere: `pwFT_sub`, `tsum_enorm_sq_pwFT_int`,
+`l2piSq_eq_of_pwFT_eq`, `fourierCoeffOn_pwFT` (the obsolete §1.7 route), `MemPW.isH2Upper_mul_exp`,
+`MemPW.lintegral_mul_exp_le`.
 
 Throughout, `f ∈ PW` means `MemPW f`, `‖f‖² = pwNormSq f ∈ ℝ≥0∞` (finite for `f ∈ PW`), and
 `hPW : PaleyWienerThm`. For `g : ℝ → ℂ` write `F_g := pwFT g`, `F_g(z) = ∫_{-π}^{π} g(t) e^{izt} dt`
 and `‖g‖² = l2piSq g = ∫_{(-π,π]} |g|²`.
 
-## 0. The one real problem: `PaleyWienerThm` only gives `⇒`
+## 0. `PaleyWienerThm`
 
-`PaleyWienerThm` (Defs.lean) says: `MemPW f ↔ ∃ g ∈ L², (∀ z, f z = ∫ g e^{izt}) ∧ pwNormSq f = 2π‖g‖²`.
-The direction `⇐` can only be applied to an `f` for which the identity `pwNormSq f = 2π‖g‖²` is
-*already known*; but then `f ∈ L²(ℝ)` is known as well, and exponential type `≤ π` plus
-entireness are automatic, so `⇐` carries **no information**. The statement is therefore equivalent
-to the `⇒` half alone. The proof ideas in the task ("`f(·+iy)` corresponds to `g e^{-yt}`, so by
-`⇐` it is in PW"; "every `g` gives an element of PW") need the *unconditional* `⇐`:
-
-> (PW⇐) for every `g ∈ L²(-π,π)`: `F_g ∈ PW` and `‖F_g‖² = 2π‖g‖²`.
-
-**Two options.**
-
-* **(A, recommended; see "Requested changes to M00").** Strengthen `PaleyWienerThm` to
-  `(∀ g, MemL2 g → MemPW (F_g) ∧ pwNormSq F_g = 2π ‖g‖²) ∧ (∀ f, MemPW f → ∃ g, … ∧ pwNormSq f = 2π‖g‖²)`.
-  This is the true theorem (Plancherel + Paley–Wiener); no downstream statement changes, since
-  all modules treat `hPW` abstractly, only through the M01 interface. Then `memPW_pwFT` and
-  `exists_pwFT` are projections.
-* **(B, implemented in this blueprint, needs no change to M00).** Derive (PW⇐) from the weak `hPW`
-  and Mathlib's Parseval theorem for Fourier series (`AddCircle.hasSum_sq_fourierCoeffOn`).
-  Proof in §1.7 below. So all M01 statements are valid with `Defs.lean` as it is.
+`PaleyWienerThm` (Defs) is the Paley–Wiener–Plancherel theorem. Part 1 gives `F_g ∈ PW` and
+`‖F_g‖² = 2π‖g‖²` for every `g ∈ L²(−π,π)`. Part 2 represents every `f ∈ PW` as `F_g` (without a
+norm identity, which follows from part 1). `memPW_pwFT` is `hPW.1`; `exists_pwFT` is `hPW.2` plus
+`hPW.1`. (A first, `↔` form had a vacuous `⇐`; it was strengthened to the present form before the
+freeze, option (A) of the original blueprint. `PaleyWienerThm` is now proved: `paleyWiener_holds`,
+`Cited/PaleyWiener.lean`, P1.)
 
 ## 1. `PW/Basic.lean`
 
@@ -183,7 +178,7 @@ theorem memPW_of_tendsto {ι : Type*} {l : Filter ι} [l.NeBot] [l.IsCountablyGe
 ```
 
 *Proof.* (This is the shared "limit stays in `PW`" lemma, used for completeness, normal families,
-and for the closure step of §1.7; it does not need `hPW`.)
+and in the (obsolete) closure step of the old §1.7; it does not need `hPW`.)
 * *Entire:* hypothesis `hd`.
 * *Type:* for `ε > 0`, `‖f z‖ = lim ‖F_i z‖ ≤ K e^{π|Im z|} ≤ |K| e^{(π+ε)‖z‖}`
   (`le_of_tendsto`, `Complex.abs_im_le_norm`, `Real.exp_le_exp`, `mul_le_mul_of_nonneg_left`).
@@ -297,7 +292,7 @@ two `lintegral`s agree (`lintegral_congr`, `enorm` version: `enorm_mul`, `enorm_
 (`f ≡ 1`, `a = i`: `dslope f a ≡ 0`, left side `0`, right side `∞`); without `a.im ≠ 0`, for real `a` the unimodularity fails.
 This is exactly axiom (H1) for `PW`: for `ζ = a` nonreal with `f(ζ) = 0`, `f(z)(z - ζ̄)/(z - ζ) ∈ PW` with the same norm (`b = conj ζ`).
 
-### 1.7 Proof of (PW⇐) from `hPW`
+### 1.7 `exists_pwFT`, `memPW_pwFT`: projections of `hPW`
 
 ```lean
 /-- Easy half of `hPW`: every `f ∈ PW` is `pwFT g` for some `g ∈ L²(-π,π)`, with
@@ -306,9 +301,9 @@ theorem exists_pwFT (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) :
     ∃ g : ℝ → ℂ, MemL2pi g ∧ f = pwFT g ∧ pwNormSq f = ENNReal.ofReal (2 * Real.pi) * l2piSq g
 ```
 
-*Proof.* `obtain ⟨g, hg, hrep, hnorm⟩ := (hPW f).1 hf`; `f = pwFT g` by `funext hrep`
-(`pwFT g z` is by definition the interval integral in `hrep`; `MemL2pi g` is the `MemLp` in the
-statement of `PaleyWienerThm`; `l2piSq g` is the `lintegral` there). Literally `hPW`.
+*Proof.* `obtain ⟨g, hg, hrep⟩ := hPW.2 f hf`; `f = pwFT g` by `funext hrep` (`pwFT g z` is by
+definition the interval integral in `hrep`; `MemL2pi g` is the `MemLp` of `PaleyWienerThm`); norm
+identity `(hPW.1 g hg).2` (`l2piSq g` is the `lintegral` there).
 
 ```lean
 /-- **Strong form of the Paley–Wiener theorem** (see blueprint §0: `PaleyWienerThm` as stated
@@ -318,43 +313,10 @@ theorem memPW_pwFT (hPW : PaleyWienerThm) {g : ℝ → ℂ} (hg : MemL2pi g) :
     MemPW (pwFT g) ∧ pwNormSq (pwFT g) = ENNReal.ofReal (2 * Real.pi) * l2piSq g
 ```
 
-*Proof of (PW⇐).* Let `D := {g : ℝ → ℂ | MemL2pi g ∧ MemPW (pwFT g)}`.
-
-*Step 1 (norm identity on `D`).* If `g ∈ D`, then `hPW` (`⇒`) applied to `f = pwFT g` gives `g₀ ∈ L²`
-with `pwFT g = pwFT g₀` and `‖pwFT g‖² = 2π ‖g₀‖²`. Since `pwFT g (k) = pwFT g₀ (k)` for all
-`k ∈ ℤ`, `l2piSq_eq_of_pwFT_eq` gives `‖g₀‖² = ‖g‖²`. So `pwNormSq (pwFT g) = ofReal(2π) * l2piSq g`.
-
-*Step 2 (`D` is a linear subspace).* `pwFT (g + h) = pwFT g + pwFT h`, `pwFT (c g) = c pwFT g`
-(`pwFT_sub` and the same for `+`, scalar), `MemPW.add/sub/const_mul`, `MemLp.add/const_smul`.
-
-*Step 3 (the exponentials are in `D`).* For `k ∈ ℤ`, `e_k(t) := exp(-I k t)` (bounded, so in `L²`):
-`F_{e_k}(z) = ∫_{-π}^{π} e^{i(z-k)t} dt = 2 sin(π(z-k))/(z-k)` (value `2π` at `z = k`)
-`= 2(-1)^k sin(πz)/(z-k)`. Entire (`dslope`/removable singularity, or `Real.sinc`‑style:
-`F_{e_k}(z) = 2π · csinc(π(z-k))`, using `OCS.csinc`), type `≤ π` because
-`|csinc w| ≤ e^{|Im w|}` (`OCS.norm_csinc_le_exp_abs_im`), and on `ℝ`: `|F_{e_k}(x)| ≤ 2π min(1, 1/(π|x-k|))
-≤ C/(1+(x-k)²)^{1/2}`, which is in `L²(ℝ)` (as `|F|² ≤ 4π²·2/(1+π²(x-k)²)`; `integrable_inv_one_add_sq`).
-(Alternatively verify `F_{e_k}(z) = 2π csinc(π (z-k))` by computing the integral:
-`∫_{-π}^{π} e^{iwt} dt = (e^{iπw} - e^{-iπw})/(iw) = 2 sin(πw)/w`, `integral_exp_mul_complex`.)
-
-*Step 4 (`D` is closed under `L²(-π,π)` limits).* Let `g_n ∈ D`, `g_n → g` in `L²(-π,π)`. By `norm_pwFT_le`
-applied to `g_n - g`: `|F_{g_n}(z) - F_g(z)| ≤ e^{π|y|} √(2π ‖g_n-g‖²) → 0`, locally uniformly
-(uniformly on `|Im z| ≤ ρ`). `F_{g_n}` entire; limit locally uniform ⇒ `F_g` entire
-(`TendstoLocallyUniformlyOn.differentiableOn` with `U = univ`, `tendstoLocallyUniformlyOn_univ`).
-Bounds: `‖F_{g_n}(z)‖ ≤ K e^{π|y|}` with `K = sup_n √(2π ‖g_n‖²) < ∞` (convergent sequence of norms:
-`‖g_n‖ ≤ ‖g‖ + ‖g_n-g‖`, bounded; use `l2piSq` as `eLpNorm`); norms `‖F_{g_n}‖² = 2π ‖g_n‖²` bounded by
-Step 1. Then `memPW_of_tendsto` (with `ι = ℕ`, `l = atTop`, `M = ofReal(2π·sup ‖g_n‖²)`) gives `F_g ∈ PW`. So `g ∈ D`.
-
-*Step 5 (density).* The span of `{e_k}` is dense in `L²(-π,π)`: by the Parseval identity
-(`tsum_enorm_sq_pwFT_int`, i.e. the completeness of the trigonometric system), for `g ∈ L²`
-the partial sums `g_N = ∑_{|k| ≤ N} c_k e_k`, `c_k := (2π)⁻¹ F_g(k)`, satisfy
-`pwFT (g - g_N) (j) = 0` for `|j| ≤ N` (because `F_{e_k}(j) = 2π δ_{jk}`: orthogonality of
-`e^{i(j-k)t}` on `[-π,π]`, `integral_exp_mul_complex` / `fourierCoeffOn` of `fourier`)
-and `= F_g(j)` for `|j| > N`, so `‖g - g_N‖² = (2π)⁻¹·∑_{|j|>N} |F_g(j)|² · …` → by `tsum_enorm_sq_pwFT_int` applied to `g - g_N`:
-`2π ‖g - g_N‖² = ∑_{|j| > N} |F_g(j)|² → 0`, tail of the convergent series `∑_j |F_g(j)|² = 2π‖g‖² < ∞`
-(`ENNReal.tendsto_tsum_compl_atTop_zero` or `tendsto_tsum_compl_atTop_zero`). Since `g_N ∈ D` (Steps 2, 3), closedness (Step 4)
-gives `g ∈ D`. Combining with Step 1: `MemPW (pwFT g) ∧ pwNormSq (pwFT g) = 2π ‖g‖²`. ∎
-
-(If M00 adopts option (A), this whole subsection is replaced by projections.)
+*Proof.* `hPW.1 g hg`. (The docstring is stale: it predates the strengthening of
+`PaleyWienerThm`. The five-step Parseval/density derivation that stood here is obsolete; its helper
+lemmas `pwFT_sub`, `tsum_enorm_sq_pwFT_int`, `l2piSq_eq_of_pwFT_eq`, `fourierCoeffOn_pwFT` of §1.4
+are proved but unused.)
 
 ## 2. `PW/Bounds.lean`
 
@@ -416,8 +378,8 @@ theorem pw_norm_sq_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (z
 *Proof.* `exists_pwFT`: `f = F_g`, `‖f‖² = 2π ‖g‖²`. By `norm_pwFT_le`,
 `‖f z‖² ≤ e^{2π|y|} · 2π (l2piSq g).toReal = e^{2π|y|} (pwNormSq f).toReal`
 (`ENNReal.toReal_mul`, `ENNReal.toReal_ofReal`, `Real.sq_sqrt`, `Real.exp_mul`‑type rewriting `exp(π|y|)^2 = exp(2π|y|)`).
-**Constant: exactly `1`; the exponent `2π|Im z|` cannot be improved** (it is attained
-asymptotically by `g = e^{∓ i·}`-like concentrations at `t = ∓π`).
+**Constant `1`, sharp only at `y = 0`** (the best constant is `sinh(2π|y|)/(2π|y|)`, from
+Cauchy–Schwarz with `∫_{-π}^{π} e^{-2yt}dt`); **the exponent `2π|y|` is sharp** (R2-03).
 
 ```lean
 /-- **Line integrals** `∫ |f(x + iy)|² dx ≤ e^{2π|y|} ‖f‖²`. -/
@@ -504,6 +466,7 @@ theorem pwNormSq_pwBump_pos : 0 < pwNormSq pwBump
 
 *Proof.* `pwBump` is continuous with `pwBump 0 = 1`, so `‖pwBump x‖ₑ² > 1/4` for `|x| < η` (some `η`),
 and `lintegral ≥ ∫⁻_{ball 0 η} (1/4) > 0` (`setLIntegral_mono`, `Real.volume_ball`; or `lintegral_pos_iff_support`).
+*Implemented:* by contradiction through `MemPW.eq_zero_of_pwNormSq_eq_zero` (`pwBump 0 = 1 ≠ 0`).
 
 ```lean
 theorem exists_memPW_eval_ne_zero : ∃ g : ℂ → ℂ, MemPW g ∧ g 0 = 1
@@ -640,6 +603,29 @@ Hence `sampleSum (Λ ∩ {|x| ≥ R}) f ≤ ofReal(1/(πr²)) ∫⁻_{strip, |Re
 `R` depends on `δ`, `f`, `ε` only (through the function `R' ↦ ∫∫_{strip, |x| ≥ R'} |f|²`), not on `Λ`.
 Bound used for the `α → π/2` limit (README §3.5): `∑_{λ ∈ Λ, |λ| ≥ R} |f(λ)|² ≤ (4/(π δ²)) ∫_{|y|<δ/2} ∫_{|x| ≥ R-δ/2} |f(x+iy)|² dx dy`.
 
+### 3.5 Added during assembly/implementation
+
+```lean
+/-- The tail bound of `plancherelPolya_tail`, uniformly over unions `A ∪ B` of two `δ`-separated
+sets (I-01; consumed by `Theorem1/Sufficiency/Limit.lean`). -/
+theorem plancherelPolya_tail_union (hPW : PaleyWienerThm) {δ : ℝ} (hδ : 0 < δ) {f : ℂ → ℂ}
+    (hf : MemPW f) {ε : ℝ≥0∞} (hε : ε ≠ 0) :
+    ∃ R : ℝ, ∀ A B : Set ℝ, IsSepBy δ A → IsSepBy δ B →
+      sampleSum ((A ∪ B) ∩ {x : ℝ | R ≤ |x|}) f ≤ ε
+theorem sampleSum_eq_tsum_indicator (Λ : Set ℝ) (f : ℂ → ℂ) :
+    sampleSum Λ f = ∑' x : ℝ, Λ.indicator (fun x : ℝ ↦ ‖f (x : ℂ)‖ₑ ^ 2) x
+theorem sampleSum_mono {Λ₁ Λ₂ : Set ℝ} (h : Λ₁ ⊆ Λ₂) (f : ℂ → ℂ) :
+    sampleSum Λ₁ f ≤ sampleSum Λ₂ f
+-- PW/Basic.lean
+theorem MemPW.eq_zero_of_pwNormSq_eq_zero {f : ℂ → ℂ} (hf : MemPW f) (h : pwNormSq f = 0) : f = 0
+theorem IsSeparated.finite_inter_Icc {Λ : Set ℝ} (h : IsSeparated Λ) (R : ℝ) : (Λ ∩ Icc (-R) R).Finite
+theorem IsSepBy.mono {δ δ' : ℝ} {Λ Λ' : Set ℝ} (h : IsSepBy δ Λ) (hδ : δ' ≤ δ) (hΛ : Λ' ⊆ Λ) :
+    IsSepBy δ' Λ'
+```
+`plancherelPolya_tail_union`: apply `plancherelPolya_tail` with `ε/2` to `A` and to `B` and use
+`sampleSum_union_le`. `MemPW.eq_zero_of_pwNormSq_eq_zero` needs no `hPW`: `f` is continuous with
+`∫ ‖f‖² = 0`, so `f = 0` on `ℝ`, hence everywhere (identity theorem).
+
 ## 4. `PW/Complete.lean`
 
 ```lean
@@ -661,7 +647,8 @@ then `tendstoLocallyUniformlyOn_iff_forall_isCompact` with `tendstoLocallyUnifor
 lies in `PW`, has `pwNormSq F_m < ε`, converges pointwise to `g - f_n` as `m → ∞`, and satisfies the uniform bound
 `‖F_m z‖ ≤ K e^{π|Im z|}` with `K := √ε` (from `pw_norm_sq_le`: `‖F_m z‖² ≤ e^{2π|y|} ε`). So `memPW_of_tendsto`
 (`ι = ℕ`, `l = atTop`, `M = ε`) gives `g - f_n ∈ PW` and `pwNormSq (g - f_n) ≤ liminf_m pwNormSq (f_m - f_n) ≤ ε`. Then
-`g = f_n + (g - f_n) ∈ PW` (`MemPW.add`), and `pwNormSq (f_n - g) = pwNormSq (g - f_n)` (`norm_sub_rev`) `≤ ε` for all `n ≥ N(ε)`:
+`g = f_n + (g - f_n) ∈ PW` (`MemPW.add`), and `pwNormSq (f_n - g) = pwNormSq (g - f_n)` (`norm_sub_rev`) `≤ ε` for all `n ≥ N(ε)`
+(*Implemented:* the family is re-indexed as `k ↦ f(k+N) − f n`, R2-04):
 convergence to `0`. (Locally uniform convergence is needed for `g` entire; the identity `f_n - g` vs `g - f_n`: use `‖a - b‖ₑ = ‖b - a‖ₑ`.)
 
 ```lean
@@ -695,7 +682,7 @@ and run (a), (b) for `f ∘ ψ₀`. Then `memPW_of_tendsto` (hypotheses: `hF` gi
 
 | statement | constant | depends on |
 |---|---|---|
-| `pw_norm_sq_le` | `1` · `e^{2π|Im z|}` | nothing |
+| `pw_norm_sq_le` | `1` · `e^{2π|Im z|}` (best: `sinh(2π|y|)/(2π|y|)`) | nothing |
 | `pw_line_integral_le` | `e^{2π|y|}` | nothing |
 | `MemPW.lintegral_mul_exp_le` | `1` | nothing |
 | `pw_deriv_bound` | `π² e²` | nothing |
@@ -719,12 +706,15 @@ and run (a), (b) for `f ∘ ψ₀`. Then `memPW_of_tendsto` (hypotheses: `hF` gi
    exponential type `π`. No error. Sure.
 3. **p. 797, the limit `α → π/2`:** "dominated convergence by (4)" does not give domination (README §3.5). The fix is
    `plancherelPolya_tail` above. Sure.
-4. **(Source of the formalization, not of the paper)** `PaleyWienerThm` as written in `Defs.lean` makes `⇐` vacuous
-   (§0). Sure; fixed either by option (A) or by the derivation of §1.7.
+4. **(Source of the formalization, not of the paper)** The first `PaleyWienerThm` made `⇐` vacuous.
+   *Resolved before the freeze* (option A, part 2 without norm identity; §0).
 5. The paper uses the bound `|f(z)| ≤ C e^{π|y|}‖f‖` and the Bernstein/Cauchy estimates freely (pp. 796–797, 801). The constants
-   are made explicit here: `|f(z)|² ≤ e^{2π|y|}‖f‖²` (constant exactly 1), `|f'(x)|² ≤ π²e²‖f‖²`.
+   are made explicit here: `|f(z)|² ≤ e^{2π|y|}‖f‖²` (constant 1, sharp only at `y = 0`), `|f'(x)|² ≤ π²e²‖f‖²`.
 
 ## 7. Requested changes to M00
+
+*Resolved before the freeze* (option A, with part 2 without the norm identity, which follows from
+part 1; `Defs.lean`). The request is kept for the record.
 
 1. **Strengthen `PaleyWienerThm`** (high priority). Replace by
 ```lean

@@ -30,7 +30,8 @@ brief), on branch `impl/<name>`. Lean/Mathlib v4.35.0.
    `set_option linter.* false`/`set_option maxHeartbeats 0`. Fix linter warnings by correcting
    the code. Raising `maxHeartbeats` locally for one declaration is acceptable if justified in a
    comment. Do not silence an unused hypothesis of a main statement (e.g. `hlow` in `theorem2_i`,
-   `hPW` in `theorem2_ii`); leave that warning, it is handled at the end.
+   `hPW` in `theorem2_ii`); leave that warning, it is handled at the end.  (Done in the final
+   lint pass, NOTEBOOK I-03: unused hypotheses are removed from the statements.)
 5. **Build** with `lake build FourierFrames.<Module>` in your worktree (it shares the prebuilt
    Mathlib; the first build of the project files takes a few minutes). Keep files compiling.
    Prefer many small lemmas to long proofs; long `simp`/`nlinarith` calls that time out should be

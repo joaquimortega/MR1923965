@@ -68,7 +68,7 @@ theorem bddBelow_phaseLevel {φ : ℝ → ℝ} (hφ : StrictMono φ) (α b : ℝ
   · exact Or.inl ⟨hx, hb x, hφ.monotone (not_lt.mp h0)⟩
 
 /-- Lower bound for the sampling sums of translates, from `H(E) = PW` and the norm identity. -/
-theorem translate_lower_bound_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem translate_lower_bound_aux (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ MemHE E (sAlpha E α)) {g : ℂ → ℂ} (hg : MemPW g) (hP : pwNormSq g ≠ 0) :
     ∃ ε₀ : ℝ≥0, 0 < ε₀ ∧ ∀ t : ℝ, (ε₀ : ℝ≥0∞) ≤ sampleSum (phaseLevel φ α) (fun z ↦ g (z - t)) := by
@@ -76,7 +76,7 @@ theorem translate_lower_bound_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : �
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
   obtain ⟨c, C, hc, hcC⟩ := hEPW.2
-  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hEHB hEPW
+  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hEHB hEPW
   have hTE := hE E hstrict hE0 φ hφ α hα
   obtain ⟨ε₀, hε₀, hlt⟩ := ENNReal.exists_nnreal_pos_mul_lt
     (a := ENNReal.ofReal (Real.pi / c1)) ENNReal.ofReal_ne_top
@@ -110,7 +110,7 @@ theorem phase_tendsto_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → �
     strictMono_of_hasDerivAt_pos hφ' (fun x ↦ hstrict.phaseDeriv_pos (hE0 x))
   obtain ⟨α, hα⟩ := hex
   obtain ⟨δ, hδ, hsep⟩ := levelSet_separated_aux hPW hE hEHB hEPW hφ hα
-  obtain ⟨ε₀, hε₀, hlow⟩ := translate_lower_bound_aux hPW hE hEHB hEPW hφ hα memPW_pwBump
+  obtain ⟨ε₀, hε₀, hlow⟩ := translate_lower_bound_aux hE hEHB hEPW hφ hα memPW_pwBump
     pwNormSq_pwBump_pos.ne'
   have hε : (ε₀ : ℝ≥0∞) / 2 ≠ 0 := by
     simp [hε₀.ne']

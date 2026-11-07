@@ -1,4 +1,4 @@
-import Mathlib
+import FourierFrames.Defs
 
 /-!
 # M08 helper (D2): the logarithmic lower bound `∫ log|s - x| dν ≥ log d - 2K` (blueprint §6.7)
@@ -17,7 +17,7 @@ theorem intervalIntegrable_log_abs_sub (x a b : ℝ) :
   have h := (intervalIntegrable_log' (a := a - x) (b := b - x)).comp_sub_right x
   simpa [Real.log_abs] using h
 
-theorem integrableOn_log_abs_sub (x : ℝ) {a b : ℝ} (_hab : a ≤ b) :
+theorem integrableOn_log_abs_sub (x a b : ℝ) :
     IntegrableOn (fun s : ℝ => Real.log |s - x|) (Ioc a b) :=
   (intervalIntegrable_log_abs_sub x a b).1
 
@@ -39,11 +39,11 @@ theorem integral_log_ball (x : ℝ) {d : ℝ} (hd : 0 < d) :
 def deficit (x d : ℝ) : ℝ → ℝ :=
   (Ioo (x - d) (x + d)).indicator (fun s => Real.log d - Real.log |s - x|)
 
-theorem deficit_integrable (x : ℝ) {d : ℝ} (hd : 0 < d) : Integrable (deficit x d) := by
+theorem deficit_integrable (x d : ℝ) : Integrable (deficit x d) := by
   unfold deficit
   rw [integrable_indicator_iff measurableSet_Ioo]
   have : IntegrableOn (fun s : ℝ => Real.log d - Real.log |s - x|) (Ioc (x - d) (x + d)) :=
-    (integrableOn_const (by simp)).sub (integrableOn_log_abs_sub x (by linarith))
+    (integrableOn_const (by simp)).sub (integrableOn_log_abs_sub x _ _)
   exact this.mono_set Ioo_subset_Ioc_self
 
 theorem deficit_integral (x : ℝ) {d : ℝ} (hd : 0 < d) : ∫ s, deficit x d s = 2 * d := by
@@ -90,17 +90,17 @@ theorem lower_log_integral {a b K x : ℝ} (hab : a < b) {p : ℝ → ℝ} (hp :
     have : 0 ≤ K / d := le_trans h0 this
     exact (div_nonneg_iff.mp this).elim (fun h => h.1) (fun h => by linarith [h.2, hd])
   have hpint : IntegrableOn p (Ioc a b) := hp.integrableOn_Ioc
-  have hmint : IntegrableOn (deficit x d) (Ioc a b) := (deficit_integrable x hd).integrableOn
+  have hmint : IntegrableOn (deficit x d) (Ioc a b) := (deficit_integrable x d).integrableOn
   have hae : ∀ᵐ s ∂(volume : Measure ℝ), s ≠ x := by
     simpa using (Set.countable_singleton x).ae_notMem volume
   have hRint : IntegrableOn (fun s => Real.log d * p s - K / d * deficit x d s) (Ioc a b) :=
     (hpint.const_mul _).sub (hmint.const_mul _)
   have hLint : IntegrableOn (fun s => Real.log |s - x| * p s) (Ioc a b) :=
-    (integrableOn_log_abs_sub x hab.le).mul_continuousOn_of_subset hp.continuousOn
+    (integrableOn_log_abs_sub x a b).mul_continuousOn_of_subset hp.continuousOn
       measurableSet_Ioc isCompact_Icc Ioc_subset_Icc_self
   have hm_cell : ∫ s in Ioc a b, deficit x d s ≤ 2 * d := by
     rw [← deficit_integral x hd]
-    exact setIntegral_le_integral (deficit_integrable x hd)
+    exact setIntegral_le_integral (deficit_integrable x d)
       (hae.mono fun s hs => deficit_nonneg x s hs)
   have hmain : ∫ s in Ioc a b, (Real.log d * p s - K / d * deficit x d s) ≤
       ∫ s in Ioc a b, Real.log |s - x| * p s := by

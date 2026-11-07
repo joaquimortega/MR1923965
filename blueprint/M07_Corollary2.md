@@ -1,9 +1,11 @@
 # M07 — The phase construction, the perturbation lemma and Corollary 2
 
 **Lean:** `FourierFrames/Perturbation.lean`, `FourierFrames/Construction.lean`,
-`FourierFrames/Corollary2.lean` (namespace `FF`; the last imports the first two, so for a stand-alone
-compilation the two oleans must exist: `lake build FourierFrames.Perturbation
-FourierFrames.Construction`; `Perturbation` and `Construction` compile with `lake env lean` directly).
+`FourierFrames/Corollary2.lean` (namespace `FF`); helpers
+`FourierFrames/Construction/{Gaps,Comparable,PolyHB,Limits,Rigidity,Translate}.lean` and
+`FourierFrames/Corollary2/{Affine,Kernel,Density,LogInt,Reflection,PotC,PotCDiff,PotCCont,UCont,LogNorm}.lean`.
+**Status:** proved (no `sorry`). The Lean blocks show the statements; where the implemented proof differs from
+the text it is marked *Implemented:* (sources: `impl_notes/construction.md`, `impl_notes/corollary2.md`).
 **Paper:** §5, pp. 799–801 (the proof of Corollary 2) and the perturbation sentence on p. 800.
 
 **Depends on.**
@@ -50,8 +52,9 @@ The proof of Corollary 2 on pp. 800–801 is a sketch with five real gaps. All a
    `κ = 0` this says that `A` is bounded on `ℝ`, for `κ ≠ 0` that `A e^{-κ z}` is, see the
    paragraph "Generalisation to a linear drift" below); the first four clauses need only the
    weaker `hshift : |U(z - 1/2) - U(z)| ≤ C` (`exists_hb_of_density`). M06 needs
-   `|E| ≃ e^{π Im z}`, which `exists_hb_of_density_phase` now delivers directly (after the
-   normalisation `E ↦ e^{-κ z} E`), so M06 does not have to multiply by `e^{-κ z}` itself.
+   `|E| ≃ e^{π Im z}`, which `exists_hb_of_density_phase` now delivers directly, with
+   `E_κ = e^{-κ z}(A - i e^{κ/2} B)` (`compEκ`; the plain twist `e^{-κ z}(A - iB)` has the right modulus but
+   not the right phase, see (iii) below), so M06 does not have to normalise `E` itself.
 
    **Generalisation to a linear drift (added at assembly).** The first version assumed
    `|U - π Im z| ≤ C`. M06 (`LogExample.lean`, §4) proves `U(z) = π Im z + κ Re z + O(1)` with
@@ -101,12 +104,15 @@ forced, §2.4).
 
 ## 1. The perturbation lemma (`Perturbation.lean`)
 
-### 1.0 Upstream interface (declared at the top of the file, identical to M01's)
+### 1.0 Lemmas used from M01 (imported, see `IMPORTS.md`)
 
 `MemPW.mul_div_sub`, `pwNormSq_ne_top`, `IsSepBy`, `plancherelPolya`, `sampleSum_union_le`,
-`pw_normal_family` (all with the statements of `FourierFrames/PW/*.lean`).
+`pw_normal_family` (`FourierFrames/PW/*.lean`).
 
 ### 1.1 Elementary facts
+
+(`sampleSum_mono` is in `PW/PlancherelPolya.lean` and `IsSeparated.finite_inter_Icc` in `PW/Basic.lean`, moved
+there at assembly; the other four are in `Perturbation.lean`.)
 
 ```lean
 theorem sampleSum_mono {Λ₁ Λ₂ : Set ℝ} (h : Λ₁ ⊆ Λ₂) (f : ℂ → ℂ) :
@@ -181,7 +187,7 @@ and `h(γ) = 0`; and `h(a) = dslope g b a · 0 = 0`. So `h` vanishes on `Γ`, he
 
 ```lean
 theorem isSampling_of_replace_finite (hPW : PaleyWienerThm) {Γ Γ' : Set ℝ}
-    (hsep : IsSeparated Γ) (hs : IsSampling Γ) (hsep' : IsSeparated Γ')
+    (hsep : IsSeparated Γ) (hs : IsSampling Γ)
     (hD : (Γ \ Γ').Finite) (hD' : (Γ' \ Γ).Finite) (hcard : (Γ \ Γ').ncard = (Γ' \ Γ).ncard) :
     IsSampling Γ' := by
 ```
@@ -388,13 +394,11 @@ theorem compBeta_interlace (hw : OCS.IsMultWeight m a b) {N : ℕ}
     OCS.multBary m j < compBeta m N j ∧ compBeta m N j < OCS.multBary m (j + 1) := by
 ```
 ```lean
-theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z = 0 ↔ ∃ j : ℤ, z = (compBeta m N j : ℂ) := by
 ```
 ```lean
-theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) =
       genA m (z - 1 / 2) * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) := by
 ```
@@ -489,8 +493,7 @@ theorem tendsto_polyA (hw : OCS.IsMultWeight m a b) :
       (genA m) atTop := by
 ```
 ```lean
-theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) (N : ℕ) :
     TendstoLocallyUniformly
       (fun (R : ℕ) (z : ℂ) ↦ Complex.exp (OCS.multBeta m 0 + polyExp m R * z) *
         Real.exp (-polyExp m R / 2) * polyB m N R z)
@@ -507,6 +510,11 @@ off the roots of `Q`, `e^{β + c_R z} e^{-c_R/2} B_R(z) = [e^{β + c_R(z - 1/2)}
 `B` is entire; convergence near a root `a` of `Q` follows from uniform convergence on a small circle
 about `a` (it avoids the roots) and the maximum principle
 (`Complex.norm_le_of_forall_mem_frontier_norm_le` applied to the difference). ∎
+*Implemented:* the removal of `Q` uses `Limits.tendstoLU_of_mul_prod` (maximum modulus on a large circle).
+The polynomial Hermite–Biehler step is proved through monotone arguments of the factors
+(`PolyHB.arg_sub_strictMono`, `PolyHB.sum_bound`, `PolyHB.im_prod_div_pos'`, `Construction/PolyHB.lean`), not by
+partial fractions; `isHB_compE` and `isHB_compEκ` both follow from `isHB_genA_sub_lam_compB`
+(`A - iλB ∈ \overline{HB}` for every `λ > 0`, `Construction.lean:1063`).
 
 **Theorem.**
 
@@ -563,7 +571,10 @@ Let `Σ` be the finite set `{β_j, γ_j + 1/2 : |j| < N}` and `ρ₀` so large t
 radius `≥ 1`, where both minima are `1`). For `|z| ≤ ρ₀`, `Im z ≥ 0`: `B` is entire with simple zeros
 `β_j` only, so `|B(z)|/dist(z, Γ_B)` is a positive continuous function on the compact set (limit
 `|B'(β_j)| > 0` at the zeros), bounded above and below; and `e^{U(z - 1/2)}` is bounded above and
-below there (`abs_multU_le_of_bdd`, §3.1). ∎
+below there (`expU_bounds_on_compact`, `Construction.lean:882`, via `Comparable.comparable_on_compact` of
+`Construction/Comparable.lean`: an entire function with simple zeros has `|F| ≃ min(1, d(z, Z))` on compacts;
+no continuity of `U` is used — `abs_multU_le_of_bdd` of §3.1 would create an import cycle, since
+`Corollary2.lean` imports `Construction.lean`). ∎
 
 ### 2.6 The main construction
 
@@ -577,6 +588,9 @@ theorem exists_hb_of_density (hm : Measurable m) (ha : 0 < a) (hlow : ∀ t, a �
         c * Real.exp (OCS.multU m 0 z) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (OCS.multU m 0 z)) ∧
       (∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ γ ∈ OCS.multGamma m, z = (γ : ℂ)) := by
 ```
+
+*Implemented:* `N` comes from `Gaps.exists_gap_index_strong` (gap `> 3/4`), which gives
+`dist(Γ, Γ_B) ≥ η > 0` (`exists_eta`, `Construction.lean:1152`).
 
 *Proof.* Take `N` from `exists_gap_index`, `E = compE m N` (`isHB_compE`). Real zeros: `E(x) = A(x) -
 iB(x)` with `A(x), B(x)` real, and `A`, `B` have disjoint zero sets (`β_j ∈ (γ_j, γ_{j+1})`), so `E(x) ≠ 0`.
@@ -640,6 +654,8 @@ near each `z₀ ∈ θ + ℤ`, so `A_∞(z₀) = 0` and `Q` is bounded near `z�
 `|Q| ≤ c₂/c₀` on ℂ. By Liouville (`Differentiable.apply_eq_apply_of_bounded`) `Q ≡ c`. `c ≠ 0` because
 `|A_∞(θ + 1/2)| ≥ c₁ min(1, 1/2) > 0` by (★); `c` is real because `A_∞` and `sin π(x - θ)` are
 real on `ℝ`. ∎
+*Implemented* as `Translate.translate_limit` (`Construction/Translate.lean:554`): nonvanishing of the limit at
+`θ + 1/2`, then `sin_lower`, a removable singularity and Liouville, as above.
 
 **(b) Limits of `E` and the rigidity of the phase.**
 
@@ -647,7 +663,6 @@ real on `ℝ`. ∎
 theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
@@ -668,6 +683,9 @@ uniformly on `[-2, 2]`. The functions `g_k(x) = φ(s_k + x) - φ(s_k) - πx` are
 and `e^{-i g_k} → 1` uniformly; so for large `k`, `|e^{-ig_k(x)} - 1| < 1` forces `g_k(x) ∈ 2πℤ +
 (-π/3, π/3)`, and by connectedness and `g_k(0) = 0` (`g_k` stays in `(-π/3, π/3)`) one gets
 `g_k → 0` uniformly on `[-2, 2]`. This contradicts the choice of `τ_k`. ∎
+*Implemented:* the connectedness argument is the abstract `Rigidity.phase_drift_small`
+(`Construction/Rigidity.lean:112`), applied to the translates through `tendsto_compEκ_translate`
+(`E_κ(z + s_k) → i c e^{-iπ(z-θ)}`).
 
 (Both `s_k → +∞` and `s_k → -∞` are covered: `(a)` only uses `|s_k| → ∞`.)
 
@@ -686,7 +704,9 @@ theorem phase_levels (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact 
 (`IsHB.phaseDeriv_nonneg`, `exists_isPhaseFunction`), `φ` nondecreasing. *Strict:* if `φ ≡ α` on an
 interval `J`, then on `J` `A = Re E = |E| cos α`, `B = -Im E = |E| sin α`, so
 `sin α · A - cos α · B = 0` on `J`, hence on ℂ (identity theorem); `A ≢ 0`, `B ≢ 0` and `A`, `B`
-have disjoint non-empty zero sets, so `(\sin α, \cos α) = (0,0)`: impossible. *Onto:* by (b),
+have disjoint non-empty zero sets, so `(\sin α, \cos α) = (0,0)`: impossible. (*Implemented* differently:
+`E^* = cE` would force `A ≡ 0`, so `E_κ` is strict by `IsHB.isStrictHB_or_fstar_eq` (`isStrictHB_compEκ`,
+`Construction.lean:1409`), and `IsPhaseFunction.strictMono_of_isStrictHB` applies; no identity theorem.) *Onto:* by (b),
 `φ(s + 1) - φ(s) ≥ π/2` for `|s| ≥ X`, so `φ → ±∞` at `±∞`. *Levels:* `A(x) = Re E(x) = |E(x)| cos φ(x)`,
 so `A(x) = 0 ↔ φ(x) ∈ π/2 + πℤ`. Thus `n ↦ φ^{-1}(π/2 + πn)` and `j ↦ γ_j` are strictly increasing
 bijections of `ℤ` onto `Γ`; the composite `σ = γ^{-1}∘φ^{-1}(π/2 + π ·)` is a strictly increasing
@@ -761,10 +781,10 @@ theorem multU_add {g h : ℝ → ℝ} (hg : Measurable g) (hh : Measurable h) {M
     OCS.multU (fun t ↦ g t + h t) 0 z = OCS.multU g 0 z + OCS.multU h 0 z := by
 ```
 ```lean
-theorem multU_const_mul {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (c : ℝ)
-    (z : ℂ) : OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
+theorem multU_const_mul (g : ℝ → ℝ) (c : ℝ) (z : ℂ) :
+    OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
 ```
-(linearity of the integral, using `integrable_multU_integrand_of_bdd`)
+(`integral_const_mul`; no integrability needed)
 
 ```lean
 theorem continuous_multU_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :
@@ -773,11 +793,18 @@ theorem continuous_multU_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} 
 *Proof.* `z ↦ ∫ k(z,t) g(t) dt` with `k(z, t) = log|1 - z/t| + 1_{|t|>1} Re(z/t)`: dominated convergence
 on compact sets of `z`; the dominating function is `C(1 + |log|t - z_0|| + |log|t||)` for `|t| ≤ T`
 (uniformly integrable) and `C|z|²/t²` for `|t| > T`.
+*Implemented* (`Corollary2/UCont.lean`) by Vitali's theorem (`tendsto_Lp_finite_of_tendsto_ae` +
+`unifIntegrable_of`), with the split `a + b + c` by the window `|t - Re z| ≤ 1`; needed because `g` is only
+measurable.
 
 ```lean
 theorem multU_one (z : ℂ) : OCS.multU (fun _ ↦ (1 : ℝ)) 0 z = Real.pi * |z.im| := by
 ```
-*Proof.* Let `z = x + iy`. `U_1(z) = lim_{T→∞} ∫_{-T}^{T} (log|1 - z/t| + 1_{|t|>1}Re(z/t)) dt` (the
+*Implemented* as a corollary of `log_norm_eq_multU_add_affine` (§3.2) for `f = e^{-iπz}` (`g = π`):
+`πy = U_1 + bx + c`, and evenness plus `U_1(0) = 0` give `b = c = 0` (`multU_one_aux`,
+`Corollary2/LogNorm.lean:214`). The explicit computation below is not used.
+
+*Proof (blueprint).* Let `z = x + iy`. `U_1(z) = lim_{T→∞} ∫_{-T}^{T} (log|1 - z/t| + 1_{|t|>1}Re(z/t)) dt` (the
 integrand is `O(1/t²)` at infinity) and the term `Re(z/t) 1_{|t|>1}` is odd, so it integrates to `0` over
 `[-T, T]`. Hence `U_1(z) = lim [ ∫_{-T}^T ½ log((t - x)² + y²) dt - ∫_{-T}^T log|t| dt ]`. With
 `∫ ½ log(u² + y²) du = (u/2) log(u² + y²) - u + y arctan(u/y)` (`y ≠ 0`; for `y = 0`
@@ -803,6 +830,8 @@ theorem multU_compact_sub_linear {h : ℝ → ℝ} (hh : Measurable h) {M R : �
     ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU h 0 z - (∫ t, (1 - (Icc (-1 : ℝ) 1).indicator 1 t) * (h t / t)) * z.re| ≤ C := by
 ```
+(The restriction `0 ≤ z.im` is not needed: the helper `multU_compact_aux`, `Corollary2/LogInt.lean:422`,
+proves the bound for all `z`.)
 *Proof.* Let `ℓ = ∫ (1 - 1_{[-1,1]}) h/t`; `U_h(z) - ℓ Re z = ∫ log|1 - z/t| h(t) dt`
 (`Re(z/t) = Re z / t`). Write `log|1 - z/t| = log|t - z| - log|t|`; the part `∫ log|t| h` is a
 constant. Case `|z| ≥ 2R + 2`: `log|t - z| = log|z| + log|1 - t/z|`, `∫ h = 0` kills `log|z|`, and
@@ -910,7 +939,14 @@ theorem log_norm_eq_multU_add_affine {f : ℂ → ℂ} (hf : Differentiable ℂ 
       Real.log ‖f z‖ = OCS.multU g 0 z / Real.pi + b * z.re + c := by
 ```
 
-*Proof.* Since `f ≠ 0` on the closed half-plane `{Im z ≥ 0}` (a convex set contained in the open set
+*Implemented* differently (no holomorphic logarithm): `Φ = e^{iφ(0)} f e^{-P}`, `P = potC g/π`, is
+continuous on `Im z ≥ 0`, holomorphic on `Im z > 0` and real on `ℝ`; Schwarz reflection
+(`exists_entire_reflection`, `Corollary2.lean:143`, via the Morera argument of `Corollary2/Reflection.lean`)
+gives an entire zero-free `Φ̂ = e^{G}` with `|Re G| ≲ |z|^{3/2}`, so `G` is affine (Borel–Carathéodory,
+`Corollary2/Affine.lean`) and its slope is real. The helper files use copies `argUp'`, `potC'` of the frozen
+definitions `argUp`, `potC` (transfer by `rfl`).
+
+*Proof (blueprint).* Since `f ≠ 0` on the closed half-plane `{Im z ≥ 0}` (a convex set contained in the open set
 `{f ≠ 0}`) the function `f'/f` has a primitive `L` there (integrate along segments; triangles in
 `{Im z ≥ 0}` lie in `{f ≠ 0}`, so Cauchy–Goursat applies), `L` holomorphic on `Im z > 0`, continuous on
 `Im z ≥ 0`, `e^{L} = f` (adding a constant), `Re L = log|f|`, and `e^{L(x)} = f(x) = |f(x)| e^{-iφ(x)}`
@@ -1024,6 +1060,9 @@ theorem isSeparated_levelSet {Θ : ℝ → ℝ} (hΘ : StrictMono Θ) {C : ℝ} 
 `π ≤ Θ(y) - Θ(x) ≤ C(y - x)`: `y - x ≥ π/C`. ∎
 
 ### 3.6 Rotation lemmas
+
+(`IsHB.rotate` is in `HB/Basic.lean`, `IsPhaseFunction.rotate` in `HB/Phase.lean` (moved at assembly);
+`phaseDeriv_rotate` is in `Corollary2.lean`.)
 
 ```lean
 theorem IsHB.rotate {E : ℂ → ℂ} (hE : IsHB E) (β : ℝ) :
@@ -1158,7 +1197,8 @@ None required. Remarks:
   argument, Morera reflection); (ii) `genA_translate_limit`/`phase_rigidity` (§2.7); (iii)
   `tendsto_polyA/B` (§2.4, locally uniform convergence of products + removable singularities);
   (iv) `multU_one` (§3.1, explicit limit); (v) `norm_compB_comparable`.
-* The three files are independent of `FourierFrames.HB.*` except through the declared upstream lemmas.
+* `Construction.lean` imports `HB.Phase`, and `Corollary2.lean` imports `HB.Comparable` and
+  `Theorem1.Sufficiency` (see `IMPORTS.md`).
 * **Mathlib names checked to exist:** `dslope`, `sub_smul_dslope`, `differentiableOn_dslope`,
   `Complex.differentiableOn_update_limUnder_of_bddAbove`, `Complex.borelCaratheodory`,
   `Complex.norm_iteratedDeriv_le_of_forall_mem_sphere_norm_le`, `Differentiable.apply_eq_apply_of_bounded`,
@@ -1166,5 +1206,5 @@ None required. Remarks:
   `Complex.integral_boundary_rect_eq_zero_of_differentiable_on_off_countable`,
   `Complex.norm_le_of_forall_mem_frontier_norm_le`, `image_sub_le_mul_sub_of_deriv_le`,
   `Complex.arg` / `Complex.arg_mul` (check exact names with `grep`).
-* Compile status: `Perturbation.lean`, `Construction.lean`, `Corollary2.lean` compile with only
-  `declaration uses 'sorry'` warnings.
+* Status: `Perturbation.lean`, `Construction.lean`, `Corollary2.lean` and their helper files are proved
+  (no `sorry`).

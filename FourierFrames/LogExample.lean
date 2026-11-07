@@ -1098,9 +1098,8 @@ theorem multU_model {z : ℂ} (hz : 0 < z.im) :
     rw [h2, h3]
   exact tendsto_nhds_unique hlim hlim2
 
-theorem integrable_log_mul_sub_one {z : ℂ} (hz : 0 < z.im) :
+theorem integrable_log_mul_sub_one (z : ℂ) :
     Integrable (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * (logDensity t - 1)) := by
-  have _ := hz  -- (the hypothesis is not needed; the statement holds for all `z`)
   have h1 := OCS.integrable_multUIntegrand isMultWeight_logDensity z
   have h2 : Integrable (OCS.multUIntegrand (fun _ ↦ 1) z) :=
     OCS.integrable_multUIntegrand (a := 1) (b := 1)
@@ -1125,7 +1124,7 @@ theorem multU_logDensity_eq {z : ℂ} (hz : 0 < z.im) :
     ring
   have h1 : Integrable (OCS.multUIntegrand (fun _ ↦ 1) z) :=
     OCS.integrable_multUIntegrand (a := 1) (b := 1) ⟨measurable_const, one_pos, fun _ ↦ le_rfl, fun _ ↦ le_rfl⟩ z
-  have h2 := integrable_log_mul_sub_one hz
+  have h2 := integrable_log_mul_sub_one z
   have h3 := integrable_logKappa.const_mul z.re
   rw [OCS.multU_eq]
   simp_rw [hpt]
@@ -1288,7 +1287,7 @@ noncomputable def ibpDeriv (z : ℂ) (t : ℝ) : ℝ :=
 
 theorem integrable_ibpDeriv {z : ℂ} (hy : 0 < z.im) : Integrable (ibpDeriv z) := by
   have h1 := integrable_kern_mul_logW hy
-  have h2 := integrable_log_mul_sub_one hy
+  have h2 := integrable_log_mul_sub_one z
   have h3 : Integrable (fun t : ℝ ↦ LogEx.kern z t * logW t) :=
     h1.congr (Filter.Eventually.of_forall fun t ↦ mul_comm _ _)
   exact h3.add h2
@@ -1397,7 +1396,7 @@ theorem integral_ibpDeriv_eq_zero {z : ℂ} (hy : 0 < z.im) : ∫ t : ℝ, ibpDe
 
 theorem integral_log_mul_sub_one_eq' {z : ℂ} (hz : 0 < z.im) :
     ∫ t : ℝ, Real.log ‖1 - z / t‖ * (logDensity t - 1) = -∫ t : ℝ, logW t * LogEx.kern z t := by
-  have h1 := integrable_log_mul_sub_one hz
+  have h1 := integrable_log_mul_sub_one z
   have h2 : Integrable (fun t : ℝ ↦ LogEx.kern z t * logW t) :=
     (integrable_kern_mul_logW hz).congr (Filter.Eventually.of_forall fun t ↦ mul_comm _ _)
   have h0 := integral_ibpDeriv_eq_zero hz
@@ -1838,7 +1837,7 @@ theorem not_memHE_sAlpha (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ
     have := hcC (x : ℂ) (by simp)
     simpa using this
   have hCc : 0 < Cc := lt_of_lt_of_le hc ((hEreal 0).1.trans (hEreal 0).2)
-  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hHB hEPW
+  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hHB hEPW
   obtain ⟨Cφ, hle⟩ := HEEqPW.phaseDeriv_mul_sq_le hPW hE hHB hEPW
   have hCφ : 0 < Cφ := lt_of_lt_of_le hcφ ((hge 0).trans (hle 0))
   have hderiv : ∀ x : ℝ, HasDerivAt φ (phaseDeriv E x) x := IsPhaseFunction.hasDerivAt hHB.1 h0 hφ
@@ -1947,7 +1946,7 @@ theorem orthWeight_bounds (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → �
     (hHB : IsHB E) (hEPW : HEEqPW E) :
     ∃ wl wu : ℝ≥0, 0 < wl ∧ 0 < wu ∧ ∀ γ : ℝ, (wl : ℝ≥0∞) ≤ orthWeight E γ ∧
       orthWeight E γ ≤ wu := by
-  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hHB hEPW
+  obtain ⟨cφ, hcφ, hge⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hHB hEPW
   obtain ⟨Cφ, hle⟩ := HEEqPW.phaseDeriv_mul_sq_le hPW hE hHB hEPW
   have hCφ : 0 < Cφ := lt_of_lt_of_le hcφ ((hge 0).trans (hle 0))
   refine ⟨(Real.pi / Cφ).toNNReal, (Real.pi / cφ).toNNReal, ?_, ?_, fun γ ↦ ?_⟩

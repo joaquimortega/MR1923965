@@ -1,0 +1,470 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+# formalization.yaml (v0.4): repo-root metadata for this formalization project.
+
+version: "v0.4"
+
+project:
+  name: "Fourier frames (Ortega-Cerdà–Seip 2002)"
+  description: >-
+    A Lean 4 / Mathlib formalization of J. Ortega-Cerdà and K. Seip, "Fourier frames", Ann. of
+    Math. (2) 155 (2002), 789–806 (MR1923965).
+
+    The paper characterizes the sequences of real frequencies that generate Fourier frames,
+    equivalently the sampling sequences for the Paley–Wiener space PW: a separated sequence Λ is
+    sampling if and only if there are Hermite–Biehler functions E, F with H(E) = PW such that Λ is
+    the zero set of EF + E^*F^* (Theorem 1). Consequences: Corollary 1 (a sampling sequence is
+    everywhere denser than a complete interpolating sequence), Landau's density inequality as a
+    consequence of the John–Nirenberg theorem and Pavlov's theorem, the sharpness of Landau's
+    inequality via the example {k + log⁺|k|}, Corollary 2 (a sufficient condition for sampling in
+    terms of the approximation of a logarithmic potential by log|f|), and Theorem 2, which
+    determines the critical growth of ψ for which {λ : λ + ψ(λ) ∈ ℤ} is sampling.
+
+    The paper rests on cited theorems (the Paley–Wiener theorem, de Branges' Theorems C, D, E, F,
+    Pavlov's Theorem A, the John–Nirenberg theorem, Lemma III of Duffin–Schaeffer). Each enters
+    the formal statements as an explicit Prop hypothesis, never as an axiom. Phase 1 proves every
+    argument of the paper itself from these hypotheses (all 15 main statements, accepted by
+    comparator). Phase 2 proves the cited results that are within reach: the Paley–Wiener
+    theorem, the John–Nirenberg inequality and Duffin–Schaeffer's lemma are proved; de Branges'
+    Theorems D and E are in progress; Theorems C and F and Pavlov's theorem are assessed in
+    blueprint/PHASE2.md.
+
+    Two of the paper's proofs are replaced: the appeal to Meĭman's theorem (false as quoted) by a
+    direct argument, and the proof of Theorem 2 (ii), which does not work as printed, by a new
+    construction. Theorem 2 (i) needs a regularity hypothesis the printed statement omits. The
+    errata are in NOTEBOOK.md.
+
+    The formalization was directed by the first author of the paper.
+  authors:
+    - "Claude (Fable 5.1 / Opus 5.5 / Sonnet 5.5, Anthropic), multi-agent run in Claude Code"
+    - "Joaquim Ortega-Cerdà (direction)"
+  responsible_maintainers:
+    - "Joaquim Ortega-Cerdà"
+  license: "Apache-2.0"
+
+sources:
+  - title: "Fourier frames"
+    authors:
+      - "Joaquim Ortega-Cerdà"
+      - "Kristian Seip"
+    id: "Ann. of Math. (2) 155 (2002), no. 3, 789–806; doi:10.2307/3062132; MR1923965"
+    type: "article"
+    location: "Theorem 1, Corollaries 1–2, Theorem 2, the Claim of §4 and the example of p. 798, and the remarks of pp. 790, 797, 799 that are used (Sections 1–5)"
+    relationship: "formalizes"
+    note: >-
+      Statements of the published version (the journal PDF). Errata, gaps and simplifications
+      found in the source are recorded in NOTEBOOK.md (42 entries; N-01–N-38 confirmed by
+      independent referee agents against the printed pages, N-39–N-42 found during the
+      implementation). The Proposition of p. 798 (quoted from [Or98]) and the
+      remarks quoting [Se95] are not formalized.
+    author_endorsement: "participated"
+  - title: "Fourier transforms in the complex domain"
+    authors:
+      - "Raymond E. A. C. Paley"
+      - "Norbert Wiener"
+    id: "Amer. Math. Soc. Colloquium Publications 19, 1934 (the Paley–Wiener theorem, cited on p. 790 of the paper)"
+    type: "book"
+    location: "The Paley–Wiener theorem with Plancherel's identity: PW = {∫_{−π}^{π} g(t) e^{izt} dt : g ∈ L²(−π, π)}, ‖f‖² = 2π‖g‖²"
+    relationship: "background"
+    note: >-
+      Assumed as the explicit Prop hypothesis FF.PaleyWienerThm of the main statements; proved in
+      the project (FF.paleyWiener_holds, FourierFrames/Cited/PaleyWiener*, blueprint/P1_PaleyWiener.md)
+      by a classical route: Parseval on [−π, π] for part 1; Gaussian regularisation, Mathlib's L²
+      Fourier transform and Phragmén–Lindelöf for part 2.
+    author_endorsement: "n/a"
+  - title: "Hilbert spaces of entire functions"
+    authors:
+      - "Louis de Branges"
+    id: "Prentice-Hall, 1968 (cited as [dB68]); and Trans. Amer. Math. Soc. 96 (1960), 259–295 ([dB60])"
+    type: "book"
+    location: "Theorems 19, 22, 23, 32 (the paper's Theorems D, E, C, F)"
+    relationship: "background"
+    note: >-
+      Assumed as the explicit Prop hypotheses FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF of
+      the main statements that use them, in the weakest form the paper uses (Theorems D, E, F for E
+      in the strict Hermite–Biehler class without real zeros; Theorem F with an extra term p·y,
+      p ≥ 0). Proofs of D and E are in progress (blueprint/P3_DeBrangesDE.md, forthcoming); C and F are assessed
+      in blueprint/P4_DeBrangesFC.md.
+    author_endorsement: "n/a"
+  - title: "Unconditional bases of exponentials and reproducing kernels"
+    authors:
+      - "Sergei V. Hruščev"
+      - "Nikolai K. Nikol'skiĭ"
+      - "Boris S. Pavlov"
+    id: "Lecture Notes in Math. 864 (1981), 214–335 (cited as [HNP81]; Pavlov's theorem [Pa79])"
+    type: "article"
+    location: "The paper's Theorem A, p. 791"
+    relationship: "background"
+    note: >-
+      Only the BMO necessity half is used (FF.PavlovBMO: a separated complete interpolating
+      sequence Γ has n_Γ(t) − t ∈ BMO). Assumed as a hypothesis of FF.landau_inequality; proving it
+      would need the Hilbert transform, Muckenhoupt weights and BMO conjugation, which Mathlib lacks
+      (blueprint/P5_Pavlov.md).
+    author_endorsement: "n/a"
+  - title: "On functions of bounded mean oscillation"
+    authors:
+      - "Fritz John"
+      - "Louis Nirenberg"
+    id: "Comm. Pure Appl. Math. 14 (1961), 415–426 (cited as [JN61])"
+    type: "article"
+    location: "The John–Nirenberg inequality, used on p. 799"
+    relationship: "background"
+    note: "Proved in the project (FF.johnNirenberg_holds, FourierFrames/Cited/JohnNirenberg.lean), by the dyadic stopping-time argument, with C = 2 and c = log 2/4."
+    author_endorsement: "n/a"
+  - title: "A class of nonharmonic Fourier series"
+    authors:
+      - "Richard J. Duffin"
+      - "Albert C. Schaeffer"
+    id: "Trans. Amer. Math. Soc. 72 (1952), 341–366 (cited as [DS52])"
+    type: "article"
+    location: "Lemma III, used on p. 800"
+    relationship: "background"
+    note: "Proved in the project from the Paley–Wiener theorem (FF.dsPerturbation_of_paleyWiener), by an L² Bernstein inequality and the fundamental theorem of calculus."
+    author_endorsement: "n/a"
+  - title: "Multipliers for entire functions and an interpolation problem of Beurling"
+    authors:
+      - "Joaquim Ortega-Cerdà"
+      - "Kristian Seip"
+    id: "J. Funct. Anal. 162 (1999), 400–415 (cited as [OS99]); MR1682065"
+    type: "article"
+    location: "Lemma 3 (the multiplier lemma), used on pp. 801 and 805"
+    relationship: "builds-on"
+    note: >-
+      Not assumed: the sorry-free part of the companion formalization
+      https://github.com/joaquimortega/MR1682065 that proves Lemma 3 (OCS.lemma3, 10 files, commit
+      05e3ac2ca83f8862636e1dd002467ad9add83396) is vendored in OrtegaCerdaSeip/. A version uniform
+      in the density is re-proved in FourierFrames/Lemma3Uniform.lean.
+    author_endorsement: "participated"
+
+related_formalizations:
+  - name: "Ortega-Cerdà–Seip (1999), Lean formalization"
+    id: "https://github.com/joaquimortega/MR1682065"
+    url: "https://github.com/joaquimortega/MR1682065"
+    relationship: "builds-on"
+    note: "Source of the vendored multiplier lemma and of the Bernstein-space toolkit (Phragmén–Lindelöf, normal families) in OrtegaCerdaSeip/."
+  - name: "Ortega-Cerdà (2002), Multipliers and weighted ∂̄-estimates, Lean formalization"
+    id: "https://github.com/joaquimortega/MR1949832"
+    url: "https://github.com/joaquimortega/MR1949832"
+    relationship: "other"
+    note: "Same workflow and conventions (blueprint, scaffold, referee round, implementation in worktrees, comparator)."
+
+classification:
+  arxiv: ["math.CA", "math.CV"]
+  msc2020: ["42C15", "30D15", "46E22", "94A20"]
+
+status:
+  scope: >-
+    The whole article, with the cited results as explicit hypotheses.
+      - Proved (phase 1): Theorem 1 (both directions), the remark of p. 797, Corollary 1, the
+        Claim of §4 (Landau's inequality), the example of p. 798 and the sharpness of Landau's
+        inequality, Corollary 2, Theorem 2 (i) (with the regularity hypothesis its proof needs,
+        NOTEBOOK N-22) and Theorem 2 (ii) (by a new proof, NOTEBOOK N-21), the equivalence of
+        Fourier frames and sampling (p. 790), and the "evident fact" of p. 799.
+      - Proved (phase 2, cited results): the Paley–Wiener theorem; the John–Nirenberg inequality;
+        Duffin–Schaeffer's Lemma III (from the Paley–Wiener theorem, hence unconditional).
+      - In progress (phase 2): de Branges' Theorems D and E.
+      - Not formalized: Pavlov's theorem (assessed infeasible with current Mathlib), de Branges'
+        Theorems C and F (assessed; see blueprint/PHASE2.md), the Proposition of p. 798 and the
+        remarks quoting [Se95].
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: ["propext", "Classical.choice", "Quot.sound"]
+  main_results:
+    - declaration: "FF.isFourierFrame_iff_isSampling"
+      file: "FourierFrames/Frames.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm"]
+    - declaration: "FF.heEqPW_of_comparable"
+      file: "FourierFrames/HB/Comparable.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm"]
+    - declaration: "FF.theorem1_necessity"
+      file: "FourierFrames/Theorem1/Necessity.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremF"]
+    - declaration: "FF.theorem1_sufficiency"
+      file: "FourierFrames/Theorem1/Sufficiency.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+    - declaration: "FF.theorem1"
+      file: "FourierFrames/Theorem1/Main.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF"]
+    - declaration: "FF.completeInterpolating_zero_set"
+      file: "FourierFrames/Corollary1.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremD"]
+    - declaration: "FF.corollary1"
+      file: "FourierFrames/Corollary1.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF"]
+    - declaration: "FF.landau_inequality"
+      file: "FourierFrames/Landau.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF", "FF.PavlovBMO", "FF.JohnNirenberg"]
+    - declaration: "FF.logExample_isCompleteInterpolating"
+      file: "FourierFrames/LogExample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+    - declaration: "FF.logExample_count"
+      file: "FourierFrames/LogExample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.landau_sharp"
+      file: "FourierFrames/LogExample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+    - declaration: "FF.corollary2"
+      file: "FourierFrames/Corollary2.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+    - declaration: "FF.theorem2_i"
+      file: "FourierFrames/Theorem2i.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+    - declaration: "FF.theorem2_i_of_densityBound"
+      file: "FourierFrames/Theorem2i.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+    - declaration: "FF.theorem2_ii"
+      file: "FourierFrames/Theorem2ii.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.johnNirenberg_holds"
+      file: "FourierFrames/Cited/JohnNirenberg.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      literature_dependencies: []
+    - declaration: "FF.dsPerturbation_of_paleyWiener"
+      file: "FourierFrames/Cited/DSPerturbation.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      literature_dependencies: ["FF.PaleyWienerThm"]
+    - declaration: "FF.paleyWiener_holds"
+      file: "FourierFrames/Cited/PaleyWiener.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      literature_dependencies: []
+
+automation:
+  methods:
+    - method: "agent"
+      models: ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5"]
+      framework: "Claude Code"
+      tool_setup: >-
+        A coordinating Claude Code session (Opus 5.5, later Fable 5.1) delegated work to background
+        subagents (Sonnet 5.5 for the blueprint, review and phase-1 implementation rounds; Opus 5.5
+        for phase 2 and the final review), each with shell access to Lean/Lake and the Mathlib
+        sources. About 35 subagents in all, up to 10 at a time.
+
+        Isolation. Each implementation subagent worked on its own git branch, in a separate git
+        worktree sharing the prebuilt Mathlib packages through a symlink, owning only its module's
+        files; new helper lemmas went into per-module helper files, so merges were conflict-free
+        (one duplicated helper lemma was removed by hand). The coordinator merged after building
+        and running scripts/check_statements.py, which verifies that no statement changed since
+        the reviewed scaffold (tag scaffold-reviewed). Verification: `lake comparator` (bwrap
+        sandbox) against the self-contained FFChallenge.lean.
+
+        Reuse: the multiplier lemma of [OS99] and a Bernstein-space toolkit are vendored from the
+        companion formalization MR1682065.
+      cost:
+        wall_time: "about 11 hours (2026-11-06 21:50 – 2026-11-07 09:00 CET) for phase 1 and the start of phase 2"
+        hardware: "API-only models; local workstation (16 cores, 31 GB RAM) for Lean builds"
+      prompting_notes: >-
+        The user asked for a blueprint with one detailed document per module, explicit
+        dependencies and Lean statements; an independent review of the modules; the
+        implementation; comparator; this file; a notebook of mistakes found in the source; and a
+        corrected tex version of the paper with the changes marked in red. Workflow:
+          1. Definitions, cited-result Props, main statements and the blueprint index by the
+             coordinator; the cited results as hypotheses was the coordinator's design decision.
+          2. Module blueprints by 8 agents, each told to check the page images, not OCR, and to
+             report issues in the source and requested changes to the definitions.
+          3. Assembly of a compiling scaffold by one agent (import graph, interface
+             reconciliation, scripts).
+          4. Independent review by 5 referee agents (statements; PW/HB; Theorem 1; the
+             construction; Theorem 2), then statement changes at their request, then a freeze.
+          5. Implementation agents per module, told "own files only; never change a statement; if
+             a helper is false, prove a corrected version under a new name and report; report
+             false upstream statements immediately".
+          6. Coordinator merges with the freeze-check, then comparator.
+          7. Phase 2: blueprint/feasibility agents for each cited result, implementation of the
+             feasible ones, and a second review round (Opus) on the phase-2 blueprints and on the
+             blueprint as documentation of the final code.
+  spend_usd: "not tracked (subscription usage)"
+  notes: >-
+    Problems in the source caught by the process (NOTEBOOK.md):
+      - Meĭman's theorem as quoted on p. 801 is false (cos πz, e^{az} sin πz); the formalization
+        proves the needed case directly (N-17).
+      - The proof of Theorem 2 (ii) does not work as printed (the auxiliary ε_n does not tend to
+        0; the key estimate (11) fails); a new, simpler proof was found by the blueprint writer,
+        confirmed by a referee with numerics, and formalized (N-21).
+      - Theorem 2 (i) needs a regularity hypothesis on ψ that its statement omits; a ψ satisfying
+        all stated hypotheses defeats the paper's construction (N-22). Two formal versions.
+      - Theorem F as printed (for the closed Hermite–Biehler class) is false, e.g. for E = 1
+        (N-37); the formal version is for the strict class.
+      - A sign error and a missing 1/π in the Herglotz representation (3) (N-07); a false
+        second-order bound on p. 804 (N-23); wrong integration ranges on p. 802 (N-20); several
+        unjustified steps (dominated convergence on p. 797, the real factor S, the bound
+        |E| ≃ e^{π Im z} in Corollary 2).
+    Statement changes after the review round (NOTEBOOK I-01): a second version of Theorem 2 (i)
+    with the density bound the proof uses; a stronger sharpness statement for Landau's inequality.
+    The definition of the Paley–Wiener Prop was corrected before any review (M01 writer).
+    Implementation found no false helper statement in the reviewed scaffold.
+
+fidelity:
+  divergences: >-
+    1. Sequences are sets of reals (Set ℝ); Theorem 1 is about separated sequences, so nothing is
+       lost. Sums, integrals and norms are ℝ≥0∞-valued.
+    2. The cited results are explicit Prop hypotheses in the weakest form the paper uses:
+       Theorems D, E, F for E in the strict Hermite–Biehler class without real zeros (necessary:
+       Theorem F fails for E = 1), Theorem F with an extra term p·y, Theorem A only in its BMO
+       necessity part, the Paley–Wiener theorem in the two-part Paley–Wiener–Plancherel form.
+    3. The potential U_ψ keeps the convergence term Re(z/t) only for |t| > 1, since the paper's
+       principal value need not exist for ψ ∈ C¹ (N-03); Corollary 2 is insensitive to this.
+       Its approximation hypothesis is stated multiplicatively, e^{U_ψ − C} ≤ |f| ≤ e^{U_ψ + C}.
+    4. Theorem 2 (i) carries the extra hypothesis "ψ' eventually nonincreasing"
+       (theorem2_i), or the local density bound ψ' ≲ 1/d_n on the cells of the partition
+       (theorem2_i_of_densityBound). Both drop the unused hypothesis ψ' = 1/O(x) of the printed
+       statement (theorem2_i since the final lint pass, NOTEBOOK N-26, I-03).
+    5. Theorem 2 (ii) is proved by a different test function (two negative density ramps around
+       a long window where ψ is nearly a half-integer).
+    6. landau_sharp states that no coefficient A < 1 of log⁺(b − a) works for {k + log⁺|k|}
+       (stronger than "the logarithmic term cannot be removed").
+    7. Proof-level changes: Theorem D is not used for Theorem 1 (Theorem E suffices); Meĭman's
+       theorem and Levin's theorem are replaced by direct arguments; the real factor S of p. 796
+       is a Weierstrass product of variable genus; the limit α → π/2 uses a uniform
+       Plancherel–Pólya tail bound; the Herglotz representation uses the kernel
+       1/(λ − z) − λ/(1 + λ²).
+
+review:
+  status: "agent-reviewed"
+  reviewers:
+    - "Independent Claude agent (R1: definitions, cited Props and main statements: truth, vacuity, fidelity)"
+    - "Independent Claude agent (R2: Paley–Wiener and Hermite–Biehler modules, against the page images)"
+    - "Independent Claude agent (R3: Theorem 1, Corollary 1, Landau's inequality)"
+    - "Independent Claude agent (R4: the example, the construction, Corollary 2)"
+    - "Independent Claude agent (R5: Theorem 2, with numerical checks of the new proof of (ii))"
+    - "Independent Claude agents (R6–R8, Opus: phase-2 blueprints; the blueprint as documentation of the final code; soundness audit)"
+  notes: >-
+    Full referee reports are in reviews/. The phase-1 round found no false or vacuous statement
+    and no broken proof; it confirmed the errata against the printed pages (and corrected three
+    notebook entries), and requested two statement strengthenings, applied before the freeze.
+
+alignment:
+  namespace: "FF"
+  statements:
+    - source: "Definitions: PW, sampling, separated, complete interpolating, Fourier frame (pp. 789–791); n_Λ, BMO; HB̄, H(E), phase function, H(E) = PW (pp. 793–794); Λ(ψ), U_ψ, logarithmically regular partition (pp. 800–801)"
+      lean: "FF.MemPW, FF.IsSampling, FF.IsSeparated, FF.IsCompleteInterpolating, FF.IsFourierFrame, FF.countFn, FF.MemBMO, FF.IsHB, FF.IsStrictHB, FF.MemHE, FF.HEEqPW, FF.IsPhaseFunction, FF.phaseDeriv, FF.LambdaPsi, FF.UPsi, FF.IsLogRegularPartition, FF.IsLogRegularPartitionWithDensity"
+      module: "FourierFrames/Defs.lean"
+      status: "proved"
+      note: "definitions"
+    - source: "Cited results: Paley–Wiener; de Branges Theorems C, D, E, F; Theorem A (Pavlov); John–Nirenberg; Duffin–Schaeffer Lemma III"
+      lean: "FF.PaleyWienerThm, FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF, FF.PavlovBMO, FF.JohnNirenberg, FF.DSPerturbation"
+      module: "FourierFrames/Defs.lean"
+      status: "proved"
+      note: "Props used as hypotheses; PaleyWienerThm, JohnNirenberg and DSPerturbation (from PaleyWienerThm) are proved in FourierFrames/Cited/"
+    - source: "p. 790: Fourier frame ⟺ sampling"
+      lean: "FF.isFourierFrame_iff_isSampling"
+      module: "FourierFrames/Frames.lean"
+      status: "proved"
+    - source: "Theorem 1 (p. 795)"
+      lean: "FF.theorem1, FF.theorem1_necessity, FF.theorem1_sufficiency"
+      module: "FourierFrames/Theorem1/"
+      status: "proved"
+    - source: "Remark p. 797 (complete interpolating ⇒ zero set of E + E^*)"
+      lean: "FF.completeInterpolating_zero_set"
+      module: "FourierFrames/Corollary1.lean"
+      status: "proved"
+    - source: "Corollary 1 (p. 798)"
+      lean: "FF.corollary1"
+      module: "FourierFrames/Corollary1.lean"
+      status: "proved"
+    - source: "Claim (p. 798): Landau's inequality (Theorem B) from John–Nirenberg"
+      lean: "FF.landau_inequality"
+      module: "FourierFrames/Landau.lean"
+      status: "proved"
+    - source: "Example p. 798: {k + log⁺|k|} is a complete interpolating sequence; Landau's inequality is best possible"
+      lean: "FF.logExample_count, FF.logExample_isCompleteInterpolating, FF.landau_sharp"
+      module: "FourierFrames/LogExample.lean"
+      status: "proved"
+      note: "Levin's theorem replaced by a direct estimate and Theorem E"
+    - source: "p. 799: H(E) = PW if |E(z)| ≃ e^{π Im z} for Im z ≥ 0"
+      lean: "FF.heEqPW_of_comparable"
+      module: "FourierFrames/HB/Comparable.lean"
+      status: "proved"
+    - source: "Corollary 2 (p. 800), with the perturbation argument and the construction of p. 801"
+      lean: "FF.corollary2, FF.IsSampling.of_perturbation, FF.exists_hb_of_density, FF.exists_hb_of_density_phase"
+      module: "FourierFrames/Corollary2.lean, Perturbation.lean, Construction.lean"
+      status: "proved"
+      note: "Meĭman's theorem replaced (NOTEBOOK N-17)"
+    - source: "Theorem 2 (i) (p. 801)"
+      lean: "FF.theorem2_i, FF.theorem2_i_of_densityBound"
+      module: "FourierFrames/Theorem2i.lean"
+      status: "proved"
+      note: "with the regularity hypothesis the proof needs (NOTEBOOK N-22)"
+    - source: "Theorem 2 (ii) (p. 801)"
+      lean: "FF.theorem2_ii"
+      module: "FourierFrames/Theorem2ii.lean"
+      status: "proved"
+      note: "new proof (NOTEBOOK N-21)"
+    - source: "[JN61] John–Nirenberg inequality"
+      lean: "FF.johnNirenberg_holds"
+      module: "FourierFrames/Cited/JohnNirenberg.lean"
+      status: "proved"
+    - source: "[DS52] Lemma III"
+      lean: "FF.dsPerturbation_of_paleyWiener"
+      module: "FourierFrames/Cited/DSPerturbation.lean"
+      status: "proved"
+    - source: "Paley–Wiener theorem (with Plancherel), cited on p. 790"
+      lean: "FF.paleyWiener_holds"
+      module: "FourierFrames/Cited/PaleyWiener.lean"
+      status: "proved"
+      note: "classical proof (blueprint/P1_PaleyWiener.md); not from the paper"
+    - source: "[dB68] Theorems 19, 22 (D, E)"
+      lean: "FF.theoremD_holds, FF.theoremE_holds"
+      module: "FourierFrames/Cited/DeBrangesDE.lean"
+      status: "in-progress"
+    - source: "[dB68] Theorems 23, 32 (C, F)"
+      lean: "FF.theoremC_holds, FF.theoremF_holds"
+      module: "FourierFrames/Cited/DeBrangesFC.lean"
+      status: "stated"
+      note: "blueprint and feasibility assessment only (blueprint/P4_DeBrangesFC.md)"
+    - source: "Theorem A (Pavlov), BMO half"
+      lean: "FF.PavlovBMO"
+      module: "FourierFrames/Defs.lean"
+      status: "not-formalized"
+      note: "assessed infeasible with current Mathlib (blueprint/P5_Pavlov.md); hypothesis of landau_inequality"
+    - source: "Proposition p. 798 ([Or98]); remarks quoting [Se95] (Lemma 3.11, Theorems 2.3, 2.7)"
+      lean: ""
+      module: ""
+      status: "not-formalized"
+      note: "quoted without proof and not used"

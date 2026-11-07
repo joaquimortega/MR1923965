@@ -1,7 +1,9 @@
 # P2 — Two classical lemmas: Duffin–Schaeffer perturbation and John–Nirenberg
 
-**Lean files.** `FourierFrames/Cited/DSPerturbation.lean` (Part A), `FourierFrames/Cited/JohnNirenberg.lean`
-(Part B); both compile with `lake env lean` (only `sorry` warnings).
+**Lean files.** `FourierFrames/Cited/DSPerturbation.lean` (Part A, 402 lines), `FourierFrames/Cited/JohnNirenberg.lean`
+(Part B, 549 lines). **Status: both proved**, no `sorry`, axioms `propext`, `Classical.choice`, `Quot.sound`
+(referee R7: accept). Implementer's notes: `impl_notes/cited-p2.md`. Since P1 is proved,
+`dsPerturbation_of_paleyWiener paleyWiener_holds : DSPerturbation` is unconditional too.
 **Paper.** p. 799 (John–Nirenberg, [JN61], [Ga81, p. 230]) and p. 800 (Lemma III of [DS52]).
 **Depends on.**
 - A: `hPW : PaleyWienerThm` and the toolkit `FourierFrames/PW/Basic.lean` (`MemL2pi`, `l2piSq`,
@@ -10,7 +12,9 @@
   It does **not** need `plancherelPolya` or `pw_deriv_bound` (see Part A route).
   Imports: `FourierFrames.PW.PlancherelPolya` (only to pull in `Basic`; may be reduced to `PW.Basic`).
 - B: nothing from the project except `Defs` (`meanOsc`, `intervalMean`, `JohnNirenberg`).
-**Used by.** Theorem 2(i)/Corollary 2 (`hDS`), Theorem 2(ii) (`hJN`). Final theorems:
+**Used by.** `corollary2`, `theorem2_i`, `theorem2_i_of_densityBound` (`hDS`; through
+`IsSampling.of_perturbation`, `Perturbation.lean`); `landau_inequality` (`hJN`; through `osc_bound_of_JN`,
+`Landau.lean`). Final theorems:
 `dsPerturbation_of_paleyWiener : PaleyWienerThm → DSPerturbation`, `johnNirenberg_holds : JohnNirenberg`
 (unconditional).
 
@@ -98,7 +102,7 @@ and `IsExpTypeLE`, is not shorter: it needs `‖f'‖₂` anyway.)
 ## A.2 Increments
 
 ```lean
-theorem enorm_sq_sub_le (hPW : PaleyWienerThm) {f : ℂ → ℂ} (hf : MemPW f) (γ δ : ℝ) :
+theorem enorm_sq_sub_le {f : ℂ → ℂ} (hf : MemPW f) (γ δ : ℝ) :
     ‖f ((γ + δ : ℝ) : ℂ) - f (γ : ℂ)‖ₑ ^ 2 ≤
       ENNReal.ofReal |δ| * ∫⁻ x in Icc (γ - |δ|) (γ + |δ|), ‖deriv f (x : ℂ)‖ₑ ^ 2
 ```
@@ -264,7 +268,7 @@ def dyadic (a b : ℝ) (n k : ℕ) : Set ℝ :=
 def dyadicIdx (a b : ℝ) (n : ℕ) (x : ℝ) : ℕ := ⌊(x - a) / (b - a) * 2 ^ n⌋₊
 theorem mem_dyadic_dyadicIdx (hab : a < b) (n) (hx : x ∈ Ico a b) : x ∈ dyadic a b n (dyadicIdx a b n x)
 theorem dyadic_parent (n k) : dyadic a b (n + 1) k ⊆ dyadic a b n (k / 2)
-theorem volume_dyadic (hab : a < b) (n k) : volume (dyadic a b n k) = ENNReal.ofReal ((b - a) / 2 ^ n)
+theorem volume_dyadic (a b) (n k) : volume (dyadic a b n k) = ENNReal.ofReal ((b - a) / 2 ^ n)
 ```
 Proofs. `mem_dyadic_dyadicIdx`: with `y = (x-a)/(b-a)·2ⁿ ≥ 0`, `⌊y⌋₊ ≤ y < ⌊y⌋₊ + 1`
 (`Nat.floor_le`, `Nat.lt_floor_add_one`); rearrange using `b - a > 0`. `dyadic_parent`:

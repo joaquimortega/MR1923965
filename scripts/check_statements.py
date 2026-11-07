@@ -55,7 +55,34 @@ def files_at_ref():
 
 # Coordinator-approved removals/changes of non-main helper statements found false during
 # implementation: name -> reason (each recorded in NOTEBOOK.md).
-APPROVED = {}
+APPROVED = {
+    "compB_eq_zero_iff": "unused hypothesis removed, NOTEBOOK I-03",
+    "compB_mul_Q": "unused hypothesis removed, NOTEBOOK I-03",
+    "tendsto_polyB": "unused hypothesis removed, NOTEBOOK I-03",
+    "phase_rigidity": "unused hypothesis removed, NOTEBOOK I-03",
+    "multU_const_mul": "unused hypothesis removed, NOTEBOOK I-03",
+    "memPW_of_memHE": "unused hypothesis removed, NOTEBOOK I-03",
+    "HEEqPW.phaseDeriv_mul_sq_ge": "unused hypothesis removed, NOTEBOOK I-03",
+    "osc_bound_of_JN": "unused hypothesis removed, NOTEBOOK I-03",
+    "integrable_log_mul_sub_one": "unused hypothesis removed, NOTEBOOK I-03",
+    "isSampling_of_replace_finite": "unused hypothesis removed, NOTEBOOK I-03",
+    "sampInner_self": "unused hypothesis removed, NOTEBOOK I-03",
+    "sampInner_conj_symm": "unused hypothesis removed, NOTEBOOK I-03",
+    "sampInner_smul_left": "unused hypothesis removed, NOTEBOOK I-03",
+    "samp_H3": "unused hypothesis removed, NOTEBOOK I-03",
+    "summable_norm_herglotz": "unused hypothesis removed, NOTEBOOK I-03",
+    "entSum_eq": "unused hypothesis removed, NOTEBOOK I-03",
+    "herglotzEnt_eq": "unused hypothesis removed, NOTEBOOK I-03",
+    "exists_noRealZero_hb": "unused hypothesis removed, NOTEBOOK I-03",
+    "HEEqPW.levelSet_ineq": "unused hypothesis removed, NOTEBOOK I-03",
+    "HEEqPW.levelSet_cis": "unused hypothesis removed, NOTEBOOK I-03",
+    "RegData.hasSum_UPsi": "unused hypothesis removed, NOTEBOOK I-03",
+    "RegData.abs_cellTerm_below": "unused hypothesis removed, NOTEBOOK I-03",
+    "RegData.abs_cellTerm_above": "unused hypothesis removed, NOTEBOOK I-03",
+    "theorem2_i": "unused hypothesis removed, NOTEBOOK I-03",
+    "theorem2_ii": "unused hypothesis removed, NOTEBOOK I-03",
+    "sampCore": "def -> abbrev (class-valued def must be reducible; set_option removed), NOTEBOOK I-03",
+}
 
 
 def all_statements(base: pathlib.Path) -> dict:

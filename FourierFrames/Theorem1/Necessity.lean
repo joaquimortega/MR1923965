@@ -173,6 +173,28 @@ conjugate-linear in the first slot). -/
 def sampInner (Λ : Set ℝ) (f g : ℂ → ℂ) : ℂ :=
   ∑' x : Λ, conj (f ((x : ℝ) : ℂ)) * g ((x : ℝ) : ℂ)
 
+theorem sampInner_self (Λ : Set ℝ) (f : ℂ → ℂ) :
+    sampInner Λ f f = ((∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 : ℝ) : ℂ) := by
+  unfold sampInner
+  rw [Complex.ofReal_tsum]
+  refine tsum_congr fun x ↦ ?_
+  rw [Complex.conj_mul']
+  push_cast; rfl
+
+theorem sampInner_conj_symm (Λ : Set ℝ) (f g : ℂ → ℂ) :
+    conj (sampInner Λ g f) = sampInner Λ f g := by
+  unfold sampInner
+  rw [Complex.conj_tsum]
+  refine tsum_congr fun x ↦ ?_
+  simp [mul_comm]
+
+theorem sampInner_smul_left (Λ : Set ℝ) (c : ℂ) (f g : ℂ → ℂ) :
+    sampInner Λ (c • f) g = conj c * sampInner Λ f g := by
+  unfold sampInner
+  rw [← tsum_mul_left]
+  refine tsum_congr fun x ↦ ?_
+  simp [mul_assoc]
+
 section Sampling
 
 variable {Λ : Set ℝ} (hs : IsSampling Λ) {f g : ℂ → ℂ}
@@ -205,21 +227,6 @@ theorem summable_samp_inner (hf : MemPW f) (hg : MemPW g) :
   rw [norm_mul, Complex.norm_conj]
   nlinarith [sq_nonneg (‖f ((x : ℝ) : ℂ)‖ - ‖g ((x : ℝ) : ℂ)‖)]
 
-theorem sampInner_self (hf : MemPW f) :
-    sampInner Λ f f = ((∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 : ℝ) : ℂ) := by
-  unfold sampInner
-  rw [Complex.ofReal_tsum]
-  refine tsum_congr fun x ↦ ?_
-  rw [Complex.conj_mul']
-  push_cast; rfl
-
-theorem sampInner_conj_symm (hf : MemPW f) (hg : MemPW g) :
-    conj (sampInner Λ g f) = sampInner Λ f g := by
-  unfold sampInner
-  rw [Complex.conj_tsum]
-  refine tsum_congr fun x ↦ ?_
-  simp [mul_comm]
-
 theorem sampInner_add_left {h : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) (hh : MemPW h) :
     sampInner Λ (f + g) h = sampInner Λ f h + sampInner Λ g h := by
   unfold sampInner
@@ -227,17 +234,10 @@ theorem sampInner_add_left {h : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) (hh :
   refine tsum_congr fun x ↦ ?_
   simp [add_mul]
 
-theorem sampInner_smul_left (c : ℂ) (hf : MemPW f) (hg : MemPW g) :
-    sampInner Λ (c • f) g = conj c * sampInner Λ f g := by
-  unfold sampInner
-  rw [← tsum_mul_left]
-  refine tsum_congr fun x ↦ ?_
-  simp [mul_assoc]
-
 /-- Positive definiteness (uses the lower sampling bound and
 `MemPW.eq_zero_of_pwNormSq_eq_zero`). -/
 theorem sampInner_definite (hf : MemPW f) (h : sampInner Λ f f = 0) : f = 0 := by
-  rw [sampInner_self hs hf] at h
+  rw [sampInner_self] at h
   have h0 : ∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 = 0 := by exact_mod_cast h
   have hS : sampleSum Λ f = 0 := by rw [sampleSum_eq_ofReal_tsum hs hf, h0]; simp
   obtain ⟨A, B, hA, hb⟩ := hs
@@ -247,18 +247,17 @@ theorem sampInner_definite (hf : MemPW f) (h : sampInner Λ f f = 0) : f = 0 := 
   · exact absurd h1 (by exact_mod_cast hA.ne')
   · exact hf.eq_zero_of_pwNormSq_eq_zero h1
 
-set_option warn.classDefReducibility false in
 /-- The `InnerProductSpace.Core` on `PWFun` given by the sampling inner product. -/
-def sampCore : InnerProductSpace.Core ℂ PWFun where
+abbrev sampCore : InnerProductSpace.Core ℂ PWFun where
   inner f g := sampInner Λ (PWFun.val f) (PWFun.val g)
-  conj_inner_symm f g := sampInner_conj_symm hs f.memPW g.memPW
+  conj_inner_symm f g := sampInner_conj_symm Λ _ _
   re_inner_nonneg f := by
-    have h := sampInner_self hs f.memPW
+    have h := sampInner_self Λ (PWFun.val f)
     show 0 ≤ (sampInner Λ (PWFun.val f) (PWFun.val f)).re
     rw [h, Complex.ofReal_re]
     exact tsum_nonneg fun x ↦ by positivity
   add_left f g h := sampInner_add_left hs f.memPW g.memPW h.memPW
-  smul_left f g c := sampInner_smul_left hs c f.memPW g.memPW
+  smul_left f g c := sampInner_smul_left Λ c _ _
   definite f h := PWFun.val_injective (by simpa using sampInner_definite hs f.memPW h)
 
 /-- Completeness in the sampling norm, stated without any instance: a sequence in `PW` that is
@@ -285,6 +284,7 @@ theorem samp_cauchy_converges (hPW : PaleyWienerThm) {f : ℕ → ℂ → ℂ} (
     (fun n ↦ ?_)
   exact (hb _ ((hf n).sub hg)).2
 
+omit hs in
 /-- (H1) at the level of functions: for `f ∈ PW` with a nonreal zero `ζ`, the function
 `(z - ζ̄) f(z)/(z - ζ)` is in `PW` and has the same sampling sum. -/
 theorem samp_H1 (hf : MemPW f) {ζ : ℂ} (hζ : ζ.im ≠ 0) (hz : f ζ = 0) :
@@ -322,8 +322,9 @@ theorem samp_H2 (hPW : PaleyWienerThm) (ζ : ℂ) :
         mul_le_mul_of_nonneg_left h3 (Real.exp_pos _).le
     _ = _ := by ring
 
+omit hs in
 /-- (H3) at the level of functions. -/
-theorem samp_H3 (hf : MemPW f) : sampleSum Λ (fstar f) = sampleSum Λ f := by
+theorem samp_H3 : sampleSum Λ (fstar f) = sampleSum Λ f := by
   unfold sampleSum
   refine tsum_congr fun x ↦ ?_
   rw [fstar_ofReal, ← ofReal_norm, ← ofReal_norm, Complex.norm_conj]
@@ -344,7 +345,7 @@ theorem exists_samplingHilbertSpace (hPW : PaleyWienerThm) :
   have hsq : ∀ h : PWFun, ‖h‖ ^ 2 = ∑' x : Λ, ‖PWFun.val h ((x : ℝ) : ℂ)‖ ^ 2 := by
     intro h
     rw [norm_sq_eq_re_inner (𝕜 := ℂ) h]
-    have := sampInner_self hs h.memPW
+    have := sampInner_self Λ (PWFun.val h)
     change (sampInner Λ (PWFun.val h) (PWFun.val h)).re = _
     rw [this, Complex.ofReal_re]
   have hnorm : ∀ h : PWFun, ENNReal.ofReal (‖h‖ ^ 2) = sampleSum Λ (PWFun.val h) := by
@@ -397,7 +398,7 @@ theorem exists_samplingHilbertSpace (hPW : PaleyWienerThm) :
   refine ⟨PWFun, i1, i2, hcomplete, PWFun.val, PWFun.val_injective, fun h ↦ h.memPW.1, ?_, ?_, ?_,
     ?_, ?_, hnorm⟩
   · intro h ζ hζ hz
-    obtain ⟨hm, hS⟩ := samp_H1 hs h.memPW hζ hz
+    obtain ⟨hm, hS⟩ := samp_H1 (Λ := Λ) h.memPW hζ hz
     refine ⟨PWFun.mk _ hm, hnorm_eq _ _ (by simpa using hS), fun z hzz ↦ ?_⟩
     simp only [PWFun.val_mk]
     have hne : z - ζ ≠ 0 := sub_ne_zero.2 hzz
@@ -416,7 +417,7 @@ theorem exists_samplingHilbertSpace (hPW : PaleyWienerThm) :
     exact h1
   · intro h
     refine ⟨PWFun.mk _ h.memPW.fstar, hnorm_eq _ _ ?_, rfl⟩
-    simpa using samp_H3 hs h.memPW
+    simpa using samp_H3 (Λ := Λ) (f := PWFun.val h)
   · obtain ⟨g, hg, hg0⟩ := exists_memPW_eval_ne_zero
     refine ⟨PWFun.mk g hg, fun h ↦ ?_⟩
     have := congrFun (congrArg PWFun.val h) 0
@@ -632,7 +633,7 @@ def herglotzSum (Λ : Set ℝ) (c : ℝ → ℝ) (z : ℂ) : ℂ :=
 
 /-- Absolute convergence of the series for `z ∉ Λ`. -/
 theorem summable_norm_herglotz {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
-    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {z : ℂ} (hz : z.im ≠ 0) :
+    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) (z : ℂ) :
     Summable fun x : Λ ↦ ‖(c x : ℂ) * hk (x : ℝ) z‖ := by
   have hR : (1 : ℝ) / 2 ≤ max ‖z‖ (1 / 2) := le_max_right _ _
   refine Summable.of_norm_bounded_eventually (hcs.mul_left (2 * (1 + max ‖z‖ (1 / 2)))) ?_
@@ -648,7 +649,7 @@ theorem re_herglotzSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {z : ℂ} (hz : 0 < z.im) :
     ((-I / Real.pi) * herglotzSum Λ c z).re =
       ∑' x : Λ, c x * (z.im / (Real.pi * (((x : ℝ) - z.re) ^ 2 + z.im ^ 2))) := by
-  have hsum := (summable_norm_herglotz hΛ hcs hz.ne').of_norm
+  have hsum := (summable_norm_herglotz hΛ hcs z).of_norm
   unfold herglotzSum
   rw [← tsum_mul_left, Complex.re_tsum (hsum.mul_left _)]
   refine tsum_congr fun x ↦ ?_
@@ -715,8 +716,7 @@ theorem differentiable_entSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ →
         gcongr
     _ = _ := by ring
 
-theorem entSum_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
-    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
+theorem entSum_eq {Λ : Set ℝ} {c : ℝ → ℝ} {G : ℂ → ℂ}
     (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) {z : ℂ} (hz : z.im ≠ 0) :
     entSum Λ c G z = G z * herglotzSum Λ c z := by
   unfold entSum herglotzSum
@@ -742,7 +742,7 @@ theorem fstar_entSum {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
     rw [map_mul, hkc, Complex.conj_ofReal]
   have hGz : conj (G (conj z)) = G z := congrFun hGs z
   show conj (entSum Λ c G (conj z)) = entSum Λ c G z
-  rw [entSum_eq hΛ hcs hG0 hz', entSum_eq hΛ hcs hG0 hz.ne', map_mul, hGz, hS]
+  rw [entSum_eq hG0 hz', entSum_eq hG0 hz.ne', map_mul, hGz, hS]
 
 end Kernel
 
@@ -890,7 +890,7 @@ theorem exists_herglotz_const {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ
     have hz' : 0 < z.im := hz
     have := hGne z hz'
     simp only [Pi.div_apply]
-    rw [entSum_eq hΛ hcs' hG0 hz'.ne']
+    rw [entSum_eq hG0 hz'.ne']
     field_simp
   have hD := (differentiableOn_hbQuot hE hA hA1).sub hM₀
   obtain ⟨a, ha⟩ := exists_const_of_re_eq_zero hD (fun z hz ↦ by
@@ -909,18 +909,14 @@ theorem exists_herglotz_const {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ
   linear_combination this
 
 /-- On `ℂ₊`: `W = G · (E + E^*A)/(E - E^*A)`. -/
-theorem herglotzEnt_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ → ℂ} {p a : ℝ}
-    (hcs : Summable fun x : Λ ↦ ‖E ((x : ℝ) : ℂ)‖ ^ 2 / (1 + (x : ℝ) ^ 2))
+theorem herglotzEnt_eq {Λ : Set ℝ} {E A G : ℂ → ℂ} {p a : ℝ}
     (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0)
     (ha : ∀ z : ℂ, 0 < z.im → hbQuot E A z =
       (-I / Real.pi) * herglotzSum Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) z - I * p * z + I * a)
     {z : ℂ} (hz : 0 < z.im) :
     herglotzEnt Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) G p a z = G z * hbQuot E A z := by
-  have hcs' : Summable fun x : Λ ↦ |(fun x : ℝ ↦ ‖E (x : ℂ)‖ ^ 2) x| / (1 + (x : ℝ) ^ 2) := by
-    refine hcs.congr fun x ↦ ?_
-    rw [abs_of_nonneg (by positivity)]
   unfold herglotzEnt
-  rw [entSum_eq (c := fun x : ℝ ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hG0 hz.ne', ha z hz]
+  rw [entSum_eq (c := fun x : ℝ ↦ ‖E (x : ℂ)‖ ^ 2) hG0 hz.ne', ha z hz]
   ring
 
 /-- Algebra on `ℂ₊`: from `W = G H`, `H = (E + E^*A)/(E - E^*A)`, `P = W - G`, `Q = W + G`:
@@ -1078,7 +1074,7 @@ theorem theorem1_necessity (hPW : PaleyWienerThm) (hC : TheoremC) (hF : TheoremF
   have hWd := differentiable_herglotzEnt (c := fun x ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hGd hG0 p a
   have hWs := fstar_herglotzEnt (c := fun x ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hGd hG0 hGs p a
   have hWeq : ∀ z : ℂ, 0 < z.im → herglotzEnt Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) G p a z =
-      G z * hbQuot E A z := fun z hz ↦ herglotzEnt_eq hΛ hcs hG0 ha hz
+      G z * hbQuot E A z := fun z hz ↦ herglotzEnt_eq hG0 ha hz
   suffices key : ∀ W : ℂ → ℂ, Differentiable ℂ W → fstar W = (fun z ↦ -W z) →
       (∀ z : ℂ, 0 < z.im → W z = G z * hbQuot E A z) →
       ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧

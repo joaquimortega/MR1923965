@@ -276,7 +276,7 @@ theorem abs_cellTerm_below (h : RegData ψ t C M) {n : ℕ} (hn : 1 ≤ n) {z : 
 
 /-- Above, `n ≥ 2`. -/
 theorem abs_cellTerm_above (h : RegData ψ t C M) {n : ℕ} (hn : 2 ≤ n) {z : ℂ}
-    (_hz : 0 ≤ z.im) (hzn : 2 * ‖z‖ ≤ t (n - 1)) (hz0 : z ≠ 0) :
+    (hzn : 2 * ‖z‖ ≤ t (n - 1)) (hz0 : z ≠ 0) :
     |cellTerm ψ t C n z| ≤
       (2 * Real.log (1 + C) + 2) * (cellLen t n * ‖z‖ / t (n - 1) ^ 2) := by
   have hn1 : 1 ≤ n := by omega

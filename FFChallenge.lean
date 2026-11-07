@@ -418,13 +418,14 @@ theorem corollary2 (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     IsSampling (LambdaPsi ψ) := by
   sorry
 
-/-- **Theorem 2 (i)** (p. 801): if `ψ = 0` on `(-∞, 0]`, `ψ'(x) ≥ c/x` for large `x`, and `ψ`
-induces a logarithmically regular partition, then `Λ(ψ)` is sampling for `PW`.  The proof needs
-`ψ` to be "sufficiently regular" (p. 790; "the smoothness of `ψ` ensures", p. 802), which the
-statement does not say: we assume `ψ'` eventually nonincreasing (NOTEBOOK N-22). -/
+/-- **Theorem 2 (i)** (p. 801): if `ψ = 0` on `(-∞, 0]` and `ψ` induces a logarithmically regular
+partition, then `Λ(ψ)` is sampling for `PW`.  The printed hypothesis `ψ'(x) = 1/O(x)`
+(`ψ'(x) ≥ c/x` for large `x`) is not needed by the proof and is not assumed (NOTEBOOK N-26, I-03).
+The proof needs `ψ` to be "sufficiently regular" (p. 790; "the smoothness of `ψ` ensures",
+p. 802), which the statement does not say: we assume `ψ'` eventually nonincreasing
+(NOTEBOOK N-22). -/
 theorem theorem2_i (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
-    (hlow : ∃ c : ℝ, 0 < c ∧ ∃ X : ℝ, ∀ x : ℝ, X ≤ x → c / x ≤ deriv ψ x)
     (hreg : IsLogRegularPartition ψ) (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
     IsSampling (LambdaPsi ψ) := by
   sorry
@@ -439,11 +440,121 @@ theorem theorem2_i_of_densityBound (hPW : PaleyWienerThm) (hE : TheoremE) (hDS :
   sorry
 
 /-- **Theorem 2 (ii)** (p. 801): if `ψ = 0` on `(-∞, 0]` and `ψ'(x) = o(1/x)`, then `Λ(ψ)` is not
-sampling for `PW`. -/
-theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+sampling for `PW`.  The proof uses no cited theorem, so the statement has no `PaleyWienerThm`
+hypothesis: it is unconditional (NOTEBOOK I-03). -/
+theorem theorem2_ii {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ) := by
+  sorry
+
+/-! ## Phase 2: the cited results that are proved, and the main results with them discharged -/
+
+/-- **The Paley–Wiener theorem** (phase 2). -/
+theorem paleyWiener_holds : PaleyWienerThm := by
+  sorry
+
+/-- **The John–Nirenberg inequality** (phase 2). -/
+theorem johnNirenberg_holds : JohnNirenberg := by
+  sorry
+
+/-- **de Branges' Theorem D** (phase 2). -/
+theorem theoremD_holds : TheoremD := by
+  sorry
+
+/-- **de Branges' Theorem E** (phase 2). -/
+theorem theoremE_holds : TheoremE := by
+  sorry
+
+/-- **Lemma III of Duffin–Schaeffer**, unconditionally. -/
+theorem dsPerturbation_holds : DSPerturbation := by
+  sorry
+
+/-- **Fourier frames ⟺ sampling** (p. 790), unconditionally. -/
+theorem isFourierFrame_iff_isSampling_unconditional (Λ : Set ℝ) :
+    IsFourierFrame Λ ↔ IsSampling Λ := by
+  sorry
+
+/-- **The "evident fact"** (p. 799), unconditionally. -/
+theorem heEqPW_of_comparable_unconditional {E : ℂ → ℂ} (hE : IsHB E)
+    (hcomp : ∃ c C : ℝ, 0 < c ∧ ∀ z : ℂ, 0 ≤ z.im →
+      c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im)) :
+    HEEqPW E := by
+  sorry
+
+/-- **Theorem 1, sufficiency**, unconditionally. -/
+theorem theorem1_sufficiency_unconditional {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E F : ℂ → ℂ}
+    (hEHB : IsHB E) (hFHB : IsHB F) (hEPW : HEEqPW E)
+    (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
+    IsSampling Λ := by
+  sorry
+
+/-- **Theorem 1, necessity**, from de Branges' Theorems C and F alone. -/
+theorem theorem1_necessity_of_theoremCF (hC : TheoremC) (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Theorem 1**, from de Branges' Theorems C and F alone. -/
+theorem theorem1_of_theoremCF (hC : TheoremC) (hF : TheoremF) {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
+    IsSampling Λ ↔ ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Remark p. 797**, from de Branges' Theorem C alone. -/
+theorem completeInterpolating_zero_set_of_theoremC (hC : TheoremC)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) :
+    ∃ E : ℂ → ℂ, IsHB E ∧ HEEqPW E ∧ ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Corollary 1**, from de Branges' Theorems C and F alone. -/
+theorem corollary1_of_theoremCF (hC : TheoremC) (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsCompleteInterpolating (Set.range γ) ∧
+      ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) := by
+  sorry
+
+/-- **Landau's inequality** (the Claim of §4), from de Branges' Theorems C and F and Pavlov's
+Theorem A alone. -/
+theorem landau_inequality_of_theoremCF_pavlov (hC : TheoremC) (hF : TheoremF) (hA : PavlovBMO)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) := by
+  sorry
+
+/-- **The example of p. 798** is a complete interpolating sequence, unconditionally. -/
+theorem logExample_isCompleteInterpolating_unconditional :
+    IsCompleteInterpolating logExample := by
+  sorry
+
+/-- **Landau's inequality is best possible**, unconditionally. -/
+theorem landau_sharp_unconditional :
+    IsSeparated logExample ∧ IsSampling logExample ∧
+      ∀ A : ℝ, A < 1 → ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
+        ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤
+          ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
+  sorry
+
+/-- **Corollary 2**, unconditionally. -/
+theorem corollary2_unconditional {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) {f : ℂ → ℂ} (hf : IsHB f)
+    (hφ : Tendsto (phaseDeriv f) (cocompact ℝ) (𝓝 0))
+    (happ : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
+      Real.exp (UPsi ψ z - C) ≤ ‖f z‖ ∧ ‖f z‖ ≤ Real.exp (UPsi ψ z + C)) :
+    IsSampling (LambdaPsi ψ) := by
+  sorry
+
+/-- **Theorem 2 (i)** (with `ψ'` eventually nonincreasing), unconditionally. -/
+theorem theorem2_i_unconditional {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+    (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0) (hreg : IsLogRegularPartition ψ)
+    (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
+    IsSampling (LambdaPsi ψ) := by
+  sorry
+
+/-- **Theorem 2 (i)** (with the cell density bound), unconditionally. -/
+theorem theorem2_i_of_densityBound_unconditional {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+    (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0) (hreg : IsLogRegularPartitionWithDensity ψ) :
+    IsSampling (LambdaPsi ψ) := by
   sorry
 
 end FF

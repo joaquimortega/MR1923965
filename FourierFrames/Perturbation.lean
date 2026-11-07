@@ -268,10 +268,9 @@ theorem isSampling_replace_point (hPW : PaleyWienerThm) {Γ : Set ℝ} (hsep : I
 /-- **Replacing finitely many points by the same number of new points.**  (The "elementary fact"
 of p. 800.) -/
 theorem isSampling_of_replace_finite (hPW : PaleyWienerThm) {Γ Γ' : Set ℝ}
-    (hsep : IsSeparated Γ) (hs : IsSampling Γ) (hsep' : IsSeparated Γ')
+    (hsep : IsSeparated Γ) (hs : IsSampling Γ)
     (hD : (Γ \ Γ').Finite) (hD' : (Γ' \ Γ).Finite) (hcard : (Γ \ Γ').ncard = (Γ' \ Γ).ncard) :
     IsSampling Γ' := by
-  have _ := hsep'
   suffices H : ∀ n : ℕ, ∀ Γ : Set ℝ, IsSeparated Γ → IsSampling Γ → (Γ \ Γ').Finite →
       (Γ' \ Γ).Finite → (Γ \ Γ').ncard = n → (Γ' \ Γ).ncard = n → IsSampling Γ' from
     H _ Γ hsep hs hD hD' rfl hcard.symm
@@ -444,7 +443,7 @@ theorem IsSampling.of_perturbation (hPW : PaleyWienerThm) (hDS : DSPerturbation)
   have c1 := Set.ncard_inter_add_ncard_sdiff_eq_ncard Nr G hNfin
   have c2 := Set.ncard_inter_add_ncard_sdiff_eq_ncard G Nr hGfin
   rw [inter_comm] at c2
-  refine isSampling_of_replace_finite hPW hsepΓ₁ hS₁ hsepΓ' ?_ ?_ ?_
+  refine isSampling_of_replace_finite hPW hsepΓ₁ hS₁ ?_ ?_ ?_
   · rw [e1]; exact hNfin.sdiff
   · rw [e2]; exact hGfin.sdiff
   · rw [e1, e2]; omega

@@ -1,6 +1,10 @@
 # M05 — The Claim: Landau's inequality from John–Nirenberg and Pavlov
 
 **Lean:** `FourierFrames/Landau.lean` (namespace `FF`).
+**Status (final).** All proved, no `sorry`; the code follows this document, with the same
+constants (`M = max M₀ 1`, `A₁ = 2M/c`, `L₀ = max 2 (C+1)`, `A = 2A₁`, `B = max(2(K+D), K L₀ + D)`,
+`K = 1 + 1/q`, `D = 1`, final `B + 1`). Lean blocks show the statements; the hypothesis `hD : 0 ≤ D`
+of `osc_bound_of_JN` was not needed and was removed (NOTEBOOK I-03).
 **Paper:** §4, "Claim", p. 799 (proof, tex lines 640–681).
 **Depends on:**
 - M04 `corollary1_strong` (Corollary 1 with `Γ` separated; the statement of `corollary1` in
@@ -112,7 +116,7 @@ in which only *Lebesgue measure `< 1`* of `J` is used.
 /-- **Core of the Claim.** If `h ∈ BMO` has the local growth bound
 `|h(b) - h(a)| ≤ K (b - a) + D` (`a ≤ b`), then `|h(b) - h(a)| ≤ A log⁺(b - a) + B`. -/
 theorem osc_bound_of_JN (hJN : JohnNirenberg) {h : ℝ → ℝ} (hbmo : MemBMO h) {K D : ℝ}
-    (hK : 0 ≤ K) (hD : 0 ≤ D) (hloc : ∀ a b : ℝ, a ≤ b → |h b - h a| ≤ K * (b - a) + D) :
+    (hK : 0 ≤ K) (hloc : ∀ a b : ℝ, a ≤ b → |h b - h a| ≤ K * (b - a) + D) :
     ∃ A B : ℝ, ∀ a b : ℝ, a < b → |h b - h a| ≤ A * Real.posLog (b - a) + B := by
   sorry
 ```

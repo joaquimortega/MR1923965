@@ -91,7 +91,7 @@ theorem dyadic_anc {a b : ℝ} (n m k : ℕ) : dyadic a b (n + m) k ⊆ dyadic a
     refine (dyadic_parent (n + m) k).trans ((ih (k / 2)).trans ?_)
     rw [Nat.div_div_eq_div_mul, ← pow_succ']
 
-theorem volume_dyadic {a b : ℝ} (_hab : a < b) (n k : ℕ) :
+theorem volume_dyadic (a b : ℝ) (n k : ℕ) :
     volume (dyadic a b n k) = ENNReal.ofReal ((b - a) / 2 ^ n) := by
   rw [dyadic_eq, Real.volume_Ico]
   congr 1

@@ -1,11 +1,14 @@
 # M09 — Theorem 2 (ii)
 
-**Lean:** `FourierFrames/Theorem2ii.lean` (compiles, only `sorry` warnings).
+**Lean:** `FourierFrames/Theorem2ii.lean` + helpers `FourierFrames/Theorem2ii/{Window,UOne,Ramp,Mass,Cells}.lean`.
+**Status:** proved (no `sorry`); `lemma3_estimate_uniform` is proved in `FourierFrames/Lemma3Uniform.lean`.
+The Lean blocks below show the statements; where the implemented proof differs from the text it is marked
+*Implemented:* (source: `impl_notes/theorem2ii.md`).
 **Paper:** §5, pp. 804–805 (journal), `literature/ArxivOrtega.tex` lines ~967–1040, page images p-16, p-17.
 **Main statement:** `theorem2_ii` (identical to `comparator/statements.lean`).
 
 ```lean
-theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+theorem theorem2_ii {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ)
@@ -15,12 +18,12 @@ theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissibl
 `IsAdmissiblePsi`, `IsExpTypeLE`); the vendored `OCS` library: `OCS.IsMultWeight`, `OCS.multF`,
 `OCS.multU`, `OCS.multUIntegrand`, `OCS.multL`, `OCS.exp_multL`, `OCS.multF_estimate_three`,
 `OCS.multPrim`, `OCS.multPt`, `OCS.multBary`, `OCS.multIdx`, `OCS.multGammaC`,
-`OCS.multF_eq_zero_iff`, `OCS.differentiable_multF`, `OCS.integrable_multU_integrand`,
+`OCS.multF_eq_zero_iff`, `OCS.differentiable_multF`, `OCS.integrable_multUIntegrand`,
 `OCS.multPt_eq_of`, `OCS.multPt_succ_sub_bounds`, `OCS.multBary_mem`, `OCS.multIdx_mem`,
-`OCS.exists_infDist_multGammaC_eq`.  **No dependence on M01–M08.**  `hPW` is not used (it is kept
-because the statement in `comparator/statements.lean` has it).
-**Upstream interface (one item, see §0.3):** `lemma3_estimate_uniform` (uniform constants in Lemma 3
-estimate (2)).
+`OCS.exists_infDist_multGammaC_eq`.  **No dependence on M01–M08.**  The statement has no `hPW`:
+it was unused and was removed from `comparator/statements.lean` (NOTEBOOK I-03).
+**Also uses (§0.3):** `lemma3_estimate_uniform` (uniform constants in Lemma 3 estimate (2)), proved in
+`Lemma3Uniform.lean` (imported).
 **Used by:** nothing.
 
 ---
@@ -56,7 +59,7 @@ Notation: `g(x) = x + ψ(x)`, `Λ = Λ(ψ) = g⁻¹(ℤ)`.
    relative to `ℤ` stays near `1/2` for a logarithmically long range of scales.
 3. **Test function.**  Choose a density `m = 1 + μ` where `μ` consists of two negative uniform
    "ramps" of total mass `-1/2` each, on `[a₁, 2a₁]` and `[a₂, 2a₂]`, with
-   `2a₁ + 3 = x₀`, `a₂ - 3 = x₀ e^{s}`.  The primitive `ρ(t) = ∫₀ᵗ μ` is `0`, then `-1/2` on the
+   `2a₁ + 3 = x₀`, `a₂ - 3 = x₀ e^{s'}` with `s' = max(s + 1, 3)` (E1).  The primitive `ρ(t) = ∫₀ᵗ μ` is `0`, then `-1/2` on the
    window, then `-1`.  The [OS99] function `F` of `m` has zeros `ℤ + 1/2` (before the shift) on the
    left, `ℤ + 1` on the window, `ℤ + 3/2` after; with the shift `f(z) = G(z + 1/2)` (where
    `G = F e^{-κz}` removes a linear exponential): zeros `ℤ` on the left, **`ℤ + 1/2` on the window
@@ -88,7 +91,9 @@ theorem lemma3_estimate_uniform {a b : ℝ} (ha : 0 < a) (hb : 0 < b) :
         c₁ * infDist z (OCS.multGammaC m) ≤ ‖OCS.multF m C z‖ * Real.exp (-OCS.multU m C z) ∧
         ‖OCS.multF m C z‖ * Real.exp (-OCS.multU m C z) ≤ c₂ * infDist z (OCS.multGammaC m)
 ```
-It is declared in the "Upstream interface" section of the scaffold.  Proof: copy the vendored
+*Implemented* in `FourierFrames/Lemma3Uniform.lean:132`, through the copied
+`exists_abs_sum_multErr_sub_log_infDist_le_uniform` (`:26`) with `K = K₃ + 3K₁ + 3K₂` fixed from `(a, b)`.
+Plan as written: copy the vendored
 proof of `multF_estimate_two` with `K` made explicit and uniform (the proof of
 `exists_abs_sum_multErr_sub_log_infDist_le` never uses `m` beyond `IsMultWeight m a b`).  If the
 vendored library cannot be changed, the implementer may re-prove it in `FF` from the same
@@ -142,8 +147,13 @@ theorem multUIntegrand_one (z : ℂ) :
 (The first is the case `Im z = 0` of the second; it is stated separately because the real case
 needs only `integral_log`, no `arctan`.)
 
-*Proof.*  Write `z = x + iy`.  `m ≡ 1` is a weight with `(a, b) = (1, 1)`, so by
-`OCS.integrable_multU_integrand` the integrand
+*Implemented* (`Theorem2ii/UOne.lean`): reduce to `x = 0` by a shift, `∫_{-R}^{R}[G_y(t-x) - G_y(t)] dt =
+∫_0^x [G_y(R+u) - G_y(R-x+u)] du = O(x²/R)` with `G_y(s) = log(s²+y²)/2` (`T2ii.shift_eq`, `T2ii.abs_shift_le`);
+for `x = 0` use the antiderivative `t log(t²+c²) - 2t log t + 2c arctan(t/c)` of `log(t²+c²) - 2 log t`
+(`T2ii.Bf`, `UOne.lean:139`). `multUIntegrand_one_real` is a corollary. The explicit `A(s)` below is not used.
+
+*Proof (blueprint).*  Write `z = x + iy`.  `m ≡ 1` is a weight with `(a, b) = (1, 1)`, so by
+`OCS.integrable_multUIntegrand` the integrand
 `u(t) = log|1 - z/t| + (1 - χ_{[-1,1]}(t)) Re(z/t)` is integrable; hence
 `∫_ℝ u = lim_{R→∞} ∫_{-R}^{R} u` (`MeasureTheory.intervalIntegral_tendsto_integral`).
 For `R > 1`: `∫_{-R}^{R}(1-χ)Re(z/t) dt = x ∫_{1<|t|<R} dt/t = 0` (odd integrand; use
@@ -188,6 +198,14 @@ keeps `log|t| `bounded on the support; `∫ μ/t` is a bounded compactly support
 theorem rampPot_estimate {a : ℝ} (ha : 1 ≤ a) (x : ℝ) :
     |(1 / a) * ∫ t in a..2 * a, Real.log ‖1 - (x : ℂ) / t‖ - Real.log (max 1 (|x| / a))| ≤ 4
 ```
+(Lean parses this as `(1/a) ∫_a^{2a} (log|1 - x/t| - ℓ)`: the binder of `∫` extends over `- log (max …)`. This
+equals `R - ℓ` because the interval has length `a`, so the statement is the intended one;
+`T2ii.rampPot_estimate'`, `Theorem2ii/Ramp.lean:217`, is the parenthesised form.)
+
+*Implemented* (`Theorem2ii/Ramp.lean`): rescale `t = a s` to `∫_1^2 log|1 - ξ/s| ds`, `ξ = x/a`
+(`T2ii.rampInt_estimate`, `:178`); split `|ξ| ≤ 3` / `|ξ| ≥ 3`, with `∫_1^2 log|s - ξ| ≥ -2` from
+`min(0, log|v|)` (integral `-2`) and `log 3 < 1.11`. The three cases below (with `log 6`) are not used.
+
 Let `R(x) = (1/a)∫_a^{2a} log|1 - x/t| dt`, `u = |x|`, `ℓ = log max(1, u/a)`.  For `t ∈ [a, 2a]`,
 `‖1 - (x:ℂ)/t‖ = |1 - x/t|`.
 
@@ -346,7 +364,8 @@ outside a compact set, and continuous on the compact set).  `g(x) = x + ψ(x)` h
 `g(λ') - g(λ) ∈ ℤ`, `> 0`, so `≥ 1`, and `≤ (1+B)(λ' - λ)` (mean value theorem
 `Convex.norm_image_sub_le_of_norm_deriv_le` / `image_sub_le_mul_sub_of_deriv_le`).  Hence
 `λ' - λ ≥ 1/(1+B)` and **every interval `[j, j+1)` contains at most `2 + B` points of `Λ`**
-(`n` points need `(n-1)/(1+B) ≤ 1`).  Also `Λ ∩ (-∞, 0] = ℤ_{≤0}` (`ψ = 0` ⇒ `x ∈ ℤ`; conversely
+(`n` points need `(n-1)/(1+B) ≤ 1`). *Implemented* with the bound `⌊1+B⌋₊ + 1`
+(`T2ii.lambda_cell_count`, `Theorem2ii/Cells.lean:92`).  Also `Λ ∩ (-∞, 0] = ℤ_{≤0}` (`ψ = 0` ⇒ `x ∈ ℤ`; conversely
 `ψ(j) = 0`).  Tool for converting `sampleSum` (an `ℝ≥0∞` `tsum` over the subtype `Λ`) to sums over
 `j`: `ENNReal.tsum_comp_le_tsum_of_injective` is not what is needed; use the fibration
 `l ↦ ⌊l⌋`: `∑'_{l:Λ} h(l) = ∑'_{j:ℤ} ∑'_{l:Λ, ⌊l⌋ = j} h(l)` (`ENNReal.tsum_sigma'`/`tsum_fiberwise`
@@ -384,7 +403,8 @@ theorem sampleSum_testFn_le {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : 
       sampleSum (LambdaPsi ψ) (testFn a₁ a₂) ≤
         ENNReal.ofReal (C * a₁ * (1 + η ^ 2 * Real.log (a₂ / a₁)))
 ```
-`C` depends on `ψ` only through `B = sup|ψ'|` and on the constants of C1, B4.  Let `C₁` be the upper
+`C` depends on `ψ` only through `B = sup|ψ'|` and on the constants of C1, B4. *Implemented:*
+`C = 20(⌊1+B⌋₊+1)C₁²` (`Theorem2ii.lean:961`), cells indexed by `⌊l⌋₊`.  Let `C₁` be the upper
 constant of C1, `δ(l) = |l - 1/2 - round(l - 1/2)|` (distance of `l` to `ℤ + 1/2`).  By C1 and B4:
 `|f(l)|² ≤ C₁² env(l + 1/2) · infDist(l + 1/2, Γ)² ≤ 4C₁² env(l + 1/2)` for all real `l`.
 Split `Λ = Λ_0 ∪ Λ_1 ∪ Λ_2 ∪ Λ_3` with `Λ_0 = Λ ∩ (-∞, 0]`, `Λ_1 = Λ ∩ (0, 2a₁ + 3)`,
@@ -422,7 +442,9 @@ theorem exists_window {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x 
 2. Put `s' = max (s + 1) 3` (so `e^{s'} ≥ 8`) and `ε = η/s'`.  By `hsmall`, `∃ R ≥ 1`,
    `∀ x ≥ R, x * deriv ψ x ≤ ε` (`Tendsto.eventually_le_const`/`eventually_atTop`).
 3. Choose `R' = max R (max 19 (2A₀ + 3))`.  Since `ψ` is continuous, unbounded above, choose an integer `n`
-   with `n + 1/2 ≥ ψ(R')`; by `intermediate_value_Ici` there is `x₀ ≥ R'` with `ψ(x₀) = n + 1/2`.
+   with `n + 1/2 ≥ ψ(R')`; by the intermediate value theorem there is `x₀ ≥ R'` with `ψ(x₀) = n + 1/2`
+   (*implemented* with `intermediate_value_Icc` between `R'` and a point where `ψ ≥ n + 1/2`,
+   `Theorem2ii/Window.lean:85`).
 4. **Key estimate.**  For `x ∈ [x₀, x₀ e^{s'}]`: `0 ≤ ψ(x) - ψ(x₀) ≤ ε log(x/x₀) ≤ ε s' = η`.
    Lower bound: `ψ` monotone.  Upper: `h(x) = ε log x - ψ(x)` has `h'(x) = ε/x - ψ'(x) ≥ 0` on `[R, ∞)`,
    so `h` is monotone there (`monotoneOn_of_deriv_nonneg` on `Ici R`, `ψ` differentiable) and
@@ -498,8 +520,8 @@ Quotes are from `literature/ArxivOrtega.tex` (lines ≈ 967–1040); page images
    comparable to its sampling value.  *Fairly sure; this is why the reconstruction places the
    smearing at logarithmic distance (in both directions) from the bulk of the mass.*
 7. **The statement "`Ω_n` has `∫_{Ω_n} → ∞`" needs `ψ' = o(1/x)` in the following precise way**, never
-   stated in the paper: `ψ' = o(1/x)` is *equivalent to the existence, for every `s`, `η`, of arbitrarily
-   far windows `[x, x e^{s}]` on which `|ψ - (integer + 1/2)| ≤ η`*; the log-length of the window is the
+   stated in the paper: `ψ' = o(1/x)` *implies* (the converse fails; NOTEBOOK N-38) *the existence, for every
+   `s`, `η`, of arbitrarily far windows `[x, x e^{s}]` on which `|ψ - (integer + 1/2)| ≤ η`*; the log-length of the window is the
    quantity `→ ∞` which makes the critical mass `∫ dx/x` diverge.  *(Remark, not an error.)*
 8. **Minor:** (line 1033) "`\dist(λ_k, Γ) → 0` uniformly for `λ_k ∈ Ω_n`" and "`γ_k = k` for all
    `k < 0`": in [OS99] Lemma 3, `Γ = {barycentres}` is `ℤ + 1/2` for `m ≡ 1`; the zero set must be
@@ -522,12 +544,13 @@ no `t_n`, `ξ_n`, `ε_n`: a single window and two uniform ramps suffice, with al
 
 ## 9. Requested changes to M00
 
-None.  (`theorem2_ii` is true as stated; `hPW` is unused.)
+None.  (`theorem2_ii` is true as stated; its former hypothesis `hPW` was unused and has been
+removed, NOTEBOOK I-03.)
 
 Possible remark for M00: `IsAdmissiblePsi` as stated in `Defs.lean` allows `Tendsto ψ atBot atBot`; combined
 with `h0` this alternative is impossible, so no change is needed.
 
 ## 10. Request to other modules
 
-* The owner of the vendored library `OCS` (or whoever assembles): `lemma3_estimate_uniform` (see §0.3).
-  Without it, replace the proof of `testFn_norm_real` by a re-proof inside `FF`.
+*Done.* `lemma3_estimate_uniform` (see §0.3) is proved in `FourierFrames/Lemma3Uniform.lean`; the vendored library
+is unchanged.

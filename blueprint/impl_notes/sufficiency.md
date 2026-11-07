@@ -17,7 +17,8 @@
 - `levelSet_separated`: separation constant `1/(Θ+1)`, `Θ = sqrt((π e)² max(K,0))`, `K = π/(c₁ c)`.
 - `phase_tendsto` does not index by `ℤ`; it uses `translate_lower_bound_aux` (norm identity for translates
   of `pwBump`) and `translate_tail`, and bounded-above-ness of `Γ` from finiteness of `Γ ∩ {φ ∈ [a,b]}`.
-- `exists_noRealZero_hb`: the hypothesis `hEHB` is unused (frozen statement); silenced by `have _ := hEHB`.
+- `exists_noRealZero_hb`: the hypothesis `hEHB` is unused (frozen statement); silenced by `have _ := hEHB`
+  (*later:* removed in the lint pass, NOTEBOOK I-03).
 - `exists_realFactor`: variable genus `p_a = m_a + rank(a) + 1`, `rank` an injection of the real zero set into `ℕ`
   (advisor suggestion), instead of `p_x ≥ m_x + |x|` (which needs a separation hypothesis).
 - Commit trailers: IMPLEMENTING.md asks for `Claude Opus 5.5`; the session reminder says `Claude Sonnet 5.5`. The
