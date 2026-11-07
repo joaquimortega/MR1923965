@@ -131,6 +131,10 @@ theorem paleyWiener_holds : PaleyWienerThm := by
 theorem johnNirenberg_holds : JohnNirenberg := by
   sorry
 
+/-- **de Branges' Theorem C** (phase 2). -/
+theorem theoremC_holds : TheoremC := by
+  sorry
+
 /-- **de Branges' Theorem D** (phase 2). -/
 theorem theoremD_holds : TheoremD := by
   sorry
@@ -230,3 +234,35 @@ theorem theorem2_i_of_densityBound_unconditional {ψ : ℝ → ℝ} (hψ : IsAdm
     IsSampling (LambdaPsi ψ) := by
   sorry
 
+/-- **Theorem 1, necessity**, from de Branges' Theorem F alone. -/
+theorem theorem1_necessity_of_theoremF (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Theorem 1**, from de Branges' Theorem F alone. -/
+theorem theorem1_of_theoremF (hF : TheoremF) {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
+    IsSampling Λ ↔ ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Remark p. 797**, unconditionally. -/
+theorem completeInterpolating_zero_set_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) :
+    ∃ E : ℂ → ℂ, IsHB E ∧ HEEqPW E ∧ ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Corollary 1**, from de Branges' Theorem F alone. -/
+theorem corollary1_of_theoremF (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsCompleteInterpolating (Set.range γ) ∧
+      ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) := by
+  sorry
+
+/-- **Landau's inequality**, from de Branges' Theorem F and Pavlov's Theorem A alone. -/
+theorem landau_inequality_of_theoremF_pavlov (hF : TheoremF) (hA : PavlovBMO)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) := by
+  sorry

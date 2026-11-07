@@ -19,6 +19,7 @@
     "FF.theorem2_ii",
     "FF.paleyWiener_holds",
     "FF.johnNirenberg_holds",
+    "FF.theoremC_holds",
     "FF.theoremD_holds",
     "FF.theoremE_holds",
     "FF.dsPerturbation_holds",
@@ -34,7 +35,12 @@
     "FF.landau_sharp_unconditional",
     "FF.corollary2_unconditional",
     "FF.theorem2_i_unconditional",
-    "FF.theorem2_i_of_densityBound_unconditional"
+    "FF.theorem2_i_of_densityBound_unconditional",
+    "FF.theorem1_necessity_of_theoremF",
+    "FF.theorem1_of_theoremF",
+    "FF.completeInterpolating_zero_set_unconditional",
+    "FF.corollary1_of_theoremF",
+    "FF.landau_inequality_of_theoremF_pavlov"
   ],
   "permitted_axioms": [
     "propext",

@@ -10,16 +10,18 @@ import FourierFrames.Cited.PaleyWiener
 import FourierFrames.Cited.DSPerturbation
 import FourierFrames.Cited.JohnNirenberg
 import FourierFrames.Cited.DeBrangesDE
+import FourierFrames.Cited.DeBrangesFC
 
 /-!
 # The main results with the proved cited results discharged
 
-Phase 2 proves the Paley–Wiener theorem (`paleyWiener_holds`), de Branges' Theorems D and E
-(`theoremD_holds`, `theoremE_holds`), the John–Nirenberg inequality (`johnNirenberg_holds`) and
-Duffin–Schaeffer's Lemma III (`dsPerturbation_holds`).  This file applies them to the main
-theorems.  The results that need only these hypotheses become unconditional (`*_unconditional`);
-those that also need de Branges' Theorem C or F, or Pavlov's Theorem A, keep exactly those
-hypotheses (`*_of_theoremCF`, `*_of_theoremC`, `*_of_theoremCF_pavlov`).
+Phase 2 proves the Paley–Wiener theorem (`paleyWiener_holds`), de Branges' Theorems C, D and E
+(`theoremC_holds`, `theoremD_holds`, `theoremE_holds`), the John–Nirenberg inequality
+(`johnNirenberg_holds`) and Duffin–Schaeffer's Lemma III (`dsPerturbation_holds`).  This file
+applies them to the main theorems.  The results that need only these hypotheses become
+unconditional (`*_unconditional`); those that also need de Branges' Theorem F or Pavlov's
+Theorem A keep exactly those hypotheses (`*_of_theoremF`, `*_of_theoremF_pavlov`).  The
+intermediate forms `*_of_theoremCF`, `*_of_theoremC`, `*_of_theoremCF_pavlov` are kept.
 -/
 
 open MeasureTheory Set Complex Filter Topology
@@ -117,5 +119,38 @@ theorem theorem2_i_of_densityBound_unconditional {ψ : ℝ → ℝ} (hψ : IsAdm
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0) (hreg : IsLogRegularPartitionWithDensity ψ) :
     IsSampling (LambdaPsi ψ) :=
   theorem2_i_of_densityBound paleyWiener_holds theoremE_holds dsPerturbation_holds hψ h0 hreg
+
+/-- **Theorem 1, necessity**, from de Branges' Theorem F alone. -/
+theorem theorem1_necessity_of_theoremF (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) :=
+  theorem1_necessity_of_theoremCF theoremC_holds hF hΛ hs
+
+/-- **Theorem 1**, from de Branges' Theorem F alone. -/
+theorem theorem1_of_theoremF (hF : TheoremF) {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
+    IsSampling Λ ↔ ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) :=
+  theorem1_of_theoremCF theoremC_holds hF hΛ
+
+/-- **Remark p. 797**, unconditionally. -/
+theorem completeInterpolating_zero_set_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hcis : IsCompleteInterpolating Λ) :
+    ∃ E : ℂ → ℂ, IsHB E ∧ HEEqPW E ∧ ∀ z : ℂ, E z + fstar E z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) :=
+  completeInterpolating_zero_set_of_theoremC theoremC_holds hΛ hcis
+
+/-- **Corollary 1**, from de Branges' Theorem F alone. -/
+theorem corollary1_of_theoremF (hF : TheoremF)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsCompleteInterpolating (Set.range γ) ∧
+      ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) :=
+  corollary1_of_theoremCF theoremC_holds hF hΛ hs
+
+/-- **Landau's inequality**, from de Branges' Theorem F and Pavlov's Theorem A alone. -/
+theorem landau_inequality_of_theoremF_pavlov (hF : TheoremF) (hA : PavlovBMO)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) :=
+  landau_inequality_of_theoremCF_pavlov theoremC_holds hF hA hΛ hs
 
 end FF
