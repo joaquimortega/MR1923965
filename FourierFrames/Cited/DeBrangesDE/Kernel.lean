@@ -530,6 +530,36 @@ theorem integrable_heInner {E f g : ℂ → ℂ} (hE : Differentiable ℂ E) (h0
   rw [e]
   nlinarith [sq_nonneg (‖f t / E t‖ - ‖g t / E t‖)]
 
+theorem integrable_conj {g : ℝ → ℂ} (hg : Integrable g) : Integrable fun t ↦ conj (g t) := by
+  have := (Complex.conjCLE.toContinuousLinearMap).integrable_comp hg
+  simpa using this
+
+/-- Decomposition of `⟨f, K_w⟩_E` for nonreal `w`, given `IsH2Cont` functions `A`, `B` equal a.e. on
+`ℝ` to `f/E`, `f^*/E`:
+`⟨f, K_w⟩ = (-i/2π) [E(w) ∫ A(t)/(t - w) - E^*(w) conj ∫ B(t)/(t - w̄)]`. -/
+theorem heInner_kernel_eq_of_ae {E f A B : ℂ → ℂ} (hE0 : ∀ᵐ t : ℝ, E t ≠ 0) (hA : IsH2Cont A)
+    (hB : IsH2Cont B) (hAr : ∀ᵐ t : ℝ, A t = f t / E t) (hBr : ∀ᵐ t : ℝ, B t = fstar f t / E t)
+    {w : ℂ} (hw : w.im ≠ 0) :
+    heInner E f (deBrangesKernel E w) = (-I / (2 * Real.pi)) *
+      (E w * (∫ t : ℝ, A t / ((t : ℂ) - w)) -
+        fstar E w * conj (∫ t : ℝ, B t / ((t : ℂ) - conj w))) := by
+  have hcw : (conj w).im ≠ 0 := by simpa using hw
+  have hiA := hA.integrable_div hw
+  have hiBc := integrable_conj (hB.integrable_div hcw)
+  have hae : (fun t : ℝ ↦ f t * conj (deBrangesKernel E w t) / ((‖E t‖ ^ 2 : ℝ) : ℂ)) =ᵐ[volume]
+      fun t ↦ (-I / (2 * Real.pi)) * (E w * (A t / ((t : ℂ) - w)) -
+        fstar E w * conj (B t / ((t : ℂ) - conj w))) := by
+    filter_upwards [hE0, hAr, hBr] with t ht hA' hB'
+    have htw : (t : ℂ) ≠ w := fun h ↦ hw (by rw [← h]; simp)
+    have hc : conj (fstar f t / E t / ((t : ℂ) - conj w)) =
+        conj (fstar f t / E t) / ((t : ℂ) - w) := by
+      rw [map_div₀ _ (fstar f t / E t), map_sub, Complex.conj_ofReal, Complex.conj_conj]
+    rw [integrand_eq w f ht htw, hA', hB', hc]
+    ring
+  unfold heInner
+  rw [integral_congr_ae hae, integral_const_mul, integral_sub (hiA.const_mul _)
+    (hiBc.const_mul _), integral_const_mul, integral_const_mul, integral_conj]
+
 /-- **Reproducing formula at `w ∈ ℂ₊`, general form (for P4)**: `E ∈ \overline{HB}` may have real
 zeros; `A`, `B` are `IsH2Cont` functions agreeing with `f/E`, `f^*/E` on `ℂ₊` and a.e. on `ℝ`
 (e.g. the continuous extensions across removable real singularities).  Proof: a.e. on `ℝ` the
@@ -540,29 +570,105 @@ theorem heInner_kernel_upper_of_isH2Cont {E f A B : ℂ → ℂ} (hE : IsHB E)
     (hAu : ∀ z : ℂ, 0 < z.im → A z = f z / E z)
     (hAr : ∀ᵐ t : ℝ, A t = f t / E t) (hBr : ∀ᵐ t : ℝ, B t = fstar f t / E t)
     {w : ℂ} (hw : 0 < w.im) : heInner E f (deBrangesKernel E w) = f w := by
-  sorry
+  have hEw : E w ≠ 0 := hE.2.1 w hw
+  have hcw : (conj w).im < 0 := by simpa using hw
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  rw [heInner_kernel_eq_of_ae hE0 hA hB hAr hBr hw.ne', hA.cauchy_upper hw,
+    hB.integral_div_lower hcw, hAu w hw, map_zero, mul_zero, sub_zero]
+  field_simp
+  ring_nf
+  rw [Complex.I_sq]
+  ring
 
 /-- **Reproducing formula, `w ∈ ℂ₊`**: `cauchy_upper` for `f/E` and `integral_div_lower` (at `w̄`)
 for `f^*/E` (the case `A = f/E`, `B = f^*/E` of the previous lemma). -/
 theorem heInner_kernel_upper {E f : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) {w : ℂ} (hw : 0 < w.im) : heInner E f (deBrangesKernel E w) = f w := by
-  sorry
+  obtain ⟨hA, hB⟩ := isH2Cont_of_memHE hE.1 h0 hf
+  exact heInner_kernel_upper_of_isH2Cont hE (Eventually.of_forall h0) hA hB (fun z _ ↦ rfl)
+    (Eventually.of_forall fun t ↦ rfl) (Eventually.of_forall fun t ↦ rfl) hw
 
 /-- **Reproducing formula, `w ∈ ℂ₋`**: `integral_div_lower` for `f/E` and `cauchy_upper` (at `w̄`)
 for `f^*/E`. -/
 theorem heInner_kernel_lower {E f : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) {w : ℂ} (hw : w.im < 0) : heInner E f (deBrangesKernel E w) = f w := by
-  sorry
+  obtain ⟨hA, hB⟩ := isH2Cont_of_memHE hE.1 h0 hf
+  have hcw : 0 < (conj w).im := by simpa using hw
+  have hEc : E (conj w) ≠ 0 := hE.2.1 _ hcw
+  have hEs : fstar E w ≠ 0 := by
+    simp only [fstar, ne_eq, map_eq_zero]
+    exact hEc
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  rw [heInner_kernel_eq_of_ae (Eventually.of_forall h0) hA hB (Eventually.of_forall fun t ↦ rfl)
+    (Eventually.of_forall fun t ↦ rfl) hw.ne, hA.integral_div_lower hw, hB.cauchy_upper hcw]
+  have e : conj (2 * Real.pi * I * (fstar f (conj w) / E (conj w))) =
+      -(2 * Real.pi * I) * (f w / fstar E w) := by
+    simp only [fstar, map_mul, map_div₀, Complex.conj_conj, Complex.conj_ofReal, Complex.conj_I,
+      map_ofNat]
+    ring
+  rw [e]
+  field_simp
+  ring_nf
+  rw [Complex.I_sq]
+  ring
 
 /-- **Reproducing formula, real `w = x`**: decomposition `integrand_eq_real`, then
 `cauchy_real` for `f/E` and `f^*/E` at `x` and `integral_two_I_div`. -/
 theorem heInner_kernel_real {E f : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) (x : ℝ) : heInner E f (deBrangesKernel E x) = f x := by
-  sorry
+  obtain ⟨hA, hB⟩ := isH2Cont_of_memHE hE.1 h0 hf
+  have hdA : DifferentiableAt ℂ (fun z ↦ f z / E z) (x : ℂ) := (hf.1 _).div (hE.1 _) (h0 x)
+  have hdB : DifferentiableAt ℂ (fun z ↦ fstar f z / E z) (x : ℂ) :=
+    ((Differentiable.fstar hf.1) _).div (hE.1 _) (h0 x)
+  have hP : Integrable fun t : ℝ ↦
+      (f t / E t - f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) :=
+    hA.integrable_reg_real hdA
+  have hQ : Integrable fun t : ℝ ↦
+      (fstar f t / E t - fstar f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) :=
+    hB.integrable_reg_real hdB
+  have hP0 : ∫ t : ℝ, (f t / E t - f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) = 0 :=
+    hA.cauchy_real hdA
+  have hQ0 : ∫ t : ℝ,
+      (fstar f t / E t - fstar f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) = 0 :=
+    hB.cauchy_real hdB
+  have hR : Integrable fun t : ℝ ↦ 2 * I / ((((t - x) ^ 2 + 1 : ℝ)) : ℂ) := by
+    have h : Integrable fun t : ℝ ↦ 2 * I * ((((t - x) ^ 2 + 1 ^ 2)⁻¹ : ℝ) : ℂ) :=
+      ((integrable_inv_sq_add_sq x one_ne_zero).ofReal).const_mul (2 * I)
+    refine h.congr (Eventually.of_forall fun t ↦ ?_)
+    push_cast
+    ring
+  have hae : (fun t : ℝ ↦ f t * conj (deBrangesKernel E x t) / ((‖E t‖ ^ 2 : ℝ) : ℂ)) =ᵐ[volume]
+      fun t ↦ (-I / (2 * Real.pi)) *
+        (E x * ((f t / E t - f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x))
+          - fstar E x *
+            conj ((fstar f t / E t - fstar f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x))
+          + f x * (2 * I / ((((t - x) ^ 2 + 1 : ℝ)) : ℂ))) := by
+    filter_upwards [volume.ae_ne x] with t ht
+    exact integrand_eq_real f (h0 x) (h0 t) ht
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have hPQ : Integrable fun t : ℝ ↦
+      E x * ((f t / E t - f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x))
+        - fstar E x *
+          conj ((fstar f t / E t - fstar f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x)) :=
+    (hP.const_mul _).sub ((integrable_conj hQ).const_mul _)
+  unfold heInner
+  rw [integral_congr_ae hae, integral_const_mul, integral_add hPQ (hR.const_mul _),
+    integral_sub (hP.const_mul _) ((integrable_conj hQ).const_mul _), integral_const_mul,
+    integral_const_mul, integral_const_mul, integral_conj, hP0, hQ0, integral_two_I_div,
+    map_zero]
+  field_simp
+  ring_nf
+  rw [Complex.I_sq]
+  ring
 
 /-- **Theorem D, part 2**: `⟨f, K_w⟩_E = f(w)` for all `w ∈ ℂ`. -/
 theorem heInner_kernel {E f : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) (w : ℂ) : heInner E f (deBrangesKernel E w) = f w := by
-  sorry
+  rcases lt_trichotomy w.im 0 with h | h | h
+  · exact heInner_kernel_lower hE h0 hf h
+  · have hw : ((w.re : ℝ) : ℂ) = w := Complex.ext (by simp) (by simp [h])
+    rw [← hw]
+    exact heInner_kernel_real hE h0 hf w.re
+  · exact heInner_kernel_upper hE h0 hf h
 
 end FF
