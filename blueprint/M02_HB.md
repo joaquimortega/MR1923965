@@ -31,7 +31,7 @@ repairs; nothing is dropped):
 | `IsStrictHB.phaseDeriv_pos` | also the stronger `IsHB.phaseDeriv_pos_of_exists_lt` (strict at *one* point suffices) and `IsHB.isStrictHB_or_fstar_eq` (dichotomy), `IsPhaseFunction.strictMono_of_isStrictHB`. |
 | `MemHE.mul_isHB` | no hypothesis `IsHB E` needed (only `IsHB F`). |
 | `HEEqPW.isStrictHB`, `.ne_zero_ofReal` | extra hypothesis `IsHB E` (necessary: `H(E)` makes no sense otherwise, and the proofs use `E ≠ 0` on `ℂ₊`). No `hPW` needed. |
-| `HEEqPW.phaseDeriv_mul_sq_ge/_le` | `∃ c > 0, ∀ x, c ≤ phaseDeriv E x * ‖E x‖^2` and `∃ C, ∀ x, … ≤ C`; hypotheses `hPW`, `hE : TheoremE`, `IsHB E`, `HEEqPW E`. |
+| `HEEqPW.phaseDeriv_mul_sq_ge/_le` | `∃ c > 0, ∀ x, c ≤ phaseDeriv E x * ‖E x‖^2` and `∃ C, ∀ x, … ≤ C`; hypotheses `hE : TheoremE`, `IsHB E`, `HEEqPW E`, and `hPW` for `_le` only (`_ge` does not use it, NOTEBOOK I-03). |
 | `memHE_sAlpha_unique` | needs only `IsHB E` (strictness not needed); `sAlpha E α` is a new `def` (the function of Theorem E). |
 | `zero_set_eq_phaseLevel` | `z ∈ Complex.ofReal '' phaseLevel (fun t ↦ φE t + φF t) (π/2)`. |
 | — | New: `H2.lean` (Hardy toolkit: closure properties, area mean-value inequality, pointwise `H²` bound, Liouville for `L²` on lines, blow-up at a real zero). M03/M04 may use these freely. |
@@ -607,6 +607,7 @@ complement (`Set.Countable.dense_compl`). So **`Xᶜ` is dense**.
 *Extension to all `x`.* `{x | c ≤ κ x}` and `{x | κ x ≤ π/c₁}` are closed (continuity of `κ`) and contain the dense set `Xᶜ`, hence equal `ℝ`
 (`Dense.closure_eq`, `closure_minimal`). This is the avoidance of the exceptional `α` by continuity (README §3.1).
 **Scaffolds:** `HEEqPW.phaseDeriv_mul_sq_ge` states `∃ c > 0, ∀ x, c ≤ κ x`; `_le` states `∃ C, ∀ x, κ x ≤ C` (with `C = π/c₁`).
+Only the upper bound uses `hPW` (the pointwise bound); `_ge` has no `hPW` argument (NOTEBOOK I-03).
 (*Paper:* "`1 = sup_{‖f‖² ≤ 1}|f(x)|² ≃ … = K_E(x,x) = (1/π)φ_E'|E|²`" — the first `|f(x)|` is missing its square (p. 796) and the identification `K_E(x,x)` uses Theorem D, which for strict `E` without real zeros is avoided here, see README §3.1.)
 
 ## 11. The "evident fact" of p. 799
@@ -636,7 +637,7 @@ Proof. Let `f ∈ PW`, `N = pwNormSq f < ∞` (`pwNormSq_ne_top`).
 
 ```lean
 /-- `H(E) ⊆ PW` with `‖f‖²_{PW} ≤ C² ‖f‖²_E`. -/
-theorem memPW_of_memHE (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
+theorem memPW_of_memHE {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
     (hcomp : ∀ z : ℂ, 0 ≤ z.im →
       c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im))
     {f : ℂ → ℂ} (hf : MemHE E f) :

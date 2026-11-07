@@ -22,7 +22,7 @@ theorem orth_term_le {pE pG nE nG c1 : ℝ} (hc1 : 0 < c1) (hnG : 0 < nG) (hnE :
   exact this
 
 
-theorem levelSet_ineq_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem levelSet_ineq_aux (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) :
     ∃ C₀ : ℝ≥0, 0 < C₀ ∧ ∀ G : ℂ → ℂ, IsHB G → (∀ x : ℝ, G x ≠ 0) → ∀ ψ : ℝ → ℝ,
       IsPhaseFunction (fun z ↦ E z * G z) ψ → ∀ α : ℝ,
@@ -32,7 +32,7 @@ theorem levelSet_ineq_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → �
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
   obtain ⟨c, C, hc, hcC⟩ := hEPW.2
-  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hEHB hEPW
+  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hEHB hEPW
   have hc0 : (c : ℝ≥0) ≠ 0 := hc.ne'
   refine ⟨c⁻¹ * Real.toNNReal (Real.pi / c1), ?_, ?_⟩
   · exact mul_pos (inv_pos.mpr hc) (Real.toNNReal_pos.mpr (div_pos hπ hc1))
@@ -91,7 +91,7 @@ theorem orthWeight_le {E : ℂ → ℂ} {c1 : ℝ} (hc1 : 0 < c1)
 
 /-- The Theorem E set-up for `H(E) = PW`: the bounds on the data of the orthogonal sampling
 formula. -/
-theorem levelSet_data_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem levelSet_data_aux (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ MemHE E (sAlpha E α)) :
     ∃ K : ℝ, ∀ γ ∈ phaseLevel φ α, ∃ f : ℂ → ℂ, MemPW f ∧ f γ = 1 ∧
@@ -101,7 +101,7 @@ theorem levelSet_data_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → �
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
   obtain ⟨c, C, hc, hcC⟩ := hEPW.2
-  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hEHB hEPW
+  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hEHB hEPW
   have hTE := hE E hstrict hE0 φ hφ α hα
   refine ⟨Real.pi / (c1 * c), fun γ hγ ↦ ?_⟩
   let a : ℝ → ℂ := fun x ↦ if x = γ then 1 else 0
@@ -140,7 +140,7 @@ theorem levelSet_data_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → �
 theorem levelSet_separated_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ MemHE E (sAlpha E α)) : IsSeparated (phaseLevel φ α) := by
-  obtain ⟨K, hK⟩ := levelSet_data_aux hPW hE hEHB hEPW hφ hα
+  obtain ⟨K, hK⟩ := levelSet_data_aux hE hEHB hEPW hφ hα
   set Θ : ℝ := Real.sqrt ((Real.pi * Real.exp 1) ^ 2 * max K 0) with hΘ
   have hΘ0 : 0 ≤ Θ := Real.sqrt_nonneg _
   refine ⟨1 / (Θ + 1), by positivity, ?_⟩
@@ -167,14 +167,14 @@ theorem levelSet_separated_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ �
   rw [div_le_iff₀ (by positivity)]
   linarith
 
-theorem levelSet_cis_aux (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem levelSet_cis_aux (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ MemHE E (sAlpha E α)) : IsCompleteInterpolating (phaseLevel φ α) := by
   have hπ := Real.pi_pos
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
   obtain ⟨c, C, hc, hcC⟩ := hEPW.2
-  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hPW hE hEHB hEPW
+  obtain ⟨c1, hc1, hc1le⟩ := HEEqPW.phaseDeriv_mul_sq_ge hE hEHB hEPW
   have hTE := hE E hstrict hE0 φ hφ α hα
   intro a ha
   have hlt : ∑' x : phaseLevel φ α, orthWeight E x * ‖a x‖ₑ ^ 2 < ∞ := by

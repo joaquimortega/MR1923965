@@ -137,10 +137,10 @@ theorem theorem2_i_of_densityBound (hPW : PaleyWienerThm) (hE : TheoremE) (hDS :
   exact theorem2_i_of_regular hPW hE hDS h hK
 
 /-- **Theorem 2 (i)** (p. 801), identical to `comparator/statements.lean`.  The paper's argument
-needs `DensBound`, which follows from `hmono` (NOTEBOOK N-22). -/
+needs `DensBound`, which follows from `hmono` (NOTEBOOK N-22); the printed hypothesis
+`ψ'(x) = 1/O(x)` is not needed (NOTEBOOK N-26, I-03). -/
 theorem theorem2_i (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
-    (hlow : ∃ c : ℝ, 0 < c ∧ ∃ X : ℝ, ∀ x : ℝ, X ≤ x → c / x ≤ deriv ψ x)
     (hreg : IsLogRegularPartition ψ) (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
     IsSampling (LambdaPsi ψ) := by
   obtain ⟨t, C, M, h⟩ := RegData.of_isLogRegularPartition hψ h0 hreg

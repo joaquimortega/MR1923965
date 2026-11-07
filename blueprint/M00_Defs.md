@@ -91,5 +91,6 @@ See `comparator/statements.lean` and the table in `README.md` §1. Points to not
 - `corollary1` enumerates `Γ` increasingly by `ℤ` (`StrictMono γ`, `range γ = Γ`).
 - `landau_inequality` uses `encard` in `ℝ≥0∞` and `ENNReal.ofReal` on the left (negative left
   sides are trivially fine).
-- `theorem2_i`: "`ψ'(x) = 1/O(x)`" is `ψ'(x) ≥ c/x` for large `x`. `theorem2_ii`:
+- `theorem2_i`: "`ψ'(x) = 1/O(x)`" is `ψ'(x) ≥ c/x` for large `x` (this hypothesis was later
+  removed as unused, NOTEBOOK I-03). `theorem2_ii`:
   "`ψ'(x) = o(1/x)`" is `x ψ'(x) → 0`.

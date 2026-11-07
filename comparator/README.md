@@ -30,9 +30,9 @@ v4.35 ships it as `lake comparator`. It checks that every theorem in `config.jso
 | `FF.landau_inequality` | the Claim of §4: Landau's inequality from John–Nirenberg, Pavlov and Theorem 1 |
 | `FF.logExample_count`, `FF.logExample_isCompleteInterpolating`, `FF.landau_sharp` | the example `{k + log⁺|k|}` of p. 798 and the sharpness of Landau's inequality |
 | `FF.corollary2` | Corollary 2 |
-| `FF.theorem2_i` | Theorem 2 (i), with `ψ'` eventually nonincreasing (NOTEBOOK N-22) |
+| `FF.theorem2_i` | Theorem 2 (i), with `ψ'` eventually nonincreasing (NOTEBOOK N-22) and without the unused hypothesis `ψ' = 1/O(x)` (N-26, I-03) |
 | `FF.theorem2_i_of_densityBound` | Theorem 2 (i) with the cell density bound the proof uses |
-| `FF.theorem2_ii` | Theorem 2 (ii), by the reconstructed proof (NOTEBOOK N-21) |
+| `FF.theorem2_ii` | Theorem 2 (ii), by the reconstructed proof (NOTEBOOK N-21); unconditional (no cited hypothesis) |
 
 The cited results (Paley–Wiener, de Branges' Theorems C, D, E, F, Pavlov's Theorem A, John–Nirenberg,
 Duffin–Schaeffer's Lemma III) appear as explicit hypotheses of the theorems that use them; see

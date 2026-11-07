@@ -288,13 +288,13 @@ theorem pointwise (h : RegData ψ t C M) (hK : DensBound ψ t K) {z : ℂ} (hz :
   have n5 := Tone_nonneg (K := K) h (z := z) n
   have n6 := Ty_nonneg h hz n
   by_cases hb : t (n + 1) ≤ ‖z‖ / 2
-  · have := h.abs_cellTerm_below (n := n + 1) (by omega) hz hb hz0
+  · have := h.abs_cellTerm_below (n := n + 1) (by omega) hb hz0
     have e : Tbelow t C z n = a1 C * (cellLen t (n + 1) / ‖z‖) := by simp [Tbelow, hb]
     rw [e] at n1 ⊢
     unfold a1
     linarith
   by_cases ha : 1 ≤ n ∧ 2 * ‖z‖ ≤ t n
-  · have hj := h.abs_cellTerm_above (n := n + 1) (by omega) hz (by simpa using ha.2) hz0
+  · have hj := h.abs_cellTerm_above (n := n + 1) (by omega) (by simpa using ha.2) hz0
     simp only [Nat.add_sub_cancel] at hj
     have e : Tabove t C z n = a2 C * (cellLen t (n + 1) / t n ^ 2 * ‖z‖) := by
       simp [Tabove, ha]

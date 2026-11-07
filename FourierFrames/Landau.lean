@@ -163,10 +163,8 @@ theorem ncard_Ioc_ge {Λ : Set ℝ} {γ : ℤ → ℝ} (hγ : StrictMono γ)
 /-- **Core of the Claim.** If `h ∈ BMO` has the local growth bound
 `|h(b) - h(a)| ≤ K (b - a) + D` (`a ≤ b`), then `|h(b) - h(a)| ≤ A log⁺(b - a) + B`. -/
 theorem osc_bound_of_JN (hJN : JohnNirenberg) {h : ℝ → ℝ} (hbmo : MemBMO h) {K D : ℝ}
-    (hK : 0 ≤ K) (hD : 0 ≤ D) (hloc : ∀ a b : ℝ, a ≤ b → |h b - h a| ≤ K * (b - a) + D) :
+    (hK : 0 ≤ K) (hloc : ∀ a b : ℝ, a ≤ b → |h b - h a| ≤ K * (b - a) + D) :
     ∃ A B : ℝ, ∀ a b : ℝ, a < b → |h b - h a| ≤ A * Real.posLog (b - a) + B := by
-  have _ := hD
-  have _ := hD
   obtain ⟨C, c, hC, hc, hJ⟩ := hJN
   obtain ⟨hli, M₀, hM₀⟩ := hbmo
   set M : ℝ := max M₀ 1 with hMdef
@@ -291,7 +289,7 @@ theorem landau_inequality (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
     rw [abs_le]
     constructor <;> nlinarith
   obtain ⟨A, B, hAB⟩ := osc_bound_of_JN hJN hbmo (K := 1 + 1 / q) (D := 1)
-    (by positivity) zero_le_one hloc
+    (by positivity) hloc
   refine ⟨A, B + 1, fun a b hab ↦ ?_⟩
   have h1 := countFn_sub hfinΓ hab.le
   have h2 := ncard_Ioc_ge hγm hΛγ hfinΛ hfinΓ a b

@@ -74,7 +74,8 @@ there are no axioms. Phase 2 of the project proves them where feasible
 replaced them: the appeal to Meĭman's theorem on p. 801 (false as quoted) and the proof of
 Theorem 2 (ii) (pp. 804–805). Theorem 2 (i) needs a regularity hypothesis on `ψ` that its
 statement omits; `theorem2_i` assumes `ψ'` eventually nonincreasing, and
-`theorem2_i_of_densityBound` assumes the cell density bound the proof uses. Theorem F as printed
+`theorem2_i_of_densityBound` assumes the cell density bound the proof uses. Neither assumes the
+printed hypothesis `ψ'(x) = 1/O(x)`, which the proof does not use. Theorem F as printed
 (for the closed Hermite–Biehler class) is false. All errata, gaps and simplifications are in
 `NOTEBOOK.md` (38 entries, confirmed by independent referee agents against the printed pages). The
 corrected paper, with the changes marked in red, was produced locally (`fixed/`, not committed).

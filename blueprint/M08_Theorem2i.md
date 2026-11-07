@@ -71,7 +71,8 @@ or `not_bddAbove_iff` with `Nat` archimedean.
 `λ_n ≤ min(log(1+C), d_n/t_{n-1})` (use `Real.log_le_sub_one_of_pos`, `log(1+u) ≤ u`), and
 `t_{n-1} > r_n/(1+C)` (since `r_n < t_n ≤ (1+C)t_{n-1}`).
 **Remark.** `hlow` (`ψ' ≥ c/x`) is never used: the averaged version
-`1/d_n ≥ 1/t_n ≥ 1/((1+C)t_{n-1})` is a consequence of `d_n ≃ d_{n+1}`. (Issue F.)
+`1/d_n ≥ 1/t_n ≥ 1/((1+C)t_{n-1})` is a consequence of `d_n ≃ d_{n+1}`. (Issue F.) It has been
+removed from `theorem2_i` (NOTEBOOK I-03).
 
 **1.5 `rCentre_mem`.** `ν_n` is a probability measure with density `ψ'` (continuous, `≥ 0`) with
 `∫ ψ' = 1`, so it is not a Dirac mass; `s ↦ log s` is integrable on `I_n` against `ψ'`
@@ -334,7 +335,8 @@ Given `RegData ψ t C M` and `DensBound ψ t K`: `f = fProd` is entire, in `\ove
 `phaseDeriv f → 0` on `cocompact ℝ` (§4), and `B` from §6 gives: for `Im z ≥ 0`, `f(z) ≠ 0`
 (§3.2) so `‖f z‖ = exp(log‖f z‖)` and `|U_ψ z - log‖f z‖| ≤ B` yields
 `exp(U_ψ z - B) ≤ ‖f z‖ ≤ exp(U_ψ z + B)` (`Real.exp_log`, `Real.exp_le_exp`). Apply
-`corollary2 hPW hE hDS hψ hf hφ ⟨B, _⟩`. The hypothesis `hlow` is not used.
+`corollary2 hPW hE hDS hψ hf hφ ⟨B, _⟩`. The hypothesis `hlow` is not used (and was removed from
+`theorem2_i`, NOTEBOOK I-03).
 `theorem2_i` follows from `theorem2_i_of_regular` once `DensBound` is available
 (`RegData.of_isLogRegularPartition` produces `t, C, M`).
 
@@ -409,4 +411,5 @@ otherwise Lean's `∫` silently returns `0`.
 1. Add `DensBound` (see A) to `IsLogRegularPartition` (or as a separate hypothesis of `theorem2_i`);
    suggested form: in `IsLogRegularPartition`, `∃ K : ℝ, ∀ n, 1 ≤ n → ∀ s ∈ Icc (t (n-1)) (t n),
    deriv ψ s ≤ K / (t n - t (n-1))`.
-2. `hlow` of `theorem2_i` is superfluous (F); keep for faithfulness.
+2. `hlow` of `theorem2_i` is superfluous (F); keep for faithfulness.  *(Done differently: `hlow`
+   was removed from `theorem2_i` in the final lint pass, NOTEBOOK I-03.)*

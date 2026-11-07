@@ -184,7 +184,9 @@ variable {Λ : Set ℝ} (hs : IsSampling Λ) {f g : ℂ → ℂ}
 include hs
 ```
 so each has the explicit hypothesis `hs : IsSampling Λ` as first argument (the statements below show
-the bodies only).
+the bodies only).  Exceptions (NOTEBOOK I-03): `sampInner_self`, `sampInner_conj_symm`,
+`sampInner_smul_left` need neither `hs` nor `MemPW`; they are stated before the section with
+explicit `Λ f g`.  `samp_H1` and `samp_H3` are preceded by `omit hs in` (no `hs` argument).
 
 **`sampleSum_ne_top`.**
 ```lean
@@ -220,14 +222,14 @@ theorem summable_samp_inner (hf : MemPW f) (hg : MemPW g) :
 
 **`sampInner_self`.**
 ```lean
-theorem sampInner_self (hf : MemPW f) :
+theorem sampInner_self (Λ : Set ℝ) (f : ℂ → ℂ) :
     sampInner Λ f f = ((∑' x : Λ, ‖f ((x : ℝ) : ℂ)‖ ^ 2 : ℝ) : ℂ) := sorry
 ```
 `conj a * a = (‖a‖ ^ 2 : ℝ)` (`Complex.conj_mul'`), `Complex.ofReal_tsum`.
 
 **`sampInner_conj_symm`.**
 ```lean
-theorem sampInner_conj_symm (hf : MemPW f) (hg : MemPW g) :
+theorem sampInner_conj_symm (Λ : Set ℝ) (f g : ℂ → ℂ) :
     conj (sampInner Λ g f) = sampInner Λ f g := sorry
 ```
 `tsum_star` / `Complex.conj_tsum`-like (`star = conj`): `conj (∑ conj g · f) = ∑ g · conj f`, and
@@ -239,7 +241,7 @@ theorem sampInner_add_left {h : ℂ → ℂ} (hf : MemPW f) (hg : MemPW g) (hh :
     sampInner Λ (f + g) h = sampInner Λ f h + sampInner Λ g h := sorry
 ```
 ```lean
-theorem sampInner_smul_left (c : ℂ) (hf : MemPW f) (hg : MemPW g) :
+theorem sampInner_smul_left (Λ : Set ℝ) (c : ℂ) (f g : ℂ → ℂ) :
     sampInner Λ (c • f) g = conj c * sampInner Λ f g := sorry
 ```
 `(f+g) x = f x + g x`, `conj` additive, `add_mul`, `Summable.tsum_add` (summability from
@@ -262,23 +264,23 @@ at `0`.)
 
 ### 3.3 `sampCore`
 ```lean
-def sampCore : InnerProductSpace.Core ℂ PWFun where
+abbrev sampCore : InnerProductSpace.Core ℂ PWFun where
   inner f g := sampInner Λ (PWFun.val f) (PWFun.val g)
-  conj_inner_symm f g := sampInner_conj_symm hs f.memPW g.memPW
+  conj_inner_symm f g := sampInner_conj_symm Λ _ _
   re_inner_nonneg f := by
-    have h := sampInner_self hs f.memPW
+    have h := sampInner_self Λ (PWFun.val f)
     show 0 ≤ (sampInner Λ (PWFun.val f) (PWFun.val f)).re
     rw [h, Complex.ofReal_re]
     exact tsum_nonneg fun x ↦ by positivity
   add_left f g h := sampInner_add_left hs f.memPW g.memPW h.memPW
-  smul_left f g c := sampInner_smul_left hs c f.memPW g.memPW
+  smul_left f g c := sampInner_smul_left Λ c _ _
   definite f h := PWFun.val_injective (by simpa using sampInner_definite hs f.memPW h)
 ```
 
 `conj_inner_symm`, `add_left`, `smul_left`, `definite` are the lemmas above applied to
 `f.memPW`, ...; `re_inner_nonneg`: by `sampInner_self`, `re ⟪f,f⟫ = ∑ ‖f λ‖² ≥ 0`
-(`tsum_nonneg`). (`set_option warn.classDefReducibility false` silences the linter on a `def` of
-class type.)  This def has no `sorry` of its own; it only uses the lemmas.
+(`tsum_nonneg`). (It is an `abbrev`: a `def` of class type must be reducible, NOTEBOOK I-03.)
+This def has no `sorry` of its own; it only uses the lemmas.
 
 Instances (verified to elaborate; this is the pattern to use in 3.6):
 ```lean
@@ -315,6 +317,7 @@ and `dist = ‖·‖`, `Real.sqrt`).
 
 ### 3.5 (H1), (H2), (H3)
 ```lean
+omit hs in
 theorem samp_H1 (hf : MemPW f) {ζ : ℂ} (hζ : ζ.im ≠ 0) (hz : f ζ = 0) :
     MemPW (fun z ↦ dslope f ζ z * (z - conj ζ)) ∧
       sampleSum Λ (fun z ↦ dslope f ζ z * (z - conj ζ)) = sampleSum Λ f := sorry
@@ -335,9 +338,10 @@ and `A * pwNormSq f ≤ sampleSum Λ f` with `sampleSum Λ f ≠ ∞` gives
 (`A ≠ 0`.)
 
 ```lean
-theorem samp_H3 (hf : MemPW f) : sampleSum Λ (fstar f) = sampleSum Λ f := sorry
+omit hs in
+theorem samp_H3 : sampleSum Λ (fstar f) = sampleSum Λ f := sorry
 ```
-*Proof.* `MemPW.fstar hf`. For real `x`, `fstar f x = conj (f x)` (`fstar_ofReal`), so
+*Proof.* (No hypothesis on `f` is needed.) For real `x`, `fstar f x = conj (f x)` (`fstar_ofReal`), so
 `‖fstar f x‖ₑ = ‖f x‖ₑ` termwise.
 
 ### 3.6 Packaging
@@ -520,10 +524,10 @@ def herglotzSum (Λ : Set ℝ) (c : ℝ → ℝ) (z : ℂ) : ℂ :=
 
 ```lean
 theorem summable_norm_herglotz {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
-    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {z : ℂ} (hz : z.im ≠ 0) :
+    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) (z : ℂ) :
     Summable fun x : Λ ↦ ‖(c x : ℂ) * hk (x : ℝ) z‖ := sorry
 ```
-*Proof.* `z.im ≠ 0` implies `z ≠ λ` for all real `λ`. Let `R := max ‖z‖ (1/2)`. By
+*Proof.* (Valid for every `z`: only the `λ` with `|λ| ≥ 2R` matter.) Let `R := max ‖z‖ (1/2)`. By
 `IsSeparated.finite_inter_Icc hΛ (2R)` the set of `λ ∈ Λ` with `|λ| < 2R` is finite, and for the
 other `λ`, `‖c_λ hk λ z‖ ≤ |c_λ| · 2(1+R)/(1+λ²)` by `norm_hk_le`. `Summable.of_norm_bounded_eventually`
 (cofinite filter on the subtype `Λ`, finiteness transferred from `Λ ∩ Icc` to the subtype) with
@@ -580,8 +584,7 @@ on `ball 0 (‖z‖+1)`). Use `differentiableOn_tsum_of_cofinite_bound` with `F 
 `‖c_λ entTerm G λ w‖ = |c_λ| ‖G w‖ ‖hk λ w‖ ≤ |c_λ| M_R 2(1+R)/(1+λ²)`.
 
 ```lean
-theorem entSum_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {c : ℝ → ℝ}
-    (hcs : Summable fun x : Λ ↦ |c x| / (1 + (x : ℝ) ^ 2)) {G : ℂ → ℂ}
+theorem entSum_eq {Λ : Set ℝ} {c : ℝ → ℝ} {G : ℂ → ℂ}
     (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0) {z : ℂ} (hz : z.im ≠ 0) :
     entSum Λ c G z = G z * herglotzSum Λ c z := sorry
 ```
@@ -730,8 +733,7 @@ a Poisson integral and as `Re (1+w)/(1-w) ≥ 0` for `|w| ≤ 1` require; wherea
 `-i/(z - λ)` has real part `-y/|z-λ|²`.
 
 ```lean
-theorem herglotzEnt_eq {Λ : Set ℝ} (hΛ : IsSeparated Λ) {E A G : ℂ → ℂ} {p a : ℝ}
-    (hcs : Summable fun x : Λ ↦ ‖E ((x : ℝ) : ℂ)‖ ^ 2 / (1 + (x : ℝ) ^ 2))
+theorem herglotzEnt_eq {Λ : Set ℝ} {E A G : ℂ → ℂ} {p a : ℝ}
     (hG0 : ∀ x ∈ Λ, G (x : ℂ) = 0)
     (ha : ∀ z : ℂ, 0 < z.im → hbQuot E A z =
       (-I / Real.pi) * herglotzSum Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) z - I * p * z + I * a)
@@ -839,7 +841,7 @@ theorem theorem1_necessity (hPW : PaleyWienerThm) (hC : TheoremC) (hF : TheoremF
   have hWd := differentiable_herglotzEnt (c := fun x ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hGd hG0 p a
   have hWs := fstar_herglotzEnt (c := fun x ↦ ‖E (x : ℂ)‖ ^ 2) hΛ hcs' hGd hG0 hGs p a
   have hWeq : ∀ z : ℂ, 0 < z.im → herglotzEnt Λ (fun x ↦ ‖E (x : ℂ)‖ ^ 2) G p a z =
-      G z * hbQuot E A z := fun z hz ↦ herglotzEnt_eq hΛ hcs hG0 ha hz
+      G z * hbQuot E A z := fun z hz ↦ herglotzEnt_eq hG0 ha hz
   suffices key : ∀ W : ℂ → ℂ, Differentiable ℂ W → fstar W = (fun z ↦ -W z) →
       (∀ z : ℂ, 0 < z.im → W z = G z * hbQuot E A z) →
       ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧

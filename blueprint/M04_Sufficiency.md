@@ -217,7 +217,7 @@ hypotheses) that real zeros of `F` are simple, `OCS.canonicalProd` suffices. In 
 ```lean
 /-- The reduction of p. 795: `F` can be replaced by `G` without real zeros, at the price of
 shrinking `Λ`. -/
-theorem exists_noRealZero_hb {E F : ℂ → ℂ} {Λ : Set ℝ} (hEHB : IsHB E) (hFHB : IsHB F)
+theorem exists_noRealZero_hb {E F : ℂ → ℂ} {Λ : Set ℝ} (hFHB : IsHB F)
     (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
     ∃ G : ℂ → ℂ, IsHB G ∧ (∀ x : ℝ, G x ≠ 0) ∧
       ∀ z : ℂ, E z * G z + fstar E z * fstar G z = 0 → ∃ x ∈ Λ, z = (x : ℂ) := by
@@ -261,7 +261,7 @@ For `γ ≠ γ'` in `Γ`: `f_γ(γ) = 1`, `f_γ(γ') = 0`; the function `t ↦ f
 
 ```lean
 /-- For `H(E) = PW` and `α` non-exceptional, `Γ_α` is a complete interpolating sequence. -/
-theorem HEEqPW.levelSet_cis (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem HEEqPW.levelSet_cis (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ Exceptional E α) : IsCompleteInterpolating (phaseLevel φ α) := by
   sorry
@@ -271,7 +271,8 @@ theorem HEEqPW.levelSet_cis (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → 
 `∑'_Γ ‖a‖ₑ² < ∞`, `∑'_Γ w ‖a‖ₑ² ≤ ofReal(π/c₁) ∑'_Γ ‖a‖ₑ² < ∞` (`ENNReal.tsum_mul_left`), so Theorem E gives
 `f ∈ H(E) = PW` with `f = a` on `Γ`. *Uniqueness:* if `f, g ∈ PW` agree on `Γ`, then `h = f - g ∈ PW = H(E)`
 (`MemPW.sub`) vanishes on `Γ`, so by Theorem E `heNormSq E h = ∑' w · 0 = 0`; `c · pwNormSq h ≤ heNormSq E h`
-gives `pwNormSq h = 0`, and `pw_norm_sq_le` gives `‖h z‖² ≤ e^{2π|Im z|} · 0`, i.e. `h ≡ 0`. ∎
+gives `pwNormSq h = 0`, and `MemPW.eq_zero_of_pwNormSq_eq_zero` gives `h ≡ 0` (no `hPW` needed,
+NOTEBOOK I-03). ∎
 
 ```lean
 /-- If `H(E) = PW`, the phase of `E` is unbounded in both directions (so `Γ_α` is infinite on both
@@ -350,7 +351,7 @@ because the values `u_i` are not equal to `φ x, φ y`, and `φ` is injective) w
 ```lean
 /-- Theorem E gives the uniform inequality `‖f‖² ≤ C₀ ∑_{Λ_α} |f|²` for `EG`, `G ∈ \overline{HB}`
 without real zeros, for every non-exceptional `α`, with `C₀` depending only on `E`. -/
-theorem HEEqPW.levelSet_ineq (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem HEEqPW.levelSet_ineq (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) :
     ∃ C₀ : ℝ≥0, 0 < C₀ ∧ ∀ G : ℂ → ℂ, IsHB G → (∀ x : ℝ, G x ≠ 0) → ∀ ψ : ℝ → ℝ,
       IsPhaseFunction (fun z ↦ E z * G z) ψ → ∀ α : ℝ,

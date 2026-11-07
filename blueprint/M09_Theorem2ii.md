@@ -5,7 +5,7 @@
 **Main statement:** `theorem2_ii` (identical to `comparator/statements.lean`).
 
 ```lean
-theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+theorem theorem2_ii {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ)
@@ -17,8 +17,8 @@ theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissibl
 `OCS.multPrim`, `OCS.multPt`, `OCS.multBary`, `OCS.multIdx`, `OCS.multGammaC`,
 `OCS.multF_eq_zero_iff`, `OCS.differentiable_multF`, `OCS.integrable_multU_integrand`,
 `OCS.multPt_eq_of`, `OCS.multPt_succ_sub_bounds`, `OCS.multBary_mem`, `OCS.multIdx_mem`,
-`OCS.exists_infDist_multGammaC_eq`.  **No dependence on M01–M08.**  `hPW` is not used (it is kept
-because the statement in `comparator/statements.lean` has it).
+`OCS.exists_infDist_multGammaC_eq`.  **No dependence on M01–M08.**  The statement has no `hPW`:
+it was unused and was removed from `comparator/statements.lean` (NOTEBOOK I-03).
 **Upstream interface (one item, see §0.3):** `lemma3_estimate_uniform` (uniform constants in Lemma 3
 estimate (2)).
 **Used by:** nothing.
@@ -522,7 +522,8 @@ no `t_n`, `ξ_n`, `ε_n`: a single window and two uniform ramps suffice, with al
 
 ## 9. Requested changes to M00
 
-None.  (`theorem2_ii` is true as stated; `hPW` is unused.)
+None.  (`theorem2_ii` is true as stated; its former hypothesis `hPW` was unused and has been
+removed, NOTEBOOK I-03.)
 
 Possible remark for M00: `IsAdmissiblePsi` as stated in `Defs.lean` allows `Tendsto ψ atBot atBot`; combined
 with `h0` this alternative is impossible, so no change is needed.

@@ -557,12 +557,13 @@ while `∫_{-R}^{R} log|t| dt = 2R log R - 2R`. So `I_R → π y`. ∎
 `U(iy) = π y` by a direct computation; the closed form above is more direct.)
 
 ```lean
-theorem integrable_log_mul_sub_one {z : ℂ} (hz : 0 < z.im) :
+theorem integrable_log_mul_sub_one (z : ℂ) :
     Integrable (fun t : ℝ ↦ Real.log ‖1 - z / t‖ * (logDensity t - 1)) := by
   sorry
 ```
 
-**Proof.** For `y > 0`, `|log‖1 - z/t‖| ≤ log‖t - z‖ - log|t|` bounded for `|t| ≥ 2|z|` by
+**Proof.** (No hypothesis on `z` is needed; in the Lean proof the integrand is
+`multUIntegrand logDensity z − multUIntegrand 1 z − Re z · logKappa`, NOTEBOOK I-03.) For `y > 0`, `|log‖1 - z/t‖| ≤ log‖t - z‖ - log|t|` bounded for `|t| ≥ 2|z|` by
 `|z|/|t|·2` (`|log|1 - u|| ≤ 2|u|` for `|u| ≤ 1/2`), times `|m-1| ≤ 1100/(1+|t|)`, integrable at
 infinity (`∼ 1/t²`); near `0`, `log|t|` is locally integrable and `m - 1` is bounded; elsewhere
 continuous. ∎

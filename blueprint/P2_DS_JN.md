@@ -264,7 +264,7 @@ def dyadic (a b : ℝ) (n k : ℕ) : Set ℝ :=
 def dyadicIdx (a b : ℝ) (n : ℕ) (x : ℝ) : ℕ := ⌊(x - a) / (b - a) * 2 ^ n⌋₊
 theorem mem_dyadic_dyadicIdx (hab : a < b) (n) (hx : x ∈ Ico a b) : x ∈ dyadic a b n (dyadicIdx a b n x)
 theorem dyadic_parent (n k) : dyadic a b (n + 1) k ⊆ dyadic a b n (k / 2)
-theorem volume_dyadic (hab : a < b) (n k) : volume (dyadic a b n k) = ENNReal.ofReal ((b - a) / 2 ^ n)
+theorem volume_dyadic (a b) (n k) : volume (dyadic a b n k) = ENNReal.ofReal ((b - a) / 2 ^ n)
 ```
 Proofs. `mem_dyadic_dyadicIdx`: with `y = (x-a)/(b-a)·2ⁿ ≥ 0`, `⌊y⌋₊ ≤ y < ⌊y⌋₊ + 1`
 (`Nat.floor_le`, `Nat.lt_floor_add_one`); rearrange using `b - a > 0`. `dyadic_parent`:

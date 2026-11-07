@@ -299,7 +299,7 @@ theorem memHE_of_memPW (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E) {c
           le_enorm_div_sq (norm_pos_iff.mp (lt_of_lt_of_le hc (hreal t).1)) (hreal t).2
 
 /-- `H(E) ⊆ PW` with `‖f‖²_{PW} ≤ C² ‖f‖²_E`. -/
-theorem memPW_of_memHE (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
+theorem memPW_of_memHE {E : ℂ → ℂ} (hE : IsHB E) {c C : ℝ} (hc : 0 < c)
     (hcomp : ∀ z : ℂ, 0 ≤ z.im →
       c * Real.exp (Real.pi * z.im) ≤ ‖E z‖ ∧ ‖E z‖ ≤ C * Real.exp (Real.pi * z.im))
     {f : ℂ → ℂ} (hf : MemHE E f) :
@@ -353,7 +353,7 @@ theorem heEqPW_of_comparable (hPW : PaleyWienerThm) {E : ℂ → ℂ} (hE : IsHB
     have := hcomp 0 (by simp)
     simp only [Complex.zero_im, mul_zero, Real.exp_zero, mul_one] at this
     linarith [this.1, this.2]
-  refine ⟨fun f ↦ ⟨fun hf ↦ (memPW_of_memHE hPW hE hc hcomp hf).1,
+  refine ⟨fun f ↦ ⟨fun hf ↦ (memPW_of_memHE hE hc hcomp hf).1,
     fun hf ↦ (memHE_of_memPW hPW hE hc hcomp hf).1⟩, ((C ^ 2)⁻¹).toNNReal, ((c ^ 2)⁻¹).toNNReal,
     by simpa using pow_pos hC 2, fun f hf ↦ ?_⟩
   obtain ⟨-, h1, h2⟩ := memHE_of_memPW hPW hE hc hcomp hf

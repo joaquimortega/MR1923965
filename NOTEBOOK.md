@@ -218,7 +218,7 @@ must be shown integrable (in Lean a non-integrable integral is `0`).
 ### N-26 (S) — Theorem 2 (i): the hypothesis `ψ' = 1/O(x)` — *referee-confirmed (R3–R5)*
 The proof only uses `t_n ≤ (1 + C) t_{n-1}`, which already follows from `d_n ≃ d_{n+1}`. The
 hypothesis is kept in the formal statement for faithfulness unless the linter forces its removal
-(removing a hypothesis strengthens the theorem).
+(removing a hypothesis strengthens the theorem). *It did: removed from `theorem2_i` in I-03.*
 
 ### N-27 (S) — p. 790: Fourier frames and sampling — *tex-checked; referee-confirmed (R2)*
 "By the Paley–Wiener theorem, `Λ` is sampling for PW if and only if `{e^{iλ_k x}}` is a Fourier frame":
@@ -340,5 +340,46 @@ Made by the coordinator at the referees' request, after the reviews and before t
 `theorem2_i` has the hypothesis `hlow` (`ψ'(x) ≥ c/x`) and `theorem2_ii` has `hPW`; neither is
 used by the proofs. They are kept for faithfulness during implementation; the linter warnings are
 resolved at the end by a deliberate, recorded statement change (removing a hypothesis strengthens
-the theorem), not by suppression.
+the theorem), not by suppression. *Carried out in I-03 (2026-11-07): both hypotheses
+removed.*
 
+### I-03 — lint pass: unused hypotheses removed (2026-11-07)
+Final lint pass on master: `lake build` now has no warning other than `declaration uses 'sorry'`
+in `FourierFrames/Cited/`. Every unused hypothesis was removed from its statement (this
+strengthens the lemma) and all call sites updated; no `set_option`, `_`-prefixed binder or dummy
+`have _ := h` remains (the earlier `have _ := h` lines and `_h…` binders were removed with their
+hypotheses). Where the dropped hypothesis was the only binder fixing an implicit variable, that
+variable became explicit (noted "explicit `x`" below). Changes recorded in `APPROVED` of
+`scripts/check_statements.py` for the declarations frozen at `scaffold-reviewed`.
+
+**Main statements** (`comparator/statements.lean`, re-checked by comparator):
+- `theorem2_i`: `hlow` (`ψ'(x) ≥ c/x` for large `x`, the printed `ψ' = 1/O(x)`, cf. N-26)
+  removed; `theorem2_i` no longer assumes it (it keeps `hmono`, N-22).
+- `theorem2_ii`: `hPW` removed; `theorem2_ii` is now unconditional (no cited hypothesis).
+
+**Helpers** (declaration: hypothesis removed):
+- HB: `memPW_of_memHE`: `hPW`; `HEEqPW.phaseDeriv_mul_sq_ge`: `hPW` (the upper bound `_le`
+  keeps it).
+- Theorem 1, sufficiency (cascade from `phaseDeriv_mul_sq_ge`): `Suff.levelSet_ineq_aux`,
+  `Suff.levelSet_data_aux`, `Suff.levelSet_cis_aux`, `Suff.translate_lower_bound_aux`,
+  `HEEqPW.levelSet_ineq`, `HEEqPW.levelSet_cis`: `hPW` (`levelSet_separated(_aux)`,
+  `phase_tendsto(_aux)` still use it); `Suff.exists_noRealZero_hb`: `hEHB`.
+- Theorem 1, necessity: `sampInner_self`: `hf` and the section variable `hs`;
+  `sampInner_conj_symm`, `sampInner_smul_left`: `hf`, `hg`, `hs` (these three now precede
+  `section Sampling`, with explicit `Λ f g`); `samp_H1`: `hs` (`omit hs in`); `samp_H3`: `hf`,
+  `hs` (`omit hs in`); `summable_norm_herglotz`: `hz` (explicit `z`); `entSum_eq`: `hΛ`, `hcs`;
+  `herglotzEnt_eq`: `hΛ`, `hcs` (cascade). Also `sampCore` became an `abbrev` (a `def` of class
+  type must be reducible), replacing `set_option warn.classDefReducibility false`.
+- Landau: `osc_bound_of_JN`: `hD` (`0 ≤ D`).
+- Example: `integrable_log_mul_sub_one`: `hz` (explicit `z`).
+- Corollary 2: `multU_const_mul`: `hg`, `hM` (explicit `g`); `isSampling_of_replace_finite`:
+  `hsep'` (separation of the new set `Γ'`).
+- Construction: `compB_eq_zero_iff`, `compB_mul_Q`: `hN`, and by cascade `tendsto_polyB`,
+  `range_compBeta_eq`, `tendsto_compB_translate`, `tendsto_compEκ_translate` (explicit `N` in
+  these six), `phase_rigidity`, `phase_asymptotics`: `hN`.
+- Theorem 2 (i): `RegData.hasSum_UPsi`: `hz` (explicit `z`); `RegData.abs_cellTerm_below`,
+  `RegData.abs_cellTerm_above`, `D1.abs_cellTerm_above`: `hz` (`0 ≤ z.im`); `D1.zPt_re_im`: `h`,
+  `hn` (explicit `n`); `D2.integrableOn_log_abs_sub`: `hab` (explicit `a b`);
+  `D2.deficit_integrable`: `hd` (explicit `d`). `Theorem2i/NearAux.lean` imports
+  `FourierFrames.Defs` instead of all of `Mathlib`.
+- Cited (John–Nirenberg): `volume_dyadic`: `hab` (explicit `a b`).

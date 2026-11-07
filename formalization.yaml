@@ -333,7 +333,8 @@ fidelity:
        Its approximation hypothesis is stated multiplicatively, e^{U_ψ − C} ≤ |f| ≤ e^{U_ψ + C}.
     4. Theorem 2 (i) carries the extra hypothesis "ψ' eventually nonincreasing"
        (theorem2_i), or the local density bound ψ' ≲ 1/d_n on the cells of the partition
-       (theorem2_i_of_densityBound, which drops the unused hypothesis ψ' = 1/O(x)).
+       (theorem2_i_of_densityBound). Both drop the unused hypothesis ψ' = 1/O(x) of the printed
+       statement (theorem2_i since the final lint pass, NOTEBOOK N-26, I-03).
     5. Theorem 2 (ii) is proved by a different test function (two negative density ramps around
        a long window where ψ is nearly a half-integer).
     6. landau_sharp states that no coefficient A < 1 of log⁺(b − a) works for {k + log⁺|k|}

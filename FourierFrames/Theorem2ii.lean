@@ -1167,8 +1167,8 @@ theorem exists_window {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x 
 /-! ## Main theorem -/
 
 /-- **Theorem 2 (ii)** (p. 801): if `ψ = 0` on `(-∞, 0]` and `ψ'(x) = o(1/x)`, then `Λ(ψ)` is not
-sampling for `PW`. -/
-theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+sampling for `PW`.  Unconditional: the proof uses no cited theorem (NOTEBOOK I-03). -/
+theorem theorem2_ii {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ) := by

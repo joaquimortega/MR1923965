@@ -137,11 +137,10 @@ theorem exists_realFactor {F : ℂ → ℂ} (hF : IsHB F) (hF0 : ∃ z, F z ≠ 
 
 /-- The reduction of p. 795: `F` can be replaced by `G` without real zeros, at the price of
 shrinking `Λ`. -/
-theorem exists_noRealZero_hb {E F : ℂ → ℂ} {Λ : Set ℝ} (hEHB : IsHB E) (hFHB : IsHB F)
+theorem exists_noRealZero_hb {E F : ℂ → ℂ} {Λ : Set ℝ} (hFHB : IsHB F)
     (hzero : ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ)) :
     ∃ G : ℂ → ℂ, IsHB G ∧ (∀ x : ℝ, G x ≠ 0) ∧
       ∀ z : ℂ, E z * G z + fstar E z * fstar G z = 0 → ∃ x ∈ Λ, z = (x : ℂ) := by
-  have _ := hEHB -- (not needed: `S` and `G` come from `F` alone)
   have hF0 : ∃ z, F z ≠ 0 := by
     by_contra h
     push Not at h
@@ -168,13 +167,13 @@ open Suff
 
 /-- Theorem E gives the uniform inequality `‖f‖² ≤ C₀ ∑_{Λ_α} |f|²` for `EG`, `G ∈ \overline{HB}`
 without real zeros, for every non-exceptional `α`, with `C₀` depending only on `E`. -/
-theorem HEEqPW.levelSet_ineq (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem HEEqPW.levelSet_ineq (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) :
     ∃ C₀ : ℝ≥0, 0 < C₀ ∧ ∀ G : ℂ → ℂ, IsHB G → (∀ x : ℝ, G x ≠ 0) → ∀ ψ : ℝ → ℝ,
       IsPhaseFunction (fun z ↦ E z * G z) ψ → ∀ α : ℝ,
         ¬ Exceptional (fun z ↦ E z * G z) α → ∀ f : ℂ → ℂ, MemPW f →
           pwNormSq f ≤ C₀ * sampleSum (phaseLevel ψ α) f :=
-  levelSet_ineq_aux hPW hE hEHB hEPW
+  levelSet_ineq_aux hE hEHB hEPW
 
 /-- For `H(E) = PW` and `α` non-exceptional for `E`, `Γ_α = {φ_E ∈ α + πℤ}` is separated
 (README §3.8). -/
@@ -184,10 +183,10 @@ theorem HEEqPW.levelSet_separated (hPW : PaleyWienerThm) (hE : TheoremE) {E : �
   levelSet_separated_aux hPW hE hEHB hEPW hφ hα
 
 /-- For `H(E) = PW` and `α` non-exceptional, `Γ_α` is a complete interpolating sequence. -/
-theorem HEEqPW.levelSet_cis (hPW : PaleyWienerThm) (hE : TheoremE) {E : ℂ → ℂ}
+theorem HEEqPW.levelSet_cis (hE : TheoremE) {E : ℂ → ℂ}
     (hEHB : IsHB E) (hEPW : HEEqPW E) {φ : ℝ → ℝ} (hφ : IsPhaseFunction E φ) {α : ℝ}
     (hα : ¬ Exceptional E α) : IsCompleteInterpolating (phaseLevel φ α) :=
-  levelSet_cis_aux hPW hE hEHB hEPW hφ hα
+  levelSet_cis_aux hE hEHB hEPW hφ hα
 
 /-- If `H(E) = PW`, the phase of `E` is unbounded in both directions (so `Γ_α` is infinite on both
 sides). -/
@@ -218,7 +217,7 @@ theorem theorem1_sufficiency (hPW : PaleyWienerThm) (hE : TheoremE)
   have hπ := Real.pi_pos
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
-  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hEHB hFHB hzero
+  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hFHB hzero
   obtain ⟨φE, hφE, hφE'⟩ := exists_isPhaseFunction hEHB.1 hE0
   obtain ⟨φG, hφG, hφG'⟩ := exists_isPhaseFunction hGHB.1 hG0
   have hψ : IsPhaseFunction (fun z ↦ E z * G z) (fun x ↦ φE x + φG x) :=
@@ -235,7 +234,7 @@ theorem theorem1_sufficiency (hPW : PaleyWienerThm) (hE : TheoremE)
     rwa [this]
   have hsep1 : IsSepBy δ (phaseLevel (fun x ↦ φE x + φG x) (Real.pi / 2)) :=
     IsSepBy.mono hsep le_rfl hsub
-  obtain ⟨C₀, hC₀pos, hC₀⟩ := HEEqPW.levelSet_ineq hPW hE hEHB hEPW
+  obtain ⟨C₀, hC₀pos, hC₀⟩ := HEEqPW.levelSet_ineq hE hEHB hEPW
   have hstrict' : IsStrictHB (fun z ↦ E z * G z) := hstrict.mul_isHB hGHB
   have hlev := eventually_not_exceptional hstrict'
   have hlim := levelSet_limit hPW hψ.1 hψm hψs hδ hsep1 (C₀ := (C₀ : ℝ≥0∞)) ENNReal.coe_ne_top

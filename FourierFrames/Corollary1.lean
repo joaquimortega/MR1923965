@@ -68,7 +68,7 @@ theorem corollary1_strong (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
   obtain ⟨E, F, hEHB, hFHB, hEPW, hzero⟩ := theorem1_necessity hPW hC hF hΛ hs
   have hstrict : IsStrictHB E := HEEqPW.isStrictHB hEHB hEPW
   have hE0 : ∀ x : ℝ, E x ≠ 0 := HEEqPW.ne_zero_ofReal hEHB hEPW
-  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hEHB hFHB hzero
+  obtain ⟨G, hGHB, hG0, hGΛ⟩ := exists_noRealZero_hb hFHB hzero
   obtain ⟨φE, hφE, hφE'⟩ := exists_isPhaseFunction hEHB.1 hE0
   obtain ⟨φG, hφG, hφG'⟩ := exists_isPhaseFunction hGHB.1 hG0
   have hφEm : StrictMono φE :=
@@ -81,7 +81,7 @@ theorem corollary1_strong (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
   obtain ⟨γ, hγm, hγr⟩ := exists_levelSet_enum hφEm hφEs α
   have hαe : ¬ Exceptional E α := hα
   have hsepΓ := HEEqPW.levelSet_separated hPW hE hEHB hEPW hφE hαe
-  have hcisΓ := HEEqPW.levelSet_cis hPW hE hEHB hEPW hφE hαe
+  have hcisΓ := HEEqPW.levelSet_cis hE hEHB hEPW hφE hαe
   refine ⟨γ, hγm, by rw [hγr]; exact hsepΓ, by rw [hγr]; exact hcisΓ, fun k ↦ ?_⟩
   -- interlacing
   have hmem : ∀ k, φE (γ k) ∈ {y | ∃ n : ℤ, y = α + n * Real.pi} := by

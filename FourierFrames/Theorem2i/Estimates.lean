@@ -28,18 +28,16 @@ def K0 (C : ℝ) : ℝ := 8 + 2 * rho1 C
 
 /-- Cells below `|z|/2`. -/
 theorem RegData.abs_cellTerm_below (h : RegData ψ t C M) {n : ℕ} (hn : 1 ≤ n) {z : ℂ}
-    (hz : 0 ≤ z.im) (hzn : t n ≤ ‖z‖ / 2) (hz0 : z ≠ 0) :
+    (hzn : t n ≤ ‖z‖ / 2) (hz0 : z ≠ 0) :
     |cellTerm ψ t C n z| ≤ (4 + 2 * (1 + C) * Real.log (1 + C)) * (cellLen t n / ‖z‖) := by
-  -- the hypothesis `0 ≤ z.im` is not needed for this estimate
-  have _ := hz
   exact D1.abs_cellTerm_below h hn hzn hz0
 
 /-- Cells above `2|z|`. -/
 theorem RegData.abs_cellTerm_above (h : RegData ψ t C M) {n : ℕ} (hn : 2 ≤ n) {z : ℂ}
-    (hz : 0 ≤ z.im) (hzn : 2 * ‖z‖ ≤ t (n - 1)) (hz0 : z ≠ 0) :
+    (hzn : 2 * ‖z‖ ≤ t (n - 1)) (hz0 : z ≠ 0) :
     |cellTerm ψ t C n z| ≤
       (2 * Real.log (1 + C) + 2) * (cellLen t n * ‖z‖ / t (n - 1) ^ 2) := by
-  exact D1.abs_cellTerm_above h hn hz hzn hz0
+  exact D1.abs_cellTerm_above h hn hzn hz0
 
 /-- Cells comparable to `|z|` and at distance `≥ K₀ d_n`. -/
 theorem RegData.abs_cellTerm_far (h : RegData ψ t C M) {n : ℕ} (hn : 2 ≤ n) {z : ℂ}

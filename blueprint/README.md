@@ -50,9 +50,9 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
 | Example p. 798, counting | `logExample_count` | — |
 | Landau's inequality is sharp (no coefficient `A < 1`) | `landau_sharp` | PW, E |
 | Corollary 2 | `corollary2` | PW, E, DS |
-| Theorem 2 (i), with ψ' eventually nonincreasing (N-22) | `theorem2_i` | PW, E, DS |
+| Theorem 2 (i), with ψ' eventually nonincreasing (N-22), without `ψ' = 1/O(x)` (N-26, I-03) | `theorem2_i` | PW, E, DS |
 | Theorem 2 (i), with the cell density bound the proof uses | `theorem2_i_of_densityBound` | PW, E, DS |
-| Theorem 2 (ii) | `theorem2_ii` | PW |
+| Theorem 2 (ii) | `theorem2_ii` | — (unconditional, I-03) |
 
 Not formalized: the Proposition on p. 798 (norm equivalence via [Or98]; quoted without proof and
 not used), the remarks about [Se95] (Lemma 3.11, Theorems 2.3 and 2.7), the
@@ -189,7 +189,7 @@ All in namespace `FF`; `hPW : PaleyWienerThm` etc. are explicit hypotheses.
 - `MemHE.mul_isHB` and `heNormSq_mul`: `f ∈ H(E)`, `F ∈ \overline{HB}` ⇒ `F f ∈ H(EF)`, same norm.
 - `HEEqPW.isStrictHB`, `HEEqPW.ne_zero_ofReal` (an `E` with `H(E) = PW` is strict, has no real
   zeros).
-- `HEEqPW.phaseDeriv_mul_sq_ge (hPW) (hE : TheoremE)` and `..._le`: `φ_E'(x)|E(x)|² ≃ 1`.
+- `HEEqPW.phaseDeriv_mul_sq_ge (hE : TheoremE)` and `..._le (hPW) (hE : TheoremE)`: `φ_E'(x)|E(x)|² ≃ 1`.
 - `memHE_sAlpha_unique`: `S_α, S_β ∈ H(E)` ⇒ `β - α ∈ πℤ` (`E` strict).
 - `heEqPW_of_comparable` (main result).
 

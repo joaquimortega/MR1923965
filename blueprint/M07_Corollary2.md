@@ -181,7 +181,7 @@ and `h(γ) = 0`; and `h(a) = dslope g b a · 0 = 0`. So `h` vanishes on `Γ`, he
 
 ```lean
 theorem isSampling_of_replace_finite (hPW : PaleyWienerThm) {Γ Γ' : Set ℝ}
-    (hsep : IsSeparated Γ) (hs : IsSampling Γ) (hsep' : IsSeparated Γ')
+    (hsep : IsSeparated Γ) (hs : IsSampling Γ)
     (hD : (Γ \ Γ').Finite) (hD' : (Γ' \ Γ).Finite) (hcard : (Γ \ Γ').ncard = (Γ' \ Γ).ncard) :
     IsSampling Γ' := by
 ```
@@ -388,13 +388,11 @@ theorem compBeta_interlace (hw : OCS.IsMultWeight m a b) {N : ℕ}
     OCS.multBary m j < compBeta m N j ∧ compBeta m N j < OCS.multBary m (j + 1) := by
 ```
 ```lean
-theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_eq_zero_iff (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z = 0 ↔ ∃ j : ℤ, z = (compBeta m N j : ℂ) := by
 ```
 ```lean
-theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) (z : ℂ) :
+theorem compB_mul_Q (hw : OCS.IsMultWeight m a b) (N : ℕ) (z : ℂ) :
     compB m N z * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - ((OCS.multBary m j + 1 / 2 : ℝ) : ℂ)) =
       genA m (z - 1 / 2) * ∏ j ∈ Finset.Ioo (-(N : ℤ)) N, (z - (compBeta m N j : ℂ)) := by
 ```
@@ -489,8 +487,7 @@ theorem tendsto_polyA (hw : OCS.IsMultWeight m a b) :
       (genA m) atTop := by
 ```
 ```lean
-theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j) :
+theorem tendsto_polyB (hw : OCS.IsMultWeight m a b) (N : ℕ) :
     TendstoLocallyUniformly
       (fun (R : ℕ) (z : ℂ) ↦ Complex.exp (OCS.multBeta m 0 + polyExp m R * z) *
         Real.exp (-polyExp m R / 2) * polyB m N R z)
@@ -647,7 +644,6 @@ real on `ℝ`. ∎
 theorem phase_rigidity (hw : OCS.IsMultWeight m a b) (hlim : Tendsto m (cocompact ℝ) (𝓝 1)) {κ : ℝ}
     (hU : ∃ C : ℝ, ∀ z : ℂ, 0 ≤ z.im →
       |OCS.multU m 0 z - Real.pi * z.im - κ * z.re| ≤ C) {N : ℕ}
-    (hN : ∀ j : ℤ, N ≤ |j| → 1 / 2 < OCS.multBary m (j + 1) - OCS.multBary m j)
     {φ : ℝ → ℝ} (hφ : IsPhaseFunction (compEκ m κ N) φ) :
     ∀ ε : ℝ, 0 < ε → ∃ X : ℝ, ∀ s : ℝ, X ≤ |s| → ∀ τ : ℝ, |τ| ≤ 2 →
       |φ (s + τ) - φ s - Real.pi * τ| ≤ ε := by
@@ -761,10 +757,10 @@ theorem multU_add {g h : ℝ → ℝ} (hg : Measurable g) (hh : Measurable h) {M
     OCS.multU (fun t ↦ g t + h t) 0 z = OCS.multU g 0 z + OCS.multU h 0 z := by
 ```
 ```lean
-theorem multU_const_mul {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) (c : ℝ)
-    (z : ℂ) : OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
+theorem multU_const_mul (g : ℝ → ℝ) (c : ℝ) (z : ℂ) :
+    OCS.multU (fun t ↦ c * g t) 0 z = c * OCS.multU g 0 z := by
 ```
-(linearity of the integral, using `integrable_multU_integrand_of_bdd`)
+(`integral_const_mul`; no integrability needed)
 
 ```lean
 theorem continuous_multU_of_bdd {g : ℝ → ℝ} (hg : Measurable g) {M : ℝ} (hM : ∀ t, |g t| ≤ M) :

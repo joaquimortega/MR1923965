@@ -418,13 +418,14 @@ theorem corollary2 (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     IsSampling (LambdaPsi ψ) := by
   sorry
 
-/-- **Theorem 2 (i)** (p. 801): if `ψ = 0` on `(-∞, 0]`, `ψ'(x) ≥ c/x` for large `x`, and `ψ`
-induces a logarithmically regular partition, then `Λ(ψ)` is sampling for `PW`.  The proof needs
-`ψ` to be "sufficiently regular" (p. 790; "the smoothness of `ψ` ensures", p. 802), which the
-statement does not say: we assume `ψ'` eventually nonincreasing (NOTEBOOK N-22). -/
+/-- **Theorem 2 (i)** (p. 801): if `ψ = 0` on `(-∞, 0]` and `ψ` induces a logarithmically regular
+partition, then `Λ(ψ)` is sampling for `PW`.  The printed hypothesis `ψ'(x) = 1/O(x)`
+(`ψ'(x) ≥ c/x` for large `x`) is not needed by the proof and is not assumed (NOTEBOOK N-26, I-03).
+The proof needs `ψ` to be "sufficiently regular" (p. 790; "the smoothness of `ψ` ensures",
+p. 802), which the statement does not say: we assume `ψ'` eventually nonincreasing
+(NOTEBOOK N-22). -/
 theorem theorem2_i (hPW : PaleyWienerThm) (hE : TheoremE) (hDS : DSPerturbation)
     {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ) (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
-    (hlow : ∃ c : ℝ, 0 < c ∧ ∃ X : ℝ, ∀ x : ℝ, X ≤ x → c / x ≤ deriv ψ x)
     (hreg : IsLogRegularPartition ψ) (hmono : ∃ X : ℝ, AntitoneOn (deriv ψ) (Set.Ici X)) :
     IsSampling (LambdaPsi ψ) := by
   sorry
@@ -439,8 +440,9 @@ theorem theorem2_i_of_densityBound (hPW : PaleyWienerThm) (hE : TheoremE) (hDS :
   sorry
 
 /-- **Theorem 2 (ii)** (p. 801): if `ψ = 0` on `(-∞, 0]` and `ψ'(x) = o(1/x)`, then `Λ(ψ)` is not
-sampling for `PW`. -/
-theorem theorem2_ii (hPW : PaleyWienerThm) {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
+sampling for `PW`.  The proof uses no cited theorem, so the statement has no `PaleyWienerThm`
+hypothesis: it is unconditional (NOTEBOOK I-03). -/
+theorem theorem2_ii {ψ : ℝ → ℝ} (hψ : IsAdmissiblePsi ψ)
     (h0 : ∀ x : ℝ, x ≤ 0 → ψ x = 0)
     (hsmall : Tendsto (fun x ↦ x * deriv ψ x) atTop (𝓝 0)) :
     ¬ IsSampling (LambdaPsi ψ) := by
