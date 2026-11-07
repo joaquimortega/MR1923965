@@ -22,6 +22,10 @@ name = "OrtegaCerdaSeip"
 name = "FourierFrames"
 
 # Self-contained statements file and its solution, checked by `comparator` (see comparator/).
+# Phase-2 scaffolds still containing `sorry` (not in the default target).
+[[lean_lib]]
+name = "FourierFramesScaffold"
+
 [[lean_lib]]
 name = "FFChallenge"
 
