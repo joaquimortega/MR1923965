@@ -74,7 +74,8 @@ theorem deBrangesKernel_eq_dslope {E : ℂ → ℂ} (hE : Differentiable ℂ E) 
     have hd2 : DifferentiableAt ℂ (fun z ↦ fstar E z * conj (fstar E w)) (conj w) :=
       ((Differentiable.fstar hE) _).mul_const _
     show _ = deriv (fun z ↦ E z * conj (E w) - fstar E z * conj (fstar E w)) (conj w)
-    rw [deriv_fun_sub hd1 hd2, deriv_mul_const (hE _), deriv_mul_const ((Differentiable.fstar hE) _)]
+    rw [deriv_fun_sub hd1 hd2, deriv_mul_const (hE _),
+      deriv_mul_const ((Differentiable.fstar hE) _)]
   · rw [dslope_of_ne _ hz, slope_def_field, kernelNum_conj_self, sub_zero,
       deBrangesKernel_of_ne E hz]
     have : z - conj w ≠ 0 := sub_ne_zero.mpr hz

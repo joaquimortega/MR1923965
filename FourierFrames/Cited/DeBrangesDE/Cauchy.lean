@@ -94,13 +94,7 @@ theorem IsH2Cont.continuousAt {F : ℂ → ℂ} (hF : IsH2Cont F) {z : ℂ} (hz 
 /-- `F` is continuous on the closed upper half-plane. -/
 theorem IsH2Cont.continuousOn {F : ℂ → ℂ} (hF : IsH2Cont F) :
     ContinuousOn F {z : ℂ | 0 ≤ z.im} := by
-  intro z hz
-  rcases (show (0 : ℝ) ≤ z.im from hz).lt_or_eq with h | h
-  · exact (hF.1.1.differentiableAt
-      ((isOpen_lt continuous_const Complex.continuous_im).mem_nhds h)).continuousAt.continuousWithinAt
-  · have hz' : ((z.re : ℝ) : ℂ) = z := Complex.ext (by simp) (by simp [← h])
-    have := (hF.2 z.re).continuousWithinAt (s := {z : ℂ | 0 ≤ z.im})
-    rwa [hz'] at this
+  exact fun z hz ↦ (hF.continuousAt hz).continuousWithinAt
 
 /-- Uniform `L²` bound on all lines `Im z = y ≥ 0` (for `y = 0` by the Fatou step
 `lintegral_real_le_of_isH2`). -/
@@ -403,7 +397,8 @@ theorem IsH2Cont.exists_sides_of_dominated (hF : IsH2Cont F)
             _ = _ := by ring
       _ = c1 * (∫⁻ y in Ioc (0 : ℝ) Y, (‖F ((R n : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 +
             ‖F (((-R n : ℝ) : ℂ) + (y : ℂ) * I)‖ₑ ^ 2)) + 2 * c2 * ENNReal.ofReal Y := by
-          rw [lintegral_add_right _ measurable_const, lintegral_const_mul' _ _ ENNReal.ofReal_ne_top,
+          rw [lintegral_add_right _ measurable_const,
+            lintegral_const_mul' _ _ ENNReal.ofReal_ne_top,
             setLIntegral_const, Real.volume_Ioc, sub_zero]
       _ ≤ c1 * 1 + 2 * c2 * ENNReal.ofReal Y := by
           gcongr
@@ -627,7 +622,8 @@ theorem integral_cauchy_pair {w : ℂ} (hw : 0 < w.im) :
   push_cast
   field_simp
 
-/-- Pointwise form of the Cauchy pair: `(w - w̄)/((t - w)(t - w̄)) = 2i Im w / ((t - Re w)² + Im w²)`. -/
+/-- Pointwise form of the Cauchy pair:
+`(w - w̄)/((t - w)(t - w̄)) = 2i Im w / ((t - Re w)² + Im w²)`. -/
 theorem cauchy_pair_eq (w : ℂ) (t : ℝ) :
     (w - conj w) / (((t : ℂ) - w) * ((t : ℂ) - conj w)) =
       (2 * w.im * I) * ((((t - w.re) ^ 2 + w.im ^ 2)⁻¹ : ℝ) : ℂ) := by
