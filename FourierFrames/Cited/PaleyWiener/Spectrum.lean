@@ -28,45 +28,345 @@ theorem integral_line_shift {H : ℂ → ℂ} (hH : Differentiable ℂ H) (y : �
     (hR : Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, ‖H (R + s * I)‖) atTop (𝓝 0))
     (hR' : Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, ‖H (-R + s * I)‖) atTop (𝓝 0)) :
     ∫ x : ℝ, H x = ∫ x : ℝ, H (x + y * I) := by
-  sorry
+  have hrect : ∀ R : ℝ, (∫ x : ℝ in (-R)..R, H x) - (∫ x : ℝ in (-R)..R, H (x + y * I)) +
+      I • (∫ s : ℝ in (0 : ℝ)..y, H (R + s * I)) -
+      I • (∫ s : ℝ in (0 : ℝ)..y, H (-R + s * I)) = 0 := fun R ↦ by
+    have := Complex.integral_boundary_rect_eq_zero_of_differentiableOn H (-(R : ℂ)) (R + y * I)
+      hH.differentiableOn
+    simpa using this
+  have hA : Tendsto (fun R : ℝ ↦ ∫ x : ℝ in (-R)..R, H x) atTop (𝓝 (∫ x : ℝ, H x)) :=
+    intervalIntegral_tendsto_integral hint0 tendsto_neg_atTop_atBot tendsto_id
+  have hB : Tendsto (fun R : ℝ ↦ ∫ x : ℝ in (-R)..R, H (x + y * I)) atTop
+      (𝓝 (∫ x : ℝ, H (x + y * I))) :=
+    intervalIntegral_tendsto_integral hinty tendsto_neg_atTop_atBot tendsto_id
+  have key : ∀ {T : ℝ → ℝ → ℂ},
+      Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, ‖T R s‖) atTop (𝓝 0) →
+      Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, T R s) atTop (𝓝 0) := by
+    intro T hT
+    rw [tendsto_zero_iff_norm_tendsto_zero]
+    refine squeeze_zero (fun R ↦ norm_nonneg _) (fun R ↦
+      intervalIntegral.norm_integral_le_abs_integral_norm (a := 0) (b := y)
+        (f := fun s ↦ T R s)) ?_
+    simpa using hT.abs
+  have hV := key (T := fun R s ↦ H (R + s * I)) hR
+  have hV' := key (T := fun R s ↦ H (-R + s * I)) hR'
+  have h1 : Tendsto (fun R : ℝ ↦ (∫ x : ℝ in (-R)..R, H x) - (∫ x : ℝ in (-R)..R, H (x + y * I)) +
+      I • (∫ s : ℝ in (0 : ℝ)..y, H (R + s * I)) -
+      I • (∫ s : ℝ in (0 : ℝ)..y, H (-R + s * I))) atTop
+      (𝓝 ((∫ x : ℝ, H x) - (∫ x : ℝ, H (x + y * I)) + I • 0 - I • 0)) :=
+    ((hA.sub hB).add (hV.const_smul I)).sub (hV'.const_smul I)
+  simp only [hrect] at h1
+  have := tendsto_nhds_unique h1 tendsto_const_nhds
+  simp only [smul_zero, add_zero, sub_zero] at this
+  exact sub_eq_zero.1 this
 
 /-! ### 3.2 Gaussian integrals -/
 
-theorem integral_exp_abs_sub_sq_le {a : ℝ} (ha : 0 ≤ a) {η : ℝ} (hη : 0 < η) :
-    ∫ x : ℝ, Real.exp (a * |x| - η * x ^ 2) ≤
-      2 * Real.sqrt (Real.pi / η) * Real.exp (a ^ 2 / (4 * η)) := by
-  sorry
+theorem exp_lin_sub_sq_eq (b : ℝ) {η : ℝ} (hη : 0 < η) (x : ℝ) :
+    Real.exp (b * x - η * x ^ 2) =
+      Real.exp (b ^ 2 / (4 * η)) * Real.exp (-η * (x - b / (2 * η)) ^ 2) := by
+  rw [← Real.exp_add]
+  congr 1
+  field_simp
+  ring
+
+theorem integrable_exp_lin_sub_sq (b : ℝ) {η : ℝ} (hη : 0 < η) :
+    Integrable (fun x : ℝ ↦ Real.exp (b * x - η * x ^ 2)) := by
+  simp_rw [exp_lin_sub_sq_eq b hη]
+  exact ((integrable_exp_neg_mul_sq hη).comp_sub_right (b / (2 * η))).const_mul _
+
+theorem integral_exp_lin_sub_sq (b : ℝ) {η : ℝ} (hη : 0 < η) :
+    ∫ x : ℝ, Real.exp (b * x - η * x ^ 2) = Real.sqrt (Real.pi / η) * Real.exp (b ^ 2 / (4 * η)) := by
+  simp_rw [exp_lin_sub_sq_eq b hη]
+  rw [integral_const_mul, integral_sub_right_eq_self (fun x : ℝ ↦ Real.exp (-η * x ^ 2))
+    (b / (2 * η))]
+  have := integral_gaussian η
+  simp_rw [neg_mul] at this ⊢
+  rw [this, mul_comm]
+
+theorem exp_abs_sub_sq_le (a : ℝ) {η : ℝ} (x : ℝ) :
+    Real.exp (a * |x| - η * x ^ 2) ≤
+      Real.exp (a * x - η * x ^ 2) + Real.exp (-a * x - η * x ^ 2) := by
+  rcases le_total 0 x with h | h
+  · rw [abs_of_nonneg h]
+    exact le_add_of_nonneg_right (Real.exp_pos _).le
+  · rw [abs_of_nonpos h]
+    have : a * -x = -a * x := by ring
+    rw [this]
+    exact le_add_of_nonneg_left (Real.exp_pos _).le
 
 theorem integrable_exp_abs_sub_sq {a : ℝ} {η : ℝ} (hη : 0 < η) :
     Integrable (fun x : ℝ ↦ Real.exp (a * |x| - η * x ^ 2)) := by
-  sorry
+  refine Integrable.mono' ((integrable_exp_lin_sub_sq a hη).add (integrable_exp_lin_sub_sq (-a) hη))
+    (by fun_prop) (Eventually.of_forall fun x ↦ ?_)
+  rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+  exact exp_abs_sub_sq_le a x
+
+theorem integral_exp_abs_sub_sq_le {a : ℝ} {η : ℝ} (hη : 0 < η) :
+    ∫ x : ℝ, Real.exp (a * |x| - η * x ^ 2) ≤
+      2 * Real.sqrt (Real.pi / η) * Real.exp (a ^ 2 / (4 * η)) := by
+  calc ∫ x : ℝ, Real.exp (a * |x| - η * x ^ 2)
+      ≤ ∫ x : ℝ, (Real.exp (a * x - η * x ^ 2) + Real.exp (-a * x - η * x ^ 2)) :=
+        integral_mono (integrable_exp_abs_sub_sq hη)
+          ((integrable_exp_lin_sub_sq a hη).add (integrable_exp_lin_sub_sq (-a) hη))
+          fun x ↦ exp_abs_sub_sq_le a x
+    _ = _ := by
+        rw [integral_add (integrable_exp_lin_sub_sq a hη) (integrable_exp_lin_sub_sq (-a) hη),
+          integral_exp_lin_sub_sq a hη, integral_exp_lin_sub_sq (-a) hη]
+        ring_nf
 
 /-! ### 3.3 The pointwise bound on `∫ f(x) e^{-ηx²} e^{-iξx} dx` -/
 
+/-- The Gaussian-regularised, modulated integrand. -/
+def gaussH (f : ℂ → ℂ) (η ξ : ℝ) (z : ℂ) : ℂ :=
+  f z * Complex.exp (-(η : ℂ) * z ^ 2) * Complex.exp (-I * ξ * z)
+
+theorem differentiable_gaussH {f : ℂ → ℂ} (hd : Differentiable ℂ f) (η ξ : ℝ) :
+    Differentiable ℂ (gaussH f η ξ) := by
+  unfold gaussH
+  fun_prop
+
+theorem norm_gaussH_le {f : ℂ → ℂ} {C a b : ℝ}
+    (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|)) (η ξ x s : ℝ) :
+    ‖gaussH f η ξ (x + s * I)‖ ≤
+      |C| * Real.exp (a * |x| - η * x ^ 2) * Real.exp (η * s ^ 2 + b * |s| + ξ * s) := by
+  unfold gaussH
+  rw [norm_mul, norm_mul, Complex.norm_exp, Complex.norm_exp]
+  have h1 := hC (x + s * I)
+  simp only [Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, mul_zero,
+    Complex.ofReal_im, Complex.I_im, mul_one, sub_self, add_zero, Complex.add_im, zero_add,
+    Complex.mul_im] at h1
+  have e1 : (-(η : ℂ) * (x + s * I) ^ 2).re = -η * (x ^ 2 - s ^ 2) := by
+    simp [pow_two]
+  have e2 : (-I * (ξ : ℂ) * (x + s * I)).re = ξ * s := by
+    simp
+  rw [e1, e2]
+  have h2 : C * Real.exp (a * |x| + b * |s|) ≤ |C| * Real.exp (a * |x| + b * |s|) :=
+    mul_le_mul_of_nonneg_right (le_abs_self C) (Real.exp_pos _).le
+  calc ‖f (x + s * I)‖ * Real.exp (-η * (x ^ 2 - s ^ 2)) * Real.exp (ξ * s)
+      ≤ (|C| * Real.exp (a * |x| + b * |s|)) * Real.exp (-η * (x ^ 2 - s ^ 2)) * Real.exp (ξ * s) := by
+        gcongr
+        exact h1.trans h2
+    _ = _ := by
+        rw [mul_assoc, mul_assoc, mul_assoc, ← Real.exp_add, ← Real.exp_add, ← Real.exp_add]
+        congr 2
+        ring
+
+theorem tendsto_exp_gauss_zero (a : ℝ) {η : ℝ} (hη : 0 < η) :
+    Tendsto (fun R : ℝ ↦ Real.exp (a * R - η * R ^ 2)) atTop (𝓝 0) := by
+  have h : Tendsto (fun R : ℝ ↦ η * R ^ 2 - a * R) atTop atTop := by
+    refine tendsto_atTop_mono' _ ?_ tendsto_id
+    filter_upwards [eventually_ge_atTop ((a + 1) / η), eventually_ge_atTop 0] with R hR hR0
+    have : (a + 1) ≤ η * R := by
+      rwa [div_le_iff₀ hη, mul_comm] at hR
+    simp only [id]
+    nlinarith [mul_nonneg hR0 (sub_nonneg.2 this)]
+  have := Real.tendsto_exp_neg_atTop_nhds_zero.comp h
+  refine this.congr fun R ↦ ?_
+  simp only [Function.comp]
+  congr 1; ring
+
 theorem norm_integral_gauss_mul_le {f : ℂ → ℂ} (hd : Differentiable ℂ f) {C a b : ℝ}
-    (ha : 0 ≤ a) (hb : 0 ≤ b) (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|))
+    (hb : 0 ≤ b) (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|))
     {η : ℝ} (hη : 0 < η) {ξ : ℝ} (hξ : b ≤ |ξ|) :
     ‖∫ x : ℝ, f x * Complex.exp (-(η : ℂ) * (x : ℂ) ^ 2) * Complex.exp (-I * ξ * x)‖ ≤
       2 * |C| * Real.sqrt (Real.pi / η) * Real.exp ((a ^ 2 - (|ξ| - b) ^ 2) / (4 * η)) := by
-  sorry
+  obtain ⟨κ, hκ⟩ : ∃ κ : ℝ, κ = |ξ| - b := ⟨_, rfl⟩
+  have hκ0 : 0 ≤ κ := by linarith
+  obtain ⟨Y, hY⟩ : ∃ Y : ℝ, Y = κ / (2 * η) := ⟨_, rfl⟩
+  have hY0 : 0 ≤ Y := by rw [hY]; positivity
+  obtain ⟨y, hy1, hy2⟩ : ∃ y : ℝ, |y| = Y ∧ ξ * y = -(|ξ| * Y) := by
+    rcases le_total 0 ξ with h | h
+    · exact ⟨-Y, by simp [abs_of_nonneg hY0], by rw [abs_of_nonneg h]; ring⟩
+    · exact ⟨Y, abs_of_nonneg hY0, by rw [abs_of_nonpos h]; ring⟩
+  have hHd := differentiable_gaussH hd η ξ
+  have hHc : Continuous (gaussH f η ξ) := hHd.continuous
+  have hbd := norm_gaussH_le hC η ξ
+  have hint : ∀ s : ℝ, Integrable (fun x : ℝ ↦ gaussH f η ξ (x + s * I)) := by
+    intro s
+    refine Integrable.mono' ((integrable_exp_abs_sub_sq (a := a) hη).const_mul
+      (|C| * Real.exp (η * s ^ 2 + b * |s| + ξ * s))) ?_ ?_
+    · exact (hHc.comp (by fun_prop)).aestronglyMeasurable
+    · refine Eventually.of_forall fun x ↦ ?_
+      refine (hbd x s).trans (le_of_eq ?_)
+      ring
+  have hV : ∀ X : ℝ, ‖∫ s in (0 : ℝ)..y, ‖gaussH f η ξ (X + s * I)‖‖ ≤
+      (|C| * Real.exp (η * Y ^ 2 + (b + |ξ|) * Y) * Real.exp (a * |X| - η * X ^ 2)) * |y| := by
+    intro X
+    have := intervalIntegral.norm_integral_le_of_norm_le_const (a := 0) (b := y)
+      (f := fun s ↦ ‖gaussH f η ξ (X + s * I)‖)
+      (C := |C| * Real.exp (η * Y ^ 2 + (b + |ξ|) * Y) * Real.exp (a * |X| - η * X ^ 2))
+      (fun s hs ↦ by
+        have hs' : |s| ≤ Y := by
+          rw [← hy1]
+          rcases le_total 0 y with h | h
+          · rw [Set.uIoc_of_le h] at hs
+            rw [abs_of_nonneg h, abs_of_nonneg hs.1.le]; exact hs.2
+          · rw [Set.uIoc_of_ge h] at hs
+            rw [abs_of_nonpos h, abs_of_nonpos hs.2]; linarith [hs.1]
+        rw [norm_norm]
+        refine (hbd X s).trans ?_
+        have h1 : η * s ^ 2 + b * |s| + ξ * s ≤ η * Y ^ 2 + (b + |ξ|) * Y := by
+          have e1 : s ^ 2 ≤ Y ^ 2 := by
+            rw [← sq_abs s]; exact pow_le_pow_left₀ (abs_nonneg _) hs' 2
+          have e2 : ξ * s ≤ |ξ| * Y := by
+            calc ξ * s ≤ |ξ * s| := le_abs_self _
+              _ = |ξ| * |s| := abs_mul _ _
+              _ ≤ |ξ| * Y := mul_le_mul_of_nonneg_left hs' (abs_nonneg _)
+          nlinarith [mul_le_mul_of_nonneg_left hs' hb]
+        calc |C| * Real.exp (a * |X| - η * X ^ 2) * Real.exp (η * s ^ 2 + b * |s| + ξ * s)
+            ≤ |C| * Real.exp (a * |X| - η * X ^ 2) * Real.exp (η * Y ^ 2 + (b + |ξ|) * Y) := by
+              gcongr
+          _ = _ := by ring)
+    simpa [Real.norm_eq_abs] using this
+  have hgb : ∀ X : ℝ → ℝ, (∀ R : ℝ, 0 ≤ R → |X R| = R) →
+      Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, ‖gaussH f η ξ (X R + s * I)‖) atTop (𝓝 0) := by
+    intro X hX
+    rw [tendsto_zero_iff_norm_tendsto_zero]
+    refine squeeze_zero' (g := fun R : ℝ ↦ (|C| * Real.exp (η * Y ^ 2 + (b + |ξ|) * Y) *
+      Real.exp (a * R - η * R ^ 2)) * |y|) (Eventually.of_forall fun R ↦ norm_nonneg _) ?_ ?_
+    · filter_upwards [eventually_ge_atTop 0] with R hR
+      have := hV (X R)
+      rw [hX R hR, show η * X R ^ 2 = η * R ^ 2 by rw [← sq_abs (X R), hX R hR]] at this
+      exact this
+    · have := (((tendsto_exp_gauss_zero a hη).const_mul
+        (|C| * Real.exp (η * Y ^ 2 + (b + |ξ|) * Y))).mul_const |y|)
+      simpa [mul_assoc] using this
+  have hR := hgb (fun R ↦ R) (fun R hR ↦ abs_of_nonneg hR)
+  have hR' := hgb (fun R ↦ -R) (fun R hR ↦ by rw [abs_neg, abs_of_nonneg hR])
+  simp only [Complex.ofReal_neg] at hR'
+  have hshift := integral_line_shift hHd y (by simpa using hint 0) (hint y) hR hR'
+  have hexp : η * y ^ 2 + b * |y| + ξ * y = -(κ ^ 2 / (4 * η)) := by
+    have : y ^ 2 = Y ^ 2 := by rw [← sq_abs y, hy1]
+    rw [this, hy1, hy2, hY]
+    have hη' : η ≠ 0 := hη.ne'
+    have : b = |ξ| - κ := by linarith
+    rw [this]
+    field_simp
+    ring
+  have e : (∫ x : ℝ, f x * Complex.exp (-(η : ℂ) * (x : ℂ) ^ 2) * Complex.exp (-I * ξ * x)) =
+      ∫ x : ℝ, gaussH f η ξ x := rfl
+  rw [e, hshift, ← hκ]
+  calc ‖∫ x : ℝ, gaussH f η ξ (x + y * I)‖ ≤ ∫ x : ℝ, ‖gaussH f η ξ (x + y * I)‖ :=
+        norm_integral_le_integral_norm _
+    _ ≤ ∫ x : ℝ, |C| * Real.exp (-(κ ^ 2 / (4 * η))) * Real.exp (a * |x| - η * x ^ 2) :=
+        integral_mono (hint y).norm ((integrable_exp_abs_sub_sq hη).const_mul _) fun x ↦
+          (hbd x y).trans (le_of_eq (by rw [hexp]; ring))
+    _ = |C| * Real.exp (-(κ ^ 2 / (4 * η))) * ∫ x : ℝ, Real.exp (a * |x| - η * x ^ 2) :=
+        integral_const_mul _ _
+    _ ≤ |C| * Real.exp (-(κ ^ 2 / (4 * η))) *
+          (2 * Real.sqrt (Real.pi / η) * Real.exp (a ^ 2 / (4 * η))) :=
+        mul_le_mul_of_nonneg_left (integral_exp_abs_sub_sq_le hη) (by positivity)
+    _ = _ := by
+        have : (a ^ 2 - κ ^ 2) / (4 * η) = a ^ 2 / (4 * η) + -(κ ^ 2 / (4 * η)) := by ring
+        rw [this, Real.exp_add]
+        ring
 
 theorem tendsto_gauss_bound {a κ : ℝ} (ha : 0 ≤ a) (hκ : a < κ) (C : ℝ) :
     Tendsto (fun η : ℝ ↦
       2 * |C| * Real.sqrt (Real.pi / η) * Real.exp ((a ^ 2 - κ ^ 2) / (4 * η)))
       (𝓝[>] 0) (𝓝 0) := by
-  sorry
+  have hc : 0 < (κ ^ 2 - a ^ 2) / 4 := by nlinarith
+  have h1 := ((tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero (1 / 2) _ hc).comp
+    (tendsto_inv_nhdsGT_zero (𝕜 := ℝ))).const_mul (2 * |C| * Real.sqrt Real.pi)
+  rw [mul_zero] at h1
+  refine h1.congr' ?_
+  filter_upwards [self_mem_nhdsWithin] with η (hη : 0 < η)
+  simp only [Function.comp]
+  rw [Real.sqrt_div Real.pi_pos.le, Real.sqrt_eq_rpow, Real.sqrt_eq_rpow, Real.inv_rpow hη.le]
+  have : -((κ ^ 2 - a ^ 2) / 4) * η⁻¹ = (a ^ 2 - κ ^ 2) / (4 * η) := by
+    field_simp
+    ring
+  rw [this]
+  have hη' : η ^ (1 / 2 : ℝ) ≠ 0 := (Real.rpow_pos_of_pos hη _).ne'
+  field_simp
 
 /-! ### 3.4 `f e^{-η·²} → f` in `L²` and the a.e. limit -/
+
+theorem gauss_le_one {η : ℝ} (hη : 0 < η) (x : ℝ) : Real.exp (-η * x ^ 2) ≤ 1 := by
+  rw [Real.exp_le_one_iff]; nlinarith [sq_nonneg x]
 
 theorem memLp_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) {η : ℝ} (hη : 0 < η) :
     MemLp (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) 2 ∧
     Integrable (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) := by
-  sorry
+  have hgc : Continuous (fun x : ℝ ↦ ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) := by fun_prop
+  have hg2 : MemLp (fun x : ℝ ↦ ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) 2 := by
+    rw [memLp_two_iff_integrable_sq_norm hgc.aestronglyMeasurable]
+    have := integrable_exp_neg_mul_sq (b := 2 * η) (by positivity)
+    refine this.congr (Eventually.of_forall fun x ↦ ?_)
+    simp only [Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), ← Real.exp_nat_mul]
+    congr 1; push_cast; ring
+  refine ⟨?_, ?_⟩
+  · refine hf.of_le (hf.aestronglyMeasurable.mul hgc.aestronglyMeasurable) ?_
+    refine Eventually.of_forall fun x ↦ ?_
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    exact mul_le_of_le_one_right (norm_nonneg _) (gauss_le_one hη x)
+  · exact MemLp.integrable_mul (p := 2) (q := 2) hf hg2
 
 theorem tendsto_eLpNorm_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) :
     Tendsto (fun n : ℕ ↦ eLpNorm (fun x : ℝ ↦ f x * ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ)
       - f x) 2 volume) atTop (𝓝 0) := by
-  sorry
+  set G : ℕ → ℝ → ℂ := fun n x ↦
+    f x * ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ) - f x with hG
+  have hmeas : ∀ n, AEStronglyMeasurable (G n) := fun n ↦
+    (hf.aestronglyMeasurable.mul (by fun_prop : Continuous (fun x : ℝ ↦
+      ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ))).aestronglyMeasurable).sub
+      hf.aestronglyMeasurable
+  have hbound : ∀ n x, ‖G n x‖ ≤ ‖f x‖ := by
+    intro n x
+    have h0 : 0 < Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) := Real.exp_pos _
+    have h1 : Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) ≤ 1 := gauss_le_one (by positivity) x
+    simp only [hG]
+    rw [← mul_sub_one, norm_mul, ← Complex.ofReal_one, ← Complex.ofReal_sub, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonpos (by linarith)]
+    exact mul_le_of_le_one_right (norm_nonneg _) (by linarith)
+  have hlim : ∀ x, Tendsto (fun n ↦ G n x) atTop (𝓝 0) := by
+    intro x
+    have h1 : Tendsto (fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) atTop (𝓝 0) :=
+      tendsto_one_div_add_atTop_nhds_zero_nat
+    have h2 : Tendsto (fun n : ℕ ↦ ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ)) atTop
+        (𝓝 ((Real.exp (-0 * x ^ 2) : ℝ) : ℂ)) :=
+      (Complex.continuous_ofReal.tendsto _).comp
+        ((Real.continuous_exp.tendsto _).comp ((h1.neg).mul_const _))
+    have h3 := (h2.const_mul (f x)).sub_const (f x)
+    have e : f x * ((Real.exp (-0 * x ^ 2) : ℝ) : ℂ) - f x = 0 := by simp
+    rw [e] at h3
+    exact h3
+  have hfin : ∫⁻ x, ‖f x‖ₑ ^ (2 : ℝ) ≠ ∞ := by
+    have := hf.eLpNorm_lt_top
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal two_ne_zero ENNReal.ofNat_ne_top
+      hf.aestronglyMeasurable] at this
+    simp only [ENNReal.toReal_ofNat] at this
+    exact (ENNReal.rpow_lt_top_iff_of_pos (by norm_num)).1 this |>.ne
+  have hL : Tendsto (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ^ (2 : ℝ)) atTop (𝓝 0) := by
+    have := tendsto_lintegral_of_dominated_convergence' (μ := volume)
+      (F := fun n x ↦ ‖G n x‖ₑ ^ (2 : ℝ)) (f := fun _ ↦ 0)
+      (fun x ↦ ‖f x‖ₑ ^ (2 : ℝ))
+      (fun n ↦ ((hmeas n).enorm.pow_const _))
+      (fun n ↦ Eventually.of_forall fun x ↦ ENNReal.rpow_le_rpow (enorm_le_iff_norm_le.2 (hbound n x))
+        (by norm_num))
+      hfin
+      (Eventually.of_forall fun x ↦ by
+        have := ((hlim x).enorm).ennrpow_const (2 : ℝ)
+        simpa using this)
+    simpa using this
+  have h := (ENNReal.continuous_rpow_const (y := 1 / 2)).tendsto 0 |>.comp hL
+  rw [ENNReal.zero_rpow_of_pos (by norm_num)] at h
+  refine h.congr fun n ↦ ?_
+  simp only [Function.comp]
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal two_ne_zero ENNReal.ofNat_ne_top (hmeas n)]
+  simp [ENNReal.toReal_ofNat]
+
+/-- The Fourier transform of `f e^{-η·²}` in the form of `norm_integral_gauss_mul_le`. -/
+theorem fourier_mul_gauss_eq (f : ℂ → ℂ) (η w : ℝ) :
+    𝓕 (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) w =
+      ∫ x : ℝ, f x * Complex.exp (-(η : ℂ) * (x : ℂ) ^ 2) *
+        Complex.exp (-I * ((2 * Real.pi * w : ℝ) : ℂ) * x) := by
+  rw [Real.fourier_real_eq_integral_exp_smul]
+  refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+  simp only [smul_eq_mul, Complex.ofReal_exp]
+  push_cast
+  ring_nf
 
 /-- **Spectrum lemma.** -/
 theorem spectrum_vanish {f : ℂ → ℂ} (hd : Differentiable ℂ f) (hL2 : MemLp (fun x : ℝ ↦ f x) 2)
@@ -74,6 +374,37 @@ theorem spectrum_vanish {f : ℂ → ℂ} (hd : Differentiable ℂ f) (hL2 : Mem
     (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|)) :
     ∀ᵐ w : ℝ, a + b < 2 * Real.pi * |w| →
       (F2 (hL2.toLp (fun x : ℝ ↦ f x)) : ℝ → ℂ) w = 0 := by
-  sorry
+  set fr : ℝ → ℂ := fun x ↦ f x with hfr
+  set η : ℕ → ℝ := fun n ↦ 1 / ((n : ℝ) + 1) with hη
+  have hηpos : ∀ n, 0 < η n := fun n ↦ by simp only [hη]; positivity
+  set fn : ℕ → ℝ → ℂ := fun n x ↦ fr x * ((Real.exp (-(η n) * x ^ 2) : ℝ) : ℂ) with hfn
+  have hfn2 : ∀ n, MemLp (fn n) 2 := fun n ↦ (memLp_mul_gauss hL2 (hηpos n)).1
+  have hfn1 : ∀ n, Integrable (fn n) := fun n ↦ (memLp_mul_gauss hL2 (hηpos n)).2
+  have hconv : Tendsto (fun n ↦ (hfn2 n).toLp (fn n)) atTop (𝓝 (hL2.toLp fr)) :=
+    (Lp.tendsto_Lp_iff_tendsto_eLpNorm'' fn hfn2 fr hL2).2 (tendsto_eLpNorm_mul_gauss hL2)
+  have hconvF : Tendsto (fun n ↦ F2 ((hfn2 n).toLp (fn n))) atTop (𝓝 (F2 (hL2.toLp fr))) :=
+    (F2.continuous.tendsto _).comp hconv
+  obtain ⟨ns, hns, hae⟩ := (tendstoInMeasure_of_tendsto_Lp hconvF).exists_seq_tendsto_ae
+  have hae2 : ∀ᵐ w, ∀ n, (F2 ((hfn2 n).toLp (fn n)) : ℝ → ℂ) w = 𝓕 (fn n) w :=
+    ae_all_iff.2 fun n ↦ F2_toLp_ae_eq (hfn1 n) (hfn2 n)
+  filter_upwards [hae, hae2] with w hw1 hw2 hw
+  have hηt : Tendsto η atTop (𝓝[>] 0) :=
+    tendsto_nhdsWithin_iff.2 ⟨tendsto_one_div_add_atTop_nhds_zero_nat,
+      Eventually.of_forall hηpos⟩
+  have hξ : |2 * Real.pi * w| = 2 * Real.pi * |w| := by
+    rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 2 * Real.pi)]
+  have hzero : Tendsto (fun n ↦ 𝓕 (fn n) w) atTop (𝓝 0) := by
+    have hB := (tendsto_gauss_bound ha (by linarith : a < 2 * Real.pi * |w| - b) C).comp hηt
+    refine squeeze_zero_norm (fun n ↦ ?_) hB
+    have := norm_integral_gauss_mul_le hd hb hC (hηpos n) (ξ := 2 * Real.pi * w)
+      (by rw [hξ]; linarith)
+    rw [hξ] at this
+    simp only [Function.comp]
+    rw [hfn, fourier_mul_gauss_eq f (η n) w]
+    exact this
+  have h1 : Tendsto (fun i ↦ 𝓕 (fn (ns i)) w) atTop
+      (𝓝 ((F2 (hL2.toLp fr) : ℝ → ℂ) w)) := by
+    simpa only [hw2] using hw1
+  exact tendsto_nhds_unique h1 (hzero.comp hns.tendsto_atTop)
 
 end FF.PW1
