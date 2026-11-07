@@ -37,57 +37,181 @@ def kernelNum (E : ℂ → ℂ) (w z : ℂ) : ℂ :=
 zeros of `E`, where both integrands are `0`). -/
 theorem heInner_eq_integral_div (E f g : ℂ → ℂ) :
     heInner E f g = ∫ t : ℝ, f t / E t * conj (g t / E t) := by
-  sorry
+  unfold heInner
+  refine integral_congr_ae (Eventually.of_forall fun t ↦ ?_)
+  simp only
+  by_cases h : E t = 0
+  · simp [h]
+  · have hc : conj (E t) ≠ 0 := (map_ne_zero _).mpr h
+    have : ((‖E t‖ ^ 2 : ℝ) : ℂ) = E t * conj (E t) := by
+      rw [Complex.mul_conj, Complex.normSq_eq_norm_sq]
+    rw [this, map_div₀]
+    field_simp
 
 /-! ## 2.1 Algebra of the kernel -/
 
 theorem kernelNum_conj_self (E : ℂ → ℂ) (w : ℂ) : kernelNum E w (conj w) = 0 := by
-  sorry
+  simp only [kernelNum, fstar, Complex.conj_conj]
+  ring
 
 /-- Off the diagonal, `K(w, z) = (i/2) kernelNum / (π (z - w̄))` (unfolding the `if`). -/
 theorem deBrangesKernel_of_ne (E : ℂ → ℂ) {w z : ℂ} (hz : z ≠ conj w) :
     deBrangesKernel E w z = (I / 2) * kernelNum E w z / (Real.pi * (z - conj w)) := by
-  sorry
+  unfold deBrangesKernel kernelNum
+  rw [ite_eq_right hz]
 
 /-- `K(w, ·) = (i/2π) · dslope (kernelNum E w) w̄`. -/
 theorem deBrangesKernel_eq_dslope {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w : ℂ) :
     deBrangesKernel E w = fun z ↦ (I / (2 * Real.pi)) * dslope (kernelNum E w) (conj w) z := by
-  sorry
+  funext z
+  by_cases hz : z = conj w
+  · subst hz
+    rw [dslope_same]
+    unfold deBrangesKernel
+    rw [ite_eq_left rfl]
+    congr 1
+    have hd1 : DifferentiableAt ℂ (fun z ↦ E z * conj (E w)) (conj w) := (hE _).mul_const _
+    have hd2 : DifferentiableAt ℂ (fun z ↦ fstar E z * conj (fstar E w)) (conj w) :=
+      ((Differentiable.fstar hE) _).mul_const _
+    show _ = deriv (fun z ↦ E z * conj (E w) - fstar E z * conj (fstar E w)) (conj w)
+    rw [deriv_fun_sub hd1 hd2, deriv_mul_const (hE _), deriv_mul_const ((Differentiable.fstar hE) _)]
+  · rw [dslope_of_ne _ hz, slope_def_field, kernelNum_conj_self, sub_zero,
+      deBrangesKernel_of_ne E hz]
+    have : z - conj w ≠ 0 := sub_ne_zero.mpr hz
+    have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+    field_simp
 
 theorem differentiable_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w : ℂ) :
     Differentiable ℂ (deBrangesKernel E w) := by
-  sorry
+  rw [deBrangesKernel_eq_dslope hE w]
+  have hN : Differentiable ℂ (kernelNum E w) := fun z ↦
+    ((hE z).mul_const _).sub (((Differentiable.fstar hE) z).mul_const _)
+  have hD : Differentiable ℂ (dslope (kernelNum E w) (conj w)) :=
+    differentiableOn_univ.mp
+      ((Complex.differentiableOn_dslope Filter.univ_mem).2 hN.differentiableOn)
+  exact fun z ↦ (differentiableAt_const _).mul (hD z)
 
 /-- Multiplied form of the kernel: `K(w,z) · π (z - w̄) = (i/2) · kernelNum`, valid for all `z`. -/
 theorem deBrangesKernel_mul (E : ℂ → ℂ) (w z : ℂ) :
     deBrangesKernel E w z * (Real.pi * (z - conj w)) = (I / 2) * kernelNum E w z := by
-  sorry
+  by_cases hz : z = conj w
+  · subst hz
+    simp [kernelNum_conj_self]
+  · rw [deBrangesKernel_of_ne E hz]
+    have : z - conj w ≠ 0 := sub_ne_zero.mpr hz
+    have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+    field_simp
 
 /-- Hermitian symmetry `conj K(w, z) = K(z, w)`. -/
-theorem conj_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w z : ℂ) :
+theorem conj_deBrangesKernel (E : ℂ → ℂ) (w z : ℂ) :
     conj (deBrangesKernel E w z) = deBrangesKernel E z w := by
-  sorry
+  by_cases hz : z = conj w
+  · have hw : w = conj z := by rw [hz, Complex.conj_conj]
+    unfold deBrangesKernel
+    rw [ite_eq_left hz, ite_eq_left hw]
+    subst hz
+    simp only [deriv_fstar, fstar, Complex.conj_conj, map_mul, map_sub, map_div₀, Complex.conj_I,
+      Complex.conj_ofReal, map_ofNat]
+    ring
+  · have hw : w ≠ conj z := fun h ↦ hz (by rw [h, Complex.conj_conj])
+    rw [deBrangesKernel_of_ne E hz, deBrangesKernel_of_ne E hw]
+    simp only [kernelNum, fstar, map_mul, map_sub, map_div₀, Complex.conj_conj, Complex.conj_I,
+      Complex.conj_ofReal, map_ofNat]
+    have h1 : conj z - w ≠ 0 := sub_ne_zero.mpr (fun h ↦ hw (by rw [← h]))
+    have h2 : w - conj z ≠ 0 := sub_ne_zero.mpr hw
+    have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+    field_simp
+    ring
 
 /-- `K(w, ·)^* = K(w̄, ·)`. -/
-theorem fstar_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w : ℂ) :
+theorem fstar_deBrangesKernel (E : ℂ → ℂ) (w : ℂ) :
     fstar (deBrangesKernel E w) = deBrangesKernel E (conj w) := by
-  sorry
+  funext z
+  show conj (deBrangesKernel E w (conj z)) = _
+  rw [conj_deBrangesKernel E]
+  by_cases h : w = z
+  · subst h; rfl
+  · have h1 : w ≠ conj (conj z) := by simpa using h
+    have h2 : z ≠ conj (conj w) := by simpa using (Ne.symm h)
+    rw [deBrangesKernel_of_ne E h1, deBrangesKernel_of_ne E h2]
+    simp only [kernelNum, fstar, Complex.conj_conj]
+    have : w - z ≠ 0 := sub_ne_zero.mpr h
+    have : z - w ≠ 0 := sub_ne_zero.mpr (Ne.symm h)
+    have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+    field_simp
+    ring
 
 /-- `K(w, w) = (|E(w)|² - |E(w̄)|²) / (4π Im w)` for nonreal `w`. -/
 theorem deBrangesKernel_diag (E : ℂ → ℂ) {w : ℂ} (hw : w.im ≠ 0) :
     deBrangesKernel E w w =
       (((‖E w‖ ^ 2 - ‖E (conj w)‖ ^ 2) / (4 * Real.pi * w.im) : ℝ) : ℂ) := by
-  sorry
+  have hne : w ≠ conj w := by
+    intro h
+    apply hw
+    have := congrArg Complex.im h
+    simp only [Complex.conj_im] at this
+    linarith
+  rw [deBrangesKernel_of_ne E hne]
+  simp only [kernelNum]
+  rw [Complex.mul_conj, Complex.mul_conj, Complex.normSq_eq_norm_sq, Complex.normSq_eq_norm_sq,
+    norm_fstar, Complex.sub_conj]
+  have him : (w.im : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hw
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  push_cast
+  field_simp
+  ring
 
 /-- `K(x, x) = φ'(x) |E(x)|² / π` for real `x`. -/
 theorem deBrangesKernel_diag_real (E : ℂ → ℂ) (x : ℝ) :
     deBrangesKernel E x x = ((phaseDeriv E x * ‖E x‖ ^ 2 / Real.pi : ℝ) : ℂ) := by
-  sorry
+  have hx : (x : ℂ) = conj (x : ℂ) := (Complex.conj_ofReal x).symm
+  unfold deBrangesKernel
+  rw [ite_eq_left hx, deriv_fstar_ofReal, fstar_ofReal, Complex.conj_conj]
+  unfold phaseDeriv
+  set u := deriv E (x : ℂ)
+  set e := E (x : ℂ)
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have key : (u / e).im * ‖e‖ ^ 2 = u.im * e.re - u.re * e.im := by
+    by_cases he : e = 0
+    · simp [he]
+    · rw [Complex.div_im, ← Complex.normSq_eq_norm_sq]
+      have : Complex.normSq e ≠ 0 := by simpa using he
+      field_simp
+  have h2 : u * conj e - conj u * e = 2 * I * ((u.im * e.re - u.re * e.im : ℝ) : ℂ) := by
+    apply Complex.ext <;> simp
+    ring
+  rw [h2, show -(u / e).im * ‖e‖ ^ 2 / Real.pi = -((u / e).im * ‖e‖ ^ 2) / Real.pi by ring, key]
+  push_cast
+  field_simp
+  ring_nf
+  rw [Complex.I_sq]
+  ring
 
 /-- `K(w, w) ≥ 0` for `E ∈ \overline{HB}` (real, nonnegative). -/
 theorem deBrangesKernel_diag_nonneg {E : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0) (w : ℂ) :
     (deBrangesKernel E w w).im = 0 ∧ 0 ≤ (deBrangesKernel E w w).re := by
-  sorry
+  rcases lt_trichotomy w.im 0 with h | h | h
+  · rw [deBrangesKernel_diag E h.ne]
+    refine ⟨Complex.ofReal_im _, ?_⟩
+    rw [Complex.ofReal_re]
+    have h1 := hE.2.2 (conj w) (by simpa using h)
+    rw [Complex.conj_conj] at h1
+    apply div_nonneg_of_nonpos
+    · nlinarith [norm_nonneg (E w), norm_nonneg (E (conj w))]
+    · nlinarith [Real.pi_pos]
+  · obtain ⟨x, rfl⟩ : ∃ x : ℝ, (x : ℂ) = w := ⟨w.re, Complex.ext (by simp) (by simp [h])⟩
+    rw [deBrangesKernel_diag_real]
+    refine ⟨Complex.ofReal_im _, ?_⟩
+    rw [Complex.ofReal_re]
+    have := hE.phaseDeriv_nonneg (h0 x)
+    exact div_nonneg (mul_nonneg this (sq_nonneg _)) Real.pi_pos.le
+  · rw [deBrangesKernel_diag E h.ne']
+    refine ⟨Complex.ofReal_im _, ?_⟩
+    rw [Complex.ofReal_re]
+    have h1 := hE.2.2 w h
+    apply div_nonneg
+    · nlinarith [norm_nonneg (E w), norm_nonneg (E (conj w))]
+    · positivity
 
 /-- **Local bound**: `K` is bounded on `{‖w‖ ≤ ρ} × {‖z‖ ≤ ρ}` (mean value inequality for the
 `dslope`; no joint continuity needed). -/
@@ -102,7 +226,20 @@ theorem integrand_eq {E : ℂ → ℂ} (w : ℂ) (f : ℂ → ℂ) {t : ℝ} (hE
     f t * conj (deBrangesKernel E w t) / ((‖E t‖ ^ 2 : ℝ) : ℂ) =
       (-I / (2 * Real.pi)) *
         ((f t / E t * E w - conj (fstar f t / E t) * fstar E w) / ((t : ℂ) - w)) := by
-  sorry
+  have hne : (t : ℂ) ≠ conj w := by
+    intro h
+    apply ht
+    have := congrArg conj h
+    rwa [Complex.conj_ofReal, Complex.conj_conj] at this
+  have hc : conj (E t) ≠ 0 := (map_ne_zero _).mpr hEt
+  have htw : (t : ℂ) - w ≠ 0 := sub_ne_zero.mpr ht
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have hn : ((‖E t‖ ^ 2 : ℝ) : ℂ) = E t * conj (E t) := by
+    rw [Complex.mul_conj, Complex.normSq_eq_norm_sq]
+  rw [deBrangesKernel_of_ne E hne, hn]
+  simp only [kernelNum, fstar, map_mul, map_sub, map_div₀, Complex.conj_conj, Complex.conj_I,
+    Complex.conj_ofReal, map_ofNat]
+  field_simp
 
 /-- Decomposition of the integrand at a real point `x` (`t ≠ x`), with `A = f/E`, `g = f^*/E`,
 `ψ(t) = i/(t - x + i)`:
@@ -115,7 +252,29 @@ theorem integrand_eq_real {E : ℂ → ℂ} (f : ℂ → ℂ) {x t : ℝ} (hEx :
           - fstar E x *
             conj ((fstar f t / E t - fstar f x / E x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x))
           + f x * (2 * I / ((((t - x) ^ 2 + 1 : ℝ)) : ℂ))) := by
-  sorry
+  have htx : (t : ℂ) ≠ (x : ℂ) := by exact_mod_cast ht
+  rw [integrand_eq (x : ℂ) f hEt htx]
+  have hEtc : conj (E t) ≠ 0 := (map_ne_zero _).mpr hEt
+  have hExc : conj (E x) ≠ 0 := (map_ne_zero _).mpr hEx
+  have hs : (t : ℂ) - x ≠ 0 := sub_ne_zero.mpr htx
+  have hψ : (t : ℂ) - x + I ≠ 0 := by
+    intro h; have := congrArg Complex.im h; simp at this
+  have hψ' : (t : ℂ) - x - I ≠ 0 := by
+    intro h; have := congrArg Complex.im h; simp at this
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have hq : ((((t - x) ^ 2 + 1 : ℝ)) : ℂ) = ((t : ℂ) - x + I) * ((t : ℂ) - x - I) := by
+    push_cast
+    ring_nf
+    rw [Complex.I_sq]
+    ring
+  have hc : conj ((t : ℂ) - x + I) = (t : ℂ) - x - I := by
+    simp [map_add, map_sub, Complex.conj_ofReal, Complex.conj_I]
+    ring
+  rw [hq]
+  simp only [fstar, map_div₀, map_mul, map_sub, Complex.conj_conj, Complex.conj_ofReal,
+    Complex.conj_I, hc]
+  field_simp
+  ring
 
 /-! ## 2.2 `K(w, ·) ∈ H(E)` -/
 
@@ -133,7 +292,11 @@ theorem kernel_div_E {E : ℂ → ℂ} (w z : ℂ) (hz : E z ≠ 0) (hne : z ≠
     deBrangesKernel E w z / E z =
       (I / (2 * Real.pi)) * (conj (E w) - (fstar E z / E z) * conj (fstar E w)) /
         (z - conj w) := by
-  sorry
+  rw [deBrangesKernel_of_ne E hne]
+  simp only [kernelNum]
+  have : z - conj w ≠ 0 := sub_ne_zero.mpr hne
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  field_simp
 
 /-- `K(w, ·)/E ∈ H²(ℂ₊)` for `E ∈ \overline{HB}`, if `w ∈ ℂ₊` or `E(w̄) ≠ 0` (so that `K_w/E` is
 bounded near `w̄`; far away `|K_w/E| ≤ (|E(w)| + |E^*(w)|)/(2π|z - w̄|)` since `|Θ| ≤ 1`). -/
