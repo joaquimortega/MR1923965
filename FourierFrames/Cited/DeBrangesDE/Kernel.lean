@@ -217,7 +217,53 @@ theorem deBrangesKernel_diag_nonneg {E : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x 
 `dslope`; no joint continuity needed). -/
 theorem exists_bound_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (ρ : ℝ) :
     ∃ M : ℝ, ∀ w z : ℂ, ‖w‖ ≤ ρ → ‖z‖ ≤ ρ → ‖deBrangesKernel E w z‖ ≤ M := by
-  sorry
+  set B := Metric.closedBall (0 : ℂ) ρ with hBdef
+  have hBc : IsCompact B := isCompact_closedBall 0 ρ
+  obtain ⟨M0, hM0⟩ := hBc.exists_bound_of_continuousOn hE.continuous.continuousOn
+  have hdc : Continuous (deriv E) := hE.contDiff.continuous_deriv le_rfl
+  obtain ⟨M1, hM1⟩ := hBc.exists_bound_of_continuousOn hdc.continuousOn
+  have hconjB : ∀ u ∈ B, conj u ∈ B := fun u hu ↦ by
+    simpa [hBdef, mem_closedBall_zero_iff] using hu
+  refine ⟨‖I / (2 * (Real.pi : ℂ))‖ * (2 * (M1 * M0)), fun w z hw hz ↦ ?_⟩
+  have hwB : w ∈ B := mem_closedBall_zero_iff.mpr hw
+  have hzB : z ∈ B := mem_closedBall_zero_iff.mpr hz
+  have hcwB : conj w ∈ B := hconjB w hwB
+  have hNd : ∀ u, DifferentiableAt ℂ (kernelNum E w) u := fun u ↦
+    ((hE u).mul_const _).sub (((Differentiable.fstar hE) u).mul_const _)
+  have hderiv : ∀ u ∈ B, ‖deriv (kernelNum E w) u‖ ≤ 2 * (M1 * M0) := by
+    intro u hu
+    have e : deriv (kernelNum E w) u =
+        deriv E u * conj (E w) - conj (deriv E (conj u)) * conj (fstar E w) := by
+      show deriv (fun z ↦ E z * conj (E w) - fstar E z * conj (fstar E w)) u = _
+      rw [deriv_fun_sub ((hE u).mul_const _) (((Differentiable.fstar hE) u).mul_const _),
+        deriv_mul_const (hE u), deriv_mul_const ((Differentiable.fstar hE) u), deriv_fstar]
+    rw [e]
+    have h1 := hM1 u hu
+    have h2 := hM1 (conj u) (hconjB u hu)
+    have h3 := hM0 w hwB
+    have h4 := hM0 (conj w) hcwB
+    calc ‖deriv E u * conj (E w) - conj (deriv E (conj u)) * conj (fstar E w)‖
+        ≤ ‖deriv E u * conj (E w)‖ + ‖conj (deriv E (conj u)) * conj (fstar E w)‖ :=
+          norm_sub_le _ _
+      _ = ‖deriv E u‖ * ‖E w‖ + ‖deriv E (conj u)‖ * ‖E (conj w)‖ := by
+          rw [norm_mul, norm_mul, Complex.norm_conj, Complex.norm_conj, Complex.norm_conj,
+            norm_fstar]
+      _ ≤ M1 * M0 + M1 * M0 := by
+          gcongr
+          · exact (norm_nonneg _).trans h1
+          · exact (norm_nonneg _).trans h2
+      _ = 2 * (M1 * M0) := by ring
+  rw [deBrangesKernel_eq_dslope hE w]
+  simp only
+  rw [norm_mul]
+  gcongr
+  by_cases hzw : z = conj w
+  · rw [hzw, dslope_same]
+    exact hderiv _ hcwB
+  · rw [dslope_of_ne _ hzw, slope_def_field, norm_div,
+      div_le_iff₀ (norm_pos_iff.mpr (sub_ne_zero.mpr hzw))]
+    exact (convex_closedBall 0 ρ).norm_image_sub_le_of_norm_deriv_le (fun u _ ↦ hNd u) hderiv
+      hcwB hzB
 
 /-- The integrand of `⟨f, K(w, ·)⟩_E` on `ℝ` (`t ≠ w`):
 `(-i/2π) [ (f/E)(t) E(w) - conj ((f^*/E)(t)) E^*(w) ] / (t - w)`. -/
@@ -285,7 +331,52 @@ theorem isH2Upper_of_decay {G : ℂ → ℂ} (hG : DifferentiableOn ℂ G {z : �
     (A r M : ℝ) (hr : 0 < r)
     (hfar : ∀ z : ℂ, 0 < z.im → r ≤ ‖z - c‖ → ‖G z‖ ≤ A / ‖z - c‖)
     (hnear : ∀ z : ℂ, 0 < z.im → ‖z - c‖ < r → ‖G z‖ ≤ M) : IsH2Upper G := by
-  sorry
+  set a := c.re with ha
+  set b : ℝ → ℝ := fun x ↦ (Icc (a - r) (a + r)).indicator (fun _ ↦ M ^ 2) x +
+    2 * A ^ 2 * ((x - a) ^ 2 + r ^ 2)⁻¹ with hb
+  have hbI : Integrable b :=
+    ((integrableOn_const (by simp)).integrable_indicator measurableSet_Icc).add
+      ((integrable_inv_sq_add_sq a hr.ne').const_mul _)
+  have hb0 : ∀ x, 0 ≤ b x := fun x ↦
+    add_nonneg (indicator_nonneg (fun _ _ ↦ sq_nonneg M) x) (by positivity)
+  refine ⟨hG, (ENNReal.ofReal (∫ x, b x)).toNNReal, fun y hy ↦ ?_⟩
+  rw [ENNReal.coe_toNNReal ENNReal.ofReal_ne_top,
+    ofReal_integral_eq_lintegral_ofReal hbI (Eventually.of_forall hb0)]
+  refine lintegral_mono fun x ↦ ?_
+  rw [enorm_sq_eq_ofReal]
+  apply ENNReal.ofReal_le_ofReal
+  have hz : 0 < ((x : ℂ) + (y : ℂ) * I).im := by simpa using hy
+  have hzre : ((x : ℂ) + (y : ℂ) * I).re = x := by simp
+  by_cases hnr : ‖(x : ℂ) + (y : ℂ) * I - c‖ < r
+  · have hx : x ∈ Icc (a - r) (a + r) := by
+      have h1 := Complex.abs_re_le_norm ((x : ℂ) + (y : ℂ) * I - c)
+      rw [Complex.sub_re, hzre] at h1
+      have := abs_le.mp (h1.trans hnr.le)
+      constructor <;> linarith [this.1, this.2]
+    have h1 := hnear _ hz hnr
+    have h2 : ‖G ((x : ℂ) + (y : ℂ) * I)‖ ^ 2 ≤ M ^ 2 :=
+      pow_le_pow_left₀ (norm_nonneg _) h1 2
+    simp only [hb, indicator_of_mem hx]
+    have : 0 ≤ 2 * A ^ 2 * ((x - a) ^ 2 + r ^ 2)⁻¹ := by positivity
+    linarith
+  · rw [not_lt] at hnr
+    have hd : 0 < ‖(x : ℂ) + (y : ℂ) * I - c‖ := hr.trans_le hnr
+    have h1 := hfar _ hz hnr
+    have h2 : ‖G ((x : ℂ) + (y : ℂ) * I)‖ ^ 2 ≤ A ^ 2 * (‖(x : ℂ) + (y : ℂ) * I - c‖ ^ 2)⁻¹ := by
+      calc ‖G ((x : ℂ) + (y : ℂ) * I)‖ ^ 2 ≤ (A / ‖(x : ℂ) + (y : ℂ) * I - c‖) ^ 2 :=
+            pow_le_pow_left₀ (norm_nonneg _) h1 2
+        _ = _ := by rw [div_pow, div_eq_mul_inv]
+    have h3 := inv_norm_sq_le_of_le hr hnr
+    rw [hzre] at h3
+    have h4 : A ^ 2 * (‖(x : ℂ) + (y : ℂ) * I - c‖ ^ 2)⁻¹ ≤
+        2 * A ^ 2 * ((x - a) ^ 2 + r ^ 2)⁻¹ := by
+      calc A ^ 2 * (‖(x : ℂ) + (y : ℂ) * I - c‖ ^ 2)⁻¹
+          ≤ A ^ 2 * (2 * ((x - c.re) ^ 2 + r ^ 2)⁻¹) := by gcongr
+        _ = _ := by ring
+    have h5 : 0 ≤ (Icc (a - r) (a + r)).indicator (fun _ ↦ M ^ 2) x :=
+      indicator_nonneg (fun _ _ ↦ sq_nonneg M) x
+    simp only [hb]
+    linarith
 
 /-- `K(w, z) / E(z) = (i/2π)(conj E(w) - Θ(z) conj E^*(w))/(z - w̄)`, `Θ = E^*/E`. -/
 theorem kernel_div_E {E : ℂ → ℂ} (w z : ℂ) (hz : E z ≠ 0) (hne : z ≠ conj w) :
@@ -302,36 +393,142 @@ theorem kernel_div_E {E : ℂ → ℂ} (w z : ℂ) (hz : E z ≠ 0) (hne : z ≠
 bounded near `w̄`; far away `|K_w/E| ≤ (|E(w)| + |E^*(w)|)/(2π|z - w̄|)` since `|Θ| ≤ 1`). -/
 theorem isH2Upper_kernel_div {E : ℂ → ℂ} (hE : IsHB E) {w : ℂ}
     (hw : 0 < w.im ∨ E (conj w) ≠ 0) : IsH2Upper (fun z ↦ deBrangesKernel E w z / E z) := by
-  sorry
+  set c := conj w with hcdef
+  set A := (‖E w‖ + ‖fstar E w‖) / (2 * Real.pi) with hA
+  have hK := differentiable_deBrangesKernel hE.1 w
+  have hG : DifferentiableOn ℂ (fun z ↦ deBrangesKernel E w z / E z) {z : ℂ | 0 < z.im} :=
+    fun z hz ↦ ((hK z).div (hE.1 z) (hE.2.1 z hz)).differentiableWithinAt
+  have hnI : ‖(I / (2 * (Real.pi : ℂ)))‖ = 1 / (2 * Real.pi) := by
+    rw [norm_div, Complex.norm_I, norm_mul, Complex.norm_real, Real.norm_of_nonneg Real.pi_pos.le]
+    norm_num
+  have hfar : ∀ z : ℂ, 0 < z.im → z ≠ c → ‖deBrangesKernel E w z / E z‖ ≤ A / ‖z - c‖ := by
+    intro z hz hzc
+    have hEz := hE.2.1 z hz
+    rw [kernel_div_E w z hEz hzc]
+    have hΘ : ‖fstar E z / E z‖ ≤ 1 := by
+      rw [norm_div, norm_fstar, div_le_one (norm_pos_iff.mpr hEz)]
+      exact hE.2.2 z hz
+    have h1 : ‖conj (E w) - fstar E z / E z * conj (fstar E w)‖ ≤ ‖E w‖ + ‖fstar E w‖ := by
+      calc ‖conj (E w) - fstar E z / E z * conj (fstar E w)‖
+          ≤ ‖conj (E w)‖ + ‖fstar E z / E z * conj (fstar E w)‖ := norm_sub_le _ _
+        _ = ‖E w‖ + ‖fstar E z / E z‖ * ‖fstar E w‖ := by
+            rw [Complex.norm_conj, norm_mul, Complex.norm_conj]
+        _ ≤ ‖E w‖ + 1 * ‖fstar E w‖ := by gcongr
+        _ = ‖E w‖ + ‖fstar E w‖ := by ring
+    rw [norm_div, norm_mul, hnI, hA]
+    gcongr
+    calc 1 / (2 * Real.pi) * ‖conj (E w) - fstar E z / E z * conj (fstar E w)‖
+        ≤ 1 / (2 * Real.pi) * (‖E w‖ + ‖fstar E w‖) := by gcongr
+      _ = (‖E w‖ + ‖fstar E w‖) / (2 * Real.pi) := by ring
+  rcases hw with hw | hw
+  · refine isH2Upper_of_decay hG c A w.im 0 hw (fun z hz hzr ↦ hfar z hz ?_) ?_
+    · rintro rfl
+      simp at hzr
+      linarith
+    · intro z hz hzr
+      exfalso
+      have h1 := Complex.im_le_norm (z - c)
+      simp only [Complex.sub_im, hcdef, Complex.conj_im] at h1
+      linarith
+  · have hEc : ∀ᶠ u in 𝓝 c, E u ≠ 0 := hE.1.continuous.continuousAt.eventually_ne hw
+    obtain ⟨ε, hε, hεE⟩ := Metric.eventually_nhds_iff.mp hEc
+    have hr : 0 < ε / 2 := by positivity
+    have hsub : Metric.closedBall c (ε / 2) ⊆ {u | E u ≠ 0} := fun u hu ↦
+      hεE (lt_of_le_of_lt (Metric.mem_closedBall.mp hu) (by linarith))
+    have hcont : ContinuousOn (fun z ↦ deBrangesKernel E w z / E z) (Metric.closedBall c (ε / 2)) :=
+      hK.continuous.continuousOn.div hE.1.continuous.continuousOn fun u hu ↦ hsub hu
+    obtain ⟨M, hM⟩ := (isCompact_closedBall c (ε / 2)).exists_bound_of_continuousOn hcont
+    refine isH2Upper_of_decay hG c A (ε / 2) M hr (fun z hz hzr ↦ hfar z hz ?_) ?_
+    · rintro rfl
+      simp at hzr
+      linarith
+    · intro z _ hzr
+      exact hM z (Metric.mem_closedBall.mpr (by rw [dist_eq_norm]; exact hzr.le))
 
 /-- `K(w, ·) ∈ H(E)` for `E ∈ \overline{HB}` and `w` nonreal or `E(w) ≠ 0` (uses
 `K_w^* = K_{w̄}`). -/
 theorem memHE_deBrangesKernel_of_isHB {E : ℂ → ℂ} (hE : IsHB E) {w : ℂ}
     (hw : w.im ≠ 0 ∨ E w ≠ 0) : MemHE E (deBrangesKernel E w) := by
-  sorry
+  refine ⟨differentiable_deBrangesKernel hE.1 w, isH2Upper_kernel_div hE ?_, ?_⟩
+  · rcases lt_trichotomy w.im 0 with h' | h' | h'
+    · right
+      exact hE.2.1 (conj w) (by simpa using h')
+    · right
+      have hw' : conj w = w := Complex.conj_eq_iff_im.mpr h'
+      rw [hw']
+      rcases hw with h | h
+      · exact absurd h' h
+      · exact h
+    · left
+      exact h'
+  · rw [fstar_deBrangesKernel E w]
+    apply isH2Upper_kernel_div hE
+    rw [Complex.conj_conj]
+    rcases lt_trichotomy w.im 0 with h' | h' | h'
+    · left
+      simpa using h'
+    · right
+      rcases hw with h | h
+      · exact absurd h' h
+      · exact h
+    · right
+      exact hE.2.1 w h'
 
 /-- **Theorem D, part 1**: `K(w, ·) ∈ H(E)` (`E ∈ \overline{HB}` without real zeros). -/
 theorem memHE_deBrangesKernel {E : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0) (w : ℂ) :
     MemHE E (deBrangesKernel E w) := by
-  sorry
+  apply memHE_deBrangesKernel_of_isHB hE
+  by_cases h : w.im = 0
+  · right
+    have hw : ((w.re : ℝ) : ℂ) = w := Complex.ext (by simp) (by simp [h])
+    rw [← hw]
+    exact h0 _
+  · left
+    exact h
 
 /-! ## 2.3 The reproducing formula -/
 
 /-- `f ∈ H(E)` gives `f/E` and `f^*/E` in `IsH2Cont` (`E` without real zeros). -/
 theorem isH2Cont_of_memHE {E f : ℂ → ℂ} (hE : Differentiable ℂ E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) : IsH2Cont (fun z ↦ f z / E z) ∧ IsH2Cont (fun z ↦ fstar f z / E z) := by
-  sorry
+  refine ⟨⟨hf.2.1, fun t ↦ ?_⟩, ⟨hf.2.2, fun t ↦ ?_⟩⟩
+  · exact (hf.1 t).continuousAt.div (hE t).continuousAt (h0 t)
+  · exact ((Differentiable.fstar hf.1) t).continuousAt.div (hE t).continuousAt (h0 t)
 
 /-- `t ↦ f(t)/E(t)` is in `L²(ℝ)` and `‖f‖²_E < ∞`. -/
 theorem MemHE.heNormSq_lt_top {E f : ℂ → ℂ} (hE : Differentiable ℂ E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) : heNormSq E f < ⊤ := by
-  sorry
+  exact (isH2Cont_of_memHE hE h0 hf).1.lintegral_real_lt_top
 
 /-- For `f, g ∈ H(E)` the integrand of `heInner` is integrable (AM–GM). -/
 theorem integrable_heInner {E f g : ℂ → ℂ} (hE : Differentiable ℂ E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) (hg : MemHE E g) :
     Integrable fun t : ℝ ↦ f t * conj (g t) / ((‖E t‖ ^ 2 : ℝ) : ℂ) := by
-  sorry
+  have hA := (isH2Cont_of_memHE hE h0 hf).1
+  have hB := (isH2Cont_of_memHE hE h0 hg).1
+  have hA2 : Integrable fun t : ℝ ↦ ‖f t / E t‖ ^ 2 :=
+    (memLp_two_iff_integrable_sq_norm hA.memLp_real.aestronglyMeasurable).1 hA.memLp_real
+  have hB2 : Integrable fun t : ℝ ↦ ‖g t / E t‖ ^ 2 :=
+    (memLp_two_iff_integrable_sq_norm hB.memLp_real.aestronglyMeasurable).1 hB.memLp_real
+  have hE' : ∀ t : ℝ, ((‖E t‖ ^ 2 : ℝ) : ℂ) ≠ 0 := fun t ↦ by
+    have : 0 < ‖E t‖ := norm_pos_iff.mpr (h0 t)
+    exact_mod_cast (by positivity : (0 : ℝ) < ‖E t‖ ^ 2).ne'
+  have hcont : Continuous fun t : ℝ ↦ f t * conj (g t) / ((‖E t‖ ^ 2 : ℝ) : ℂ) := by
+    have h1 : Continuous fun t : ℝ ↦ f t := hf.1.continuous.comp Complex.continuous_ofReal
+    have h2 : Continuous fun t : ℝ ↦ g t := hg.1.continuous.comp Complex.continuous_ofReal
+    have h3 : Continuous fun t : ℝ ↦ E t := hE.continuous.comp Complex.continuous_ofReal
+    exact (h1.mul (Complex.continuous_conj.comp h2)).div
+      (Complex.continuous_ofReal.comp (h3.norm.pow 2)) hE'
+  refine ((hA2.add hB2).div_const 2).mono' hcont.aestronglyMeasurable
+    (Eventually.of_forall fun t ↦ ?_)
+  have hEt : 0 < ‖E t‖ := norm_pos_iff.mpr (h0 t)
+  have e : ‖f t * conj (g t) / ((‖E t‖ ^ 2 : ℝ) : ℂ)‖ = ‖f t / E t‖ * ‖g t / E t‖ := by
+    rw [norm_div, norm_mul, Complex.norm_conj, norm_div, norm_div, Complex.norm_real,
+      Real.norm_of_nonneg (by positivity)]
+    field_simp
+  show _ ≤ (‖f t / E t‖ ^ 2 + ‖g t / E t‖ ^ 2) / 2
+  rw [e]
+  nlinarith [sq_nonneg (‖f t / E t‖ - ‖g t / E t‖)]
 
 /-- **Reproducing formula at `w ∈ ℂ₊`, general form (for P4)**: `E ∈ \overline{HB}` may have real
 zeros; `A`, `B` are `IsH2Cont` functions agreeing with `f/E`, `f^*/E` on `ℂ₊` and a.e. on `ℝ`
