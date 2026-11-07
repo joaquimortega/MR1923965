@@ -1,4 +1,4 @@
-import FourierFrames.Cited.DeBrangesDE
+import FourierFrames.Cited.DeBrangesFC.Analytic
 
 /-!
 # P4 — de Branges' Theorems C and F
@@ -35,76 +35,7 @@ def UHP : Set ℂ := {z : ℂ | 0 < z.im}
 /-- `Θ = E^*/E`, the meromorphic inner function attached to `E`. -/
 def thetaFn (E : ℂ → ℂ) (z : ℂ) : ℂ := fstar E z / E z
 
-/-! ## Part C, general complex analysis -/
-
-/-- Identity theorem in the form used twice: entire functions that agree on `ℂ₊` are equal. -/
-theorem eq_of_eqOn_upper {f g : ℂ → ℂ} (hf : Differentiable ℂ f) (hg : Differentiable ℂ g)
-    (h : ∀ z : ℂ, 0 < z.im → f z = g z) : f = g := by
-  sorry
-
-/-- C.2, induction step: multiplying by `(z - ζ̄)/(z - ζ)` lowers the order at the nonreal
-point `ζ` by one. -/
-theorem analyticOrderAt_eq_of_mul_div {F G : ℂ → ℂ} (hF : Differentiable ℂ F)
-    (hG : Differentiable ℂ G) {ζ : ℂ} (hζ : ζ.im ≠ 0) {n : ℕ}
-    (hn : analyticOrderAt F ζ = (n + 1 : ℕ))
-    (hFG : ∀ z : ℂ, z ≠ ζ → G z = F z * (z - conj ζ) / (z - ζ)) :
-    analyticOrderAt G ζ = n := by
-  sorry
-
-/-- Fatou's lemma on a horizontal line `Im z = y > 0`. -/
-theorem lintegral_line_le_liminf {F : ℕ → ℂ → ℂ} {G : ℂ → ℂ}
-    (hF : ∀ n, DifferentiableOn ℂ (F n) {z : ℂ | 0 < z.im}) {y : ℝ} (hy : 0 < y)
-    (hlim : ∀ x : ℝ, Tendsto (fun n ↦ F n ((x : ℂ) + (y : ℂ) * I)) atTop
-      (𝓝 (G ((x : ℂ) + (y : ℂ) * I)))) :
-    ∫⁻ x : ℝ, ‖G ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤
-      liminf (fun n ↦ ∫⁻ x : ℝ, ‖F n ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2) atTop := by
-  sorry
-
-/-! ## RZ. Real zeros of `E` (R9 F5) -/
-
-/-- `E t ≠ 0` for a.e. real `t` (`countable_real_zeros`; `E ≠ 0` on `ℂ₊`). -/
-theorem IsHB.ae_ne_zero {E : ℂ → ℂ} (hE : IsHB E) : ∀ᵐ t : ℝ, E t ≠ 0 := by
-  sorry
-
-/-- `f/E ∈ H²` forces `f` to vanish at each real zero of `E` at least to the same order
-(order version of `not_isH2Upper_div_of_zero`). -/
-theorem analyticOrderAt_le_of_isH2Upper_div {E f : ℂ → ℂ} (hE : Differentiable ℂ E)
-    (hf : Differentiable ℂ f) (hE0 : ∀ z : ℂ, 0 < z.im → E z ≠ 0)
-    (h : IsH2Upper (fun z ↦ f z / E z)) (x₀ : ℝ) :
-    analyticOrderAt E (x₀ : ℂ) ≤ analyticOrderAt f (x₀ : ℂ) := by
-  sorry
-
-/-- The meromorphic normal form of `f/E` on `ℂ`: it equals `f/E` where `E ≠ 0`, and is the
-removable extension at the zeros of `E` where `f` vanishes to at least the same order. -/
-def divExt (E f : ℂ → ℂ) : ℂ → ℂ :=
-  toMeromorphicNFOn (fun z ↦ f z / E z) Set.univ
-
-theorem divExt_eq_of_ne {E f : ℂ → ℂ} (hE : Differentiable ℂ E) (hf : Differentiable ℂ f)
-    {z : ℂ} (hz : E z ≠ 0) : divExt E f z = f z / E z := by
-  sorry
-
-theorem analyticAt_divExt {E f : ℂ → ℂ} (hE : Differentiable ℂ E) (hf : Differentiable ℂ f)
-    {z : ℂ} (hle : analyticOrderAt E z ≤ analyticOrderAt f z) :
-    AnalyticAt ℂ (divExt E f) z := by
-  sorry
-
-/-- The extension of `f/E` is `IsH2Cont` when `f/E ∈ H²`. -/
-theorem isH2Cont_divExt {E f : ℂ → ℂ} (hE : IsHB E) (hf : Differentiable ℂ f)
-    (h : IsH2Upper (fun z ↦ f z / E z)) : IsH2Cont (divExt E f) := by
-  sorry
-
-/-- R9 F5: the form in which P3's `heInner_kernel_upper_of_isH2Cont` is called. -/
-theorem exists_isH2Cont_of_memHE {E f : ℂ → ℂ} (hE : IsHB E) (hf : MemHE E f) :
-    ∃ A B : ℂ → ℂ, IsH2Cont A ∧ IsH2Cont B ∧
-      (∀ z : ℂ, 0 < z.im → A z = f z / E z) ∧
-      (∀ z : ℂ, 0 < z.im → B z = fstar f z / E z) ∧
-      (∀ x : ℝ, E x ≠ 0 → A x = f x / E x ∧ B x = fstar f x / E x) := by
-  sorry
-
-/-- `‖f‖²_E` is the boundary `L²` norm of the extension `divExt E f`. -/
-theorem heNormSq_eq_lintegral_divExt {E f : ℂ → ℂ} (hE : IsHB E) (hf : Differentiable ℂ f) :
-    heNormSq E f = ∫⁻ t : ℝ, ‖divExt E f t‖ₑ ^ 2 := by
-  sorry
+/-! §1.1–1.2 (general helpers, real zeros of `E`, `divExt`) are in `DeBrangesFC/Analytic.lean`. -/
 
 /-! ## HE. `H(E)` for `E ∈ \overline{HB}` with real zeros
 
@@ -430,6 +361,8 @@ theorem division_lemma (hE : IsStrictHB E) (hE0 : ∀ x : ℝ, E x ≠ 0) {a θ 
     (hz : ∀ z ∈ UHP, thetaFn E z = 0 → analyticOrderAt (thetaFn E) z ≤ analyticOrderAt Ξ z)
     (hdec : ∀ a' : ℝ, a' < a → ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im → ‖Ξ z‖ ≤ C * Real.exp (-(a' * z.im))) :
     ∀ z ∈ UHP, ‖Ξ z‖ ≤ ‖thetaFn E z‖ := by
+  -- FALSE: see reviews/R10_TheoremC.md (needs 0 ≤ a, ‖B‖ ≤ 1 on ℂ₊ and the Blaschke-division
+  -- clause as hypotheses); counterexample E = exp(-iz/2), Θ = e^{iz}, a = θ = 0, B = Θ, Ξ ≡ 1/2.
   sorry
 
 end PartF
