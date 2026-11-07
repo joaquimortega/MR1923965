@@ -266,14 +266,42 @@ theorem tendsto_gauss_bound {a κ : ℝ} (ha : 0 ≤ a) (hκ : a < κ) (C : ℝ)
     Tendsto (fun η : ℝ ↦
       2 * |C| * Real.sqrt (Real.pi / η) * Real.exp ((a ^ 2 - κ ^ 2) / (4 * η)))
       (𝓝[>] 0) (𝓝 0) := by
-  sorry
+  have hc : 0 < (κ ^ 2 - a ^ 2) / 4 := by nlinarith
+  have h1 := ((tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero (1 / 2) _ hc).comp
+    (tendsto_inv_nhdsGT_zero (𝕜 := ℝ))).const_mul (2 * |C| * Real.sqrt Real.pi)
+  rw [mul_zero] at h1
+  refine h1.congr' ?_
+  filter_upwards [self_mem_nhdsWithin] with η (hη : 0 < η)
+  simp only [Function.comp]
+  rw [Real.sqrt_div Real.pi_pos.le, Real.sqrt_eq_rpow, Real.sqrt_eq_rpow, Real.inv_rpow hη.le]
+  have : -((κ ^ 2 - a ^ 2) / 4) * η⁻¹ = (a ^ 2 - κ ^ 2) / (4 * η) := by
+    field_simp
+    ring
+  rw [this]
+  have hη' : η ^ (1 / 2 : ℝ) ≠ 0 := (Real.rpow_pos_of_pos hη _).ne'
+  field_simp
 
 /-! ### 3.4 `f e^{-η·²} → f` in `L²` and the a.e. limit -/
+
+theorem gauss_le_one {η : ℝ} (hη : 0 < η) (x : ℝ) : Real.exp (-η * x ^ 2) ≤ 1 := by
+  rw [Real.exp_le_one_iff]; nlinarith [sq_nonneg x]
 
 theorem memLp_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) {η : ℝ} (hη : 0 < η) :
     MemLp (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) 2 ∧
     Integrable (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) := by
-  sorry
+  have hgc : Continuous (fun x : ℝ ↦ ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) := by fun_prop
+  have hg2 : MemLp (fun x : ℝ ↦ ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) 2 := by
+    rw [memLp_two_iff_integrable_sq_norm hgc.aestronglyMeasurable]
+    have := integrable_exp_neg_mul_sq (b := 2 * η) (by positivity)
+    refine this.congr (Eventually.of_forall fun x ↦ ?_)
+    simp only [Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), ← Real.exp_nat_mul]
+    congr 1; push_cast; ring
+  refine ⟨?_, ?_⟩
+  · refine hf.of_le (hf.aestronglyMeasurable.mul hgc.aestronglyMeasurable) ?_
+    refine Eventually.of_forall fun x ↦ ?_
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    exact mul_le_of_le_one_right (norm_nonneg _) (gauss_le_one hη x)
+  · exact MemLp.integrable_mul (p := 2) (q := 2) hf hg2
 
 theorem tendsto_eLpNorm_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) :
     Tendsto (fun n : ℕ ↦ eLpNorm (fun x : ℝ ↦ f x * ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ)
