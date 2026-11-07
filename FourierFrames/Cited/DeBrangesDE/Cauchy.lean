@@ -81,6 +81,16 @@ theorem inv_norm_sq_le_of_le {z w : ℂ} {r : ℝ} (hr : 0 < r) (hzw : r ≤ ‖
 
 /-! ## 1.2 Basic facts on `IsH2Cont` -/
 
+/-- `F` is continuous at every point of the closed upper half-plane. -/
+theorem IsH2Cont.continuousAt {F : ℂ → ℂ} (hF : IsH2Cont F) {z : ℂ} (hz : 0 ≤ z.im) :
+    ContinuousAt F z := by
+  rcases hz.lt_or_eq with h | h
+  · exact (hF.1.1.differentiableAt
+      ((isOpen_lt continuous_const Complex.continuous_im).mem_nhds h)).continuousAt
+  · have hz' : ((z.re : ℝ) : ℂ) = z := Complex.ext (by simp) (by simp [← h])
+    have := hF.2 z.re
+    rwa [hz'] at this
+
 /-- `F` is continuous on the closed upper half-plane. -/
 theorem IsH2Cont.continuousOn {F : ℂ → ℂ} (hF : IsH2Cont F) :
     ContinuousOn F {z : ℂ | 0 ≤ z.im} := by
@@ -464,12 +474,120 @@ theorem norm_sub_ge_mul_norm_sub {z w c : ℂ} (hz : 0 ≤ z.im) (hc : c.im < 0)
 `|F|/|t-w| ≤ (|F|² + |t-w|⁻²)/2`). -/
 theorem IsH2Cont.integrable_div {F : ℂ → ℂ} (hF : IsH2Cont F) {w : ℂ} (hw : w.im ≠ 0) :
     Integrable fun t : ℝ ↦ F (t : ℂ) / ((t : ℂ) - w) := by
-  sorry
+  have hne : ∀ t : ℝ, (t : ℂ) - w ≠ 0 := fun t h ↦ hw (by
+    have := congrArg Complex.im h
+    simp only [Complex.sub_im, Complex.ofReal_im, Complex.zero_im, zero_sub, neg_eq_zero] at this
+    exact this)
+  have hcF : Continuous fun t : ℝ ↦ F (t : ℂ) :=
+    hF.continuousOn.comp_continuous Complex.continuous_ofReal (fun t ↦ by simp)
+  have hcont : Continuous fun t : ℝ ↦ F (t : ℂ) / ((t : ℂ) - w) :=
+    hcF.div (by fun_prop) hne
+  have hml := hF.memLp_real
+  have hF2 : Integrable fun t : ℝ ↦ ‖F (t : ℂ)‖ ^ 2 :=
+    (memLp_two_iff_integrable_sq_norm hml.aestronglyMeasurable).1 hml
+  have hI := integrable_inv_sq_add_sq w.re hw
+  refine ((hF2.add hI).div_const 2).mono' hcont.aestronglyMeasurable
+    (Eventually.of_forall fun t ↦ ?_)
+  have hn : ‖(t : ℂ) - w‖ ^ 2 = (t - w.re) ^ 2 + w.im ^ 2 := by
+    have := norm_sq_line_sub t 0 w
+    simpa using this
+  have hd : 0 < ‖(t : ℂ) - w‖ := norm_pos_iff.mpr (hne t)
+  show ‖F (t : ℂ) / ((t : ℂ) - w)‖ ≤ (‖F (t : ℂ)‖ ^ 2 + ((t - w.re) ^ 2 + w.im ^ 2)⁻¹) / 2
+  rw [norm_div, ← hn, div_eq_mul_inv, ← inv_pow]
+  nlinarith [sq_nonneg (‖F (t : ℂ)‖ - ‖(t : ℂ) - w‖⁻¹)]
 
 /-- **Cauchy formula, `w ∈ ℂ₋`**: `∫_ℝ F(t)/(t - w) dt = 0`. -/
 theorem IsH2Cont.integral_div_lower {F : ℂ → ℂ} (hF : IsH2Cont F) {w : ℂ} (hw : w.im < 0) :
     ∫ t : ℝ, F (t : ℂ) / ((t : ℂ) - w) = 0 := by
-  sorry
+  have hne : ∀ z : ℂ, 0 ≤ z.im → z - w ≠ 0 := fun z hz h ↦ by
+    have := congrArg Complex.im h
+    simp only [Complex.sub_im, Complex.zero_im] at this
+    linarith
+  have hc : ContinuousOn (fun z ↦ F z / (z - w)) {z : ℂ | 0 ≤ z.im} :=
+    hF.continuousOn.div (continuousOn_id.sub continuousOn_const) hne
+  have hd : ∀ z : ℂ, 0 < z.im → DifferentiableAt ℂ (fun z ↦ F z / (z - w)) z := fun z hz ↦
+    (hF.1.1.differentiableAt ((isOpen_lt continuous_const Complex.continuous_im).mem_nhds hz)).div
+      (differentiableAt_id.sub (differentiableAt_const _)) (hne z hz.le)
+  have := hF.integral_eq_zero_of_dominated (w₀ := w) (A := 0) hc hd (fun z _ _ ↦ by
+    rw [norm_div]; simp)
+  simpa using this
+
+/-- `Φ(w) = 0` for the regularized numerator `Φ = F - F(w) (w - c)/(· - c)`. -/
+theorem sub_mul_div_self_eq_zero (F : ℂ → ℂ) {w c : ℂ} (hwc : w - c ≠ 0) :
+    F w - F w * ((w - c) / (w - c)) = 0 := by
+  rw [div_self hwc, mul_one, sub_self]
+
+theorem IsH2Cont.continuousOn_dslope {F : ℂ → ℂ} (hF : IsH2Cont F) {w c : ℂ}
+    (hdw : DifferentiableAt ℂ F w) (hc : c.im < 0) :
+    ContinuousOn (dslope (fun z ↦ F z - F w * ((w - c) / (z - c))) w) {z : ℂ | 0 ≤ z.im} := by
+  intro z hz
+  have hzc : z - c ≠ 0 := fun h ↦ by
+    have := congrArg Complex.im h
+    simp only [Complex.sub_im, Complex.zero_im] at this
+    have hz' : (0 : ℝ) ≤ z.im := hz
+    linarith
+  by_cases hzw : z = w
+  · rw [hzw] at hzc ⊢
+    have hr : DifferentiableAt ℂ (fun z : ℂ ↦ (w - c) / (z - c)) w :=
+      DifferentiableAt.div (by fun_prop) (by fun_prop) hzc
+    have hΦ : DifferentiableAt ℂ (fun z ↦ F z - F w * ((w - c) / (z - c))) w :=
+      hdw.sub (hr.const_mul _)
+    exact (continuousAt_dslope_same.2 hΦ).continuousWithinAt
+  · have hΦ : ContinuousAt (fun z ↦ F z - F w * ((w - c) / (z - c))) z :=
+      (hF.continuousAt hz).sub (continuousAt_const.mul (continuousAt_const.div
+        (continuousAt_id.sub continuousAt_const) hzc))
+    exact ((continuousAt_dslope_of_ne hzw).2 hΦ).continuousWithinAt
+
+theorem IsH2Cont.differentiableAt_dslope {F : ℂ → ℂ} (hF : IsH2Cont F) {w c : ℂ}
+    (hc : c.im < 0) {z : ℂ} (hz : 0 < z.im) :
+    DifferentiableAt ℂ (dslope (fun z ↦ F z - F w * ((w - c) / (z - c))) w) z := by
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hΦ : DifferentiableOn ℂ (fun z ↦ F z - F w * ((w - c) / (z - c))) {z : ℂ | 0 < z.im} := by
+    intro u hu
+    have huc : u - c ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.zero_im] at this
+      have hu' : (0 : ℝ) < u.im := hu
+      linarith
+    have hr : DifferentiableAt ℂ (fun z : ℂ ↦ (w - c) / (z - c)) u :=
+      DifferentiableAt.div (by fun_prop) (by fun_prop) huc
+    exact ((hF.1.1.differentiableAt (hU.mem_nhds hu)).sub
+      (hr.const_mul _)).differentiableWithinAt
+  by_cases hzw : z = w
+  · rw [hzw] at hz ⊢
+    exact ((Complex.differentiableOn_dslope (hU.mem_nhds hz)).2 hΦ).differentiableAt
+      (hU.mem_nhds hz)
+  · exact (differentiableAt_dslope_of_ne hzw).2 (hΦ.differentiableAt (hU.mem_nhds hz))
+
+/-- Domination of the regularized function, with `A = ‖F w‖ ‖w - c‖ / κ`. -/
+theorem norm_dslope_le {F : ℂ → ℂ} {w c : ℂ} (hw : 0 ≤ w.im) (hc : c.im < 0) (z : ℂ)
+    (hz : 0 ≤ z.im) (hd : 1 ≤ ‖z - w‖) :
+    ‖dslope (fun z ↦ F z - F w * ((w - c) / (z - c))) w z‖ ≤
+      ‖F z‖ / ‖z - w‖ + (‖F w‖ * ‖w - c‖ / min (1 / 2) (-c.im / (2 * ‖w - c‖))) /
+        ‖z - w‖ ^ 2 := by
+  have hzw : z ≠ w := by
+    rintro rfl
+    rw [sub_self, norm_zero] at hd
+    linarith
+  have hwc : w - c ≠ 0 := fun h ↦ by
+    have := congrArg Complex.im h
+    simp only [Complex.sub_im, Complex.zero_im] at this
+    linarith
+  have hδ : 0 < ‖w - c‖ := norm_pos_iff.mpr hwc
+  have hκ : 0 < min (1 / 2) (-c.im / (2 * ‖w - c‖)) :=
+    lt_min (by norm_num) (div_pos (by linarith) (by positivity))
+  set κ := min (1 / 2) (-c.im / (2 * ‖w - c‖)) with hκdef
+  have hk := norm_sub_ge_mul_norm_sub hz hc hw
+  have hdpos : 0 < ‖z - w‖ := by linarith
+  rw [dslope_of_ne _ hzw, slope_def_field, sub_mul_div_self_eq_zero F hwc, sub_zero, norm_div]
+  have h1 : ‖F z - F w * ((w - c) / (z - c))‖ ≤ ‖F z‖ + ‖F w‖ * ‖w - c‖ / (κ * ‖z - w‖) := by
+    calc ‖F z - F w * ((w - c) / (z - c))‖ ≤ ‖F z‖ + ‖F w * ((w - c) / (z - c))‖ :=
+          norm_sub_le _ _
+      _ = ‖F z‖ + ‖F w‖ * ‖w - c‖ / ‖z - c‖ := by rw [norm_mul, norm_div, mul_div_assoc]
+      _ ≤ _ := by gcongr
+  calc ‖F z - F w * ((w - c) / (z - c))‖ / ‖z - w‖
+      ≤ (‖F z‖ + ‖F w‖ * ‖w - c‖ / (κ * ‖z - w‖)) / ‖z - w‖ := by gcongr
+    _ = _ := by field_simp
 
 /-- The regularized function `G = dslope (F - F(w) (w - c)/(· - c)) w` is continuous on the closed
 half-plane, holomorphic on the open one, and dominated by `|F|/|z - w| + A/|z - w|²` for
@@ -478,14 +596,17 @@ integrable on `ℝ`. -/
 theorem IsH2Cont.integrable_dslope {F : ℂ → ℂ} (hF : IsH2Cont F) {w c : ℂ}
     (hw : 0 ≤ w.im) (hdw : DifferentiableAt ℂ F w) (hc : c.im < 0) :
     Integrable fun t : ℝ ↦ dslope (fun z ↦ F z - F w * ((w - c) / (z - c))) w (t : ℂ) := by
-  sorry
+  have := hF.integrable_line_of_dominated (hF.continuousOn_dslope hdw hc) (norm_dslope_le hw hc)
+    le_rfl
+  simpa using this
 
 /-- **Regularized Cauchy formula.**  For `Im w ≥ 0` with `F` differentiable at `w`, and
 `Im c < 0`, the function `G = dslope (F - F(w) (w - c)/(· - c)) w` satisfies `∫_ℝ G = 0`. -/
 theorem IsH2Cont.integral_dslope_eq_zero {F : ℂ → ℂ} (hF : IsH2Cont F) {w c : ℂ}
     (hw : 0 ≤ w.im) (hdw : DifferentiableAt ℂ F w) (hc : c.im < 0) :
     ∫ t : ℝ, dslope (fun z ↦ F z - F w * ((w - c) / (z - c))) w (t : ℂ) = 0 := by
-  sorry
+  exact hF.integral_eq_zero_of_dominated (hF.continuousOn_dslope hdw hc)
+    (fun z hz ↦ hF.differentiableAt_dslope hc hz) (norm_dslope_le hw hc)
 
 /-- The Cauchy kernel pairing: `∫_ℝ (w - w̄)/((t - w)(t - w̄)) dt = 2πi` for `w ∈ ℂ₊`. -/
 theorem integral_cauchy_pair {w : ℂ} (hw : 0 < w.im) :
@@ -506,23 +627,81 @@ theorem integral_cauchy_pair {w : ℂ} (hw : 0 < w.im) :
   push_cast
   field_simp
 
+/-- Pointwise form of the Cauchy pair: `(w - w̄)/((t - w)(t - w̄)) = 2i Im w / ((t - Re w)² + Im w²)`. -/
+theorem cauchy_pair_eq (w : ℂ) (t : ℝ) :
+    (w - conj w) / (((t : ℂ) - w) * ((t : ℂ) - conj w)) =
+      (2 * w.im * I) * ((((t - w.re) ^ 2 + w.im ^ 2)⁻¹ : ℝ) : ℂ) := by
+  have e1 : ((t : ℂ) - w) * ((t : ℂ) - conj w) = (((t - w.re) ^ 2 + w.im ^ 2 : ℝ) : ℂ) := by
+    apply Complex.ext <;>
+      simp only [Complex.mul_re, Complex.mul_im, Complex.sub_re, Complex.sub_im,
+        Complex.ofReal_re, Complex.ofReal_im, Complex.conj_re, Complex.conj_im] <;> ring
+  rw [e1, Complex.sub_conj]
+  push_cast
+  ring
+
+theorem integrable_cauchy_pair {w : ℂ} (hw : w.im ≠ 0) :
+    Integrable fun t : ℝ ↦ (w - conj w) / (((t : ℂ) - w) * ((t : ℂ) - conj w)) := by
+  simp_rw [cauchy_pair_eq w]
+  exact ((integrable_inv_sq_add_sq w.re hw).ofReal).const_mul _
+
 /-- **Cauchy formula, `w ∈ ℂ₊`**: `∫_ℝ F(t)/(t - w) dt = 2πi F(w)`. -/
 theorem IsH2Cont.cauchy_upper {F : ℂ → ℂ} (hF : IsH2Cont F) {w : ℂ} (hw : 0 < w.im) :
     ∫ t : ℝ, F (t : ℂ) / ((t : ℂ) - w) = 2 * Real.pi * I * F w := by
-  sorry
+  have hU : IsOpen {z : ℂ | 0 < z.im} := isOpen_lt continuous_const Complex.continuous_im
+  have hdw : DifferentiableAt ℂ F w := hF.1.1.differentiableAt (hU.mem_nhds hw)
+  have hc : (conj w).im < 0 := by simpa using hw
+  have h0 := hF.integral_dslope_eq_zero hw.le hdw hc
+  have hpt : ∀ t : ℝ, dslope (fun z ↦ F z - F w * ((w - conj w) / (z - conj w))) w (t : ℂ) =
+      F (t : ℂ) / ((t : ℂ) - w) -
+        F w * ((w - conj w) / (((t : ℂ) - w) * ((t : ℂ) - conj w))) := by
+    intro t
+    have htw : (t : ℂ) - w ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.ofReal_im, Complex.zero_im] at this
+      linarith
+    have htc : (t : ℂ) - conj w ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.ofReal_im, Complex.zero_im, Complex.conj_im] at this
+      linarith
+    have hwc : w - conj w ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.zero_im, Complex.conj_im] at this
+      linarith
+    rw [dslope_of_ne _ (sub_ne_zero.mp htw), slope_def_field, sub_mul_div_self_eq_zero F hwc,
+      sub_zero]
+    field_simp
+  simp_rw [hpt] at h0
+  rw [integral_sub (hF.integrable_div hw.ne') ((integrable_cauchy_pair hw.ne').const_mul _),
+    integral_const_mul, integral_cauchy_pair hw] at h0
+  linear_combination h0
 
 /-- Integrability of the regularized integrand at a real point. -/
 theorem IsH2Cont.integrable_reg_real {F : ℂ → ℂ} (hF : IsH2Cont F) {x : ℝ}
     (hdx : DifferentiableAt ℂ F x) :
     Integrable fun t : ℝ ↦ (F (t : ℂ) - F x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) := by
-  sorry
+  have hc : ((x : ℂ) - I).im < 0 := by simp
+  have h := hF.integrable_dslope (w := (x : ℂ)) (c := (x : ℂ) - I) (by simp) hdx hc
+  refine h.congr ?_
+  filter_upwards [volume.ae_ne x] with t ht
+  have htx : (t : ℂ) ≠ (x : ℂ) := by exact_mod_cast ht
+  rw [dslope_of_ne _ htx, slope_def_field, sub_mul_div_self_eq_zero F (by simp), sub_zero]
+  congr 3
+  ring
 
 /-- **Cauchy formula at a real point** (regularized, `ψ(t) = i/(t - x + i)`, `ψ(x) = 1`):
 `∫_ℝ (F(t) - F(x) ψ(t))/(t - x) dt = 0`. -/
 theorem IsH2Cont.cauchy_real {F : ℂ → ℂ} (hF : IsH2Cont F) {x : ℝ}
     (hdx : DifferentiableAt ℂ F x) :
     ∫ t : ℝ, (F (t : ℂ) - F x * (I / ((t : ℂ) - x + I))) / ((t : ℂ) - x) = 0 := by
-  sorry
+  have hc : ((x : ℂ) - I).im < 0 := by simp
+  have h := hF.integral_dslope_eq_zero (w := (x : ℂ)) (c := (x : ℂ) - I) (by simp) hdx hc
+  rw [← h]
+  refine integral_congr_ae ?_
+  filter_upwards [volume.ae_ne x] with t ht
+  have htx : (t : ℂ) ≠ (x : ℂ) := by exact_mod_cast ht
+  rw [dslope_of_ne _ htx, slope_def_field, sub_mul_div_self_eq_zero F (by simp), sub_zero]
+  congr 3
+  ring
 
 /-- `∫_ℝ 2i/((t - x)² + 1) dt = 2πi`: the constant term of the real-point decomposition. -/
 theorem integral_two_I_div (x : ℝ) :
@@ -543,7 +722,37 @@ theorem integral_two_I_div (x : ℝ) :
 (difference of `cauchy_upper` at `w` and `integral_div_lower` at `w̄`). -/
 theorem IsH2Cont.poisson {F : ℂ → ℂ} (hF : IsH2Cont F) {w : ℂ} (hw : 0 < w.im) :
     F w = ∫ t : ℝ, ((w.im / (Real.pi * ((t - w.re) ^ 2 + w.im ^ 2)) : ℝ) : ℂ) * F (t : ℂ) := by
-  sorry
+  have hcw : (conj w).im < 0 := by simpa using hw
+  have hi1 := hF.integrable_div hw.ne'
+  have hi2 := hF.integrable_div hcw.ne
+  have hsub := integral_sub hi1 hi2
+  rw [hF.cauchy_upper hw, hF.integral_div_lower hcw, sub_zero] at hsub
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have hpt : ∀ t : ℝ, F (t : ℂ) / ((t : ℂ) - w) - F (t : ℂ) / ((t : ℂ) - conj w) =
+      (2 * Real.pi * I) *
+        (((w.im / (Real.pi * ((t - w.re) ^ 2 + w.im ^ 2)) : ℝ) : ℂ) * F (t : ℂ)) := by
+    intro t
+    have htw : (t : ℂ) - w ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.ofReal_im, Complex.zero_im] at this
+      linarith
+    have htc : (t : ℂ) - conj w ≠ 0 := fun h ↦ by
+      have := congrArg Complex.im h
+      simp only [Complex.sub_im, Complex.ofReal_im, Complex.zero_im, Complex.conj_im] at this
+      linarith
+    have hX : ((t - w.re) ^ 2 + w.im ^ 2 : ℝ) ≠ 0 := by positivity
+    have e : F (t : ℂ) / ((t : ℂ) - w) - F (t : ℂ) / ((t : ℂ) - conj w) =
+        F (t : ℂ) * ((w - conj w) / (((t : ℂ) - w) * ((t : ℂ) - conj w))) := by
+      field_simp
+      ring
+    rw [e, cauchy_pair_eq]
+    have hX' : (((t - w.re) ^ 2 + w.im ^ 2 : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hX
+    push_cast
+    field_simp
+  simp_rw [hpt] at hsub
+  rw [integral_const_mul] at hsub
+  have h2 : (2 * Real.pi * I : ℂ) ≠ 0 := by simp [Real.pi_ne_zero]
+  exact (mul_left_cancel₀ h2 hsub).symm
 
 /-- **Line integrals are bounded by the boundary norm**:
 `∫ |F(x+iy)|² dx ≤ ∫ |F(t)|² dt` for `y > 0` (Cauchy–Schwarz for the probability density
