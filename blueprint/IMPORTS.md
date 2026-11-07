@@ -179,7 +179,7 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | P1 | Paley-Wiener theorem | 5 | 58 | 0 | M00 |
 | P2 | Duffin-Schaeffer, John-Nirenberg | 2 | 55 | 0 | M01 |
 | P3 | de Branges D, E | 9 | 219 | 0 | M02 |
-| P4 | de Branges C, F (scaffold) | 5 | 78 | 9 | P3 |
+| P4 | de Branges C (proved), F (deferred scaffold) | 5 | 78 | 9 | P3 |
 
 Total: 99 files, 1765 declarations, 9 `sorry`.
 

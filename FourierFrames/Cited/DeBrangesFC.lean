@@ -4,7 +4,7 @@ import FourierFrames.Cited.DeBrangesFC.Kernel
 # P4 — de Branges' Theorems C and F
 
 See `blueprint/P4_DeBrangesFC.md`.  **Part C is proved**: `theoremC_holds` depends only on
-`propext`, `Classical.choice`, `Quot.sound`.  Part F is deferred (statements only, `sorry`).
+`propext`, `Classical.choice`, `Quot.sound`.  Part F is deferred: its scaffold (statements only, `sorry`) is in `Cited/DeBrangesFC/PartF.lean`, built only by `FourierFramesScaffold`.
 
 **Part C** (Theorem 23) goes through P3 (`Cited/DeBrangesDE`); the proofs are split over
 `DeBrangesFC/Analytic.lean` (§1.1–1.2), `DeBrangesFC/Space.lean` (§1.3) and
