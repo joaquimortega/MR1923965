@@ -333,7 +333,8 @@ along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
   argument.
 - **The standing assumption `ψ(∞) - ψ(-∞) = ∞`** (p. 799) is not used by the proof of Corollary 2,
   whose conclusion holds for every nondecreasing `C¹` `ψ` with `ψ' → 0` (e.g. `ψ = 0`, `f = 1`,
-  `Λ = ℤ`). `IsAdmissiblePsi` keeps it, for faithfulness (blueprint M07).
+  `Λ = ℤ`). `IsAdmissiblePsi` keeps it, for faithfulness (blueprint M07, Issues 9). The Lean proof of
+  `corollary2` uses only `ψ ∈ C¹`, monotonicity and `ψ' → 0` from it (code-checked).
 
 ### N-37 (E) — p. 794: Theorem F as printed fails for non-strict `E` — *referee-confirmed (R3)*
 Theorem F is stated for `E ∈ \overline{HB}`. For `E = 1` (in `\overline{HB}`), `H(E) = {0}`, so the
