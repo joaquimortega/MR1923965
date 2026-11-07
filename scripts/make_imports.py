@@ -27,6 +27,7 @@ MODULES = [  # (module, title, file prefixes relative to FourierFrames/)
     ("M08", "Theorem 2 (i)", ["Theorem2i"]),
     ("M09", "Theorem 2 (ii) (+ uniform Lemma 3 estimate)", ["Theorem2ii", "Lemma3Uniform"]),
     ("M10", "Fourier frames", ["Frames"]),
+    ("U", "Main results with proved cited results discharged", ["Unconditional"]),
     ("P1", "Paley-Wiener theorem", ["Cited/PaleyWiener"]),
     ("P2", "Duffin-Schaeffer, John-Nirenberg", ["Cited/DSPerturbation", "Cited/JohnNirenberg"]),
     ("P3", "de Branges D, E", ["Cited/DeBrangesDE"]),

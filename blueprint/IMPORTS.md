@@ -135,6 +135,7 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M09 | `Theorem2ii/UOne.lean` | 21 | 0 | `Defs` | `OrtegaCerdaSeip.Lemma3.Main` |
 | M09 | `Theorem2ii/Window.lean` | 3 | 0 | `Defs` | — |
 | M10 | `Frames.lean` | 4 | 0 | `PW/Basic` | — |
+| U | `Unconditional.lean` | 14 | 0 | `Frames`, `HB/Comparable`, `Theorem1/Main`, `Corollary1`, `Landau`, `LogExample`, `Corollary2`, `Theorem2i`, `Cited/PaleyWiener`, `Cited/DSPerturbation`, `Cited/JohnNirenberg`, `Cited/DeBrangesDE` | — |
 | P1 | `Cited/PaleyWiener.lean` | 1 | 0 | `Cited/PaleyWiener/Part1`, `Cited/PaleyWiener/Part2` | — |
 | P1 | `Cited/PaleyWiener/L2Fourier.lean` | 8 | 0 | `Defs` | — |
 | P1 | `Cited/PaleyWiener/Part1.lean` | 20 | 0 | `Defs` | — |
@@ -142,13 +143,15 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | P1 | `Cited/PaleyWiener/Spectrum.lean` | 18 | 0 | `Cited/PaleyWiener/L2Fourier` | — |
 | P2 | `Cited/DSPerturbation.lean` | 17 | 0 | `PW/PlancherelPolya` | — |
 | P2 | `Cited/JohnNirenberg.lean` | 38 | 0 | `Defs` | — |
-| P3 | `Cited/DeBrangesDE.lean` | 2 | 0 | `Cited/DeBrangesDE/Complete`, `Cited/DeBrangesDE/Space` | — |
-| P3 | `Cited/DeBrangesDE/Cauchy.lean` | 16 | 14 | `HB/Comparable` | — |
-| P3 | `Cited/DeBrangesDE/Complete.lean` | 13 | 12 | `Cited/DeBrangesDE/Orthogonal`, `Cited/DeBrangesDE/EntireHerglotz` | — |
-| P3 | `Cited/DeBrangesDE/EntireHerglotz.lean` | 8 | 8 | — | Mathlib |
-| P3 | `Cited/DeBrangesDE/Kernel.lean` | 22 | 20 | `Cited/DeBrangesDE/Cauchy`, `HB/Phase` | — |
-| P3 | `Cited/DeBrangesDE/Orthogonal.lean` | 44 | 35 | `Cited/DeBrangesDE/Space` | — |
-| P3 | `Cited/DeBrangesDE/Space.lean` | 21 | 21 | `Cited/DeBrangesDE/Kernel` | — |
+| P3 | `Cited/DeBrangesDE.lean` | 2 | 0 | `Cited/DeBrangesDE/Complete` | — |
+| P3 | `Cited/DeBrangesDE/Cauchy.lean` | 41 | 0 | `HB/Comparable`, `Cited/DeBrangesDE/CauchyAux/Basic` | — |
+| P3 | `Cited/DeBrangesDE/CauchyAux/Basic.lean` | 7 | 0 | `HB/MeanValue` | — |
+| P3 | `Cited/DeBrangesDE/Complete.lean` | 18 | 0 | `Cited/DeBrangesDE/Orthogonal`, `Cited/DeBrangesDE/EntireHerglotz` | — |
+| P3 | `Cited/DeBrangesDE/EAux/KernelSymm.lean` | 1 | 0 | `Cited/DeBrangesDE/Space` | — |
+| P3 | `Cited/DeBrangesDE/EntireHerglotz.lean` | 13 | 0 | `Defs` | — |
+| P3 | `Cited/DeBrangesDE/Kernel.lean` | 31 | 0 | `Cited/DeBrangesDE/Cauchy`, `HB/Phase` | — |
+| P3 | `Cited/DeBrangesDE/Orthogonal.lean` | 76 | 0 | `Cited/DeBrangesDE/EAux/KernelSymm` | — |
+| P3 | `Cited/DeBrangesDE/Space.lean` | 30 | 0 | `Cited/DeBrangesDE/Kernel` | — |
 | P4 | `Cited/DeBrangesFC.lean` | 30 | 23 | `Defs` | — |
 
 ### Modules
@@ -166,12 +169,13 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M08 | Theorem 2 (i) | 16 | 251 | 0 | M07 |
 | M09 | Theorem 2 (ii) (+ uniform Lemma 3 estimate) | 7 | 127 | 0 | M00 |
 | M10 | Fourier frames | 1 | 4 | 0 | M01 |
+| U | Main results with proved cited results discharged | 1 | 14 | 0 | M05, M06, M08, M10, P1, P2, P3 |
 | P1 | Paley-Wiener theorem | 5 | 58 | 0 | M00 |
 | P2 | Duffin-Schaeffer, John-Nirenberg | 2 | 55 | 0 | M01 |
-| P3 | de Branges D, E | 7 | 126 | 110 | M02 |
+| P3 | de Branges D, E | 9 | 219 | 0 | M02 |
 | P4 | de Branges C, F (scaffold) | 1 | 30 | 23 | M00 |
 
-Total: 92 files, 1605 declarations, 133 `sorry`.
+Total: 95 files, 1712 declarations, 23 `sorry`.
 
 ### Module dependency graph (transitive reduction)
 
@@ -187,6 +191,7 @@ M07  <- M04
 M08  <- M07
 M09  <- M00
 M10  <- M01
+U    <- M05, M06, M08, M10, P1, P2, P3
 P1   <- M00
 P2   <- M01
 P3   <- M02
@@ -207,6 +212,7 @@ M07  <- M00, M01, M02, M03, M04
 M08  <- M00, M01, M02, M03, M04, M07
 M09  <- M00
 M10  <- M00, M01
+U    <- M00, M01, M02, M03, M04, M05, M06, M07, M08, M10, P1, P2, P3
 P1   <- M00
 P2   <- M00, M01
 P3   <- M00, M01, M02

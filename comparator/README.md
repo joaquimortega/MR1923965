@@ -12,7 +12,7 @@ v4.35 ships it as `lake comparator`. It checks that every theorem in `config.jso
 | File | Role |
 |---|---|
 | `../FFChallenge.lean` | **The self-contained file with the main results.** It imports only `Mathlib`, contains every definition used in the statements (a verbatim copy of `FourierFrames/Defs.lean`, including the cited results as `Prop`s) and states the 33 theorems with `sorry`. |
-| `statements.lean` | The main-theorem statements, copied verbatim from the project. |
+| `statements.lean` | The 33 statements (main theorems, proved cited results, discharged versions), copied verbatim from the project. |
 | `../scripts/make_challenge.py` | Regenerates `FFChallenge.lean`, `FFSolution.lean` and `config.json` from `Defs.lean` and `statements.lean`. |
 | `../FFSolution.lean` | `import FourierFrames`. The project proves the theorems with the same names (namespace `FF`). |
 | `config.json` | The comparator configuration (33 theorems). |

@@ -20,7 +20,7 @@ the proof here is classical, not from the paper.
 `OCS.norm_le_mul_exp_abs_im` (vendored Phragmén–Lindelöf, `IsExpTypeLE` of `OCS` and `FF` are the same
 formula, so `he : FF.IsExpTypeLE π f` is accepted verbatim as `OCS.IsExpTypeLE π f`).
 **No** `FourierFrames/PW/*`, `HB/*` lemma is used (they take `hPW`); no import cycle.
-**Used by**: `theorem1_unconditional` etc. (`paleyWiener_holds`).
+**Used by**: `theorem1_of_theoremCF` etc. (`paleyWiener_holds`).
 
 ## 0. Route chosen and why
 

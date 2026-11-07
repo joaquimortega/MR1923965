@@ -399,7 +399,7 @@ automation:
         A coordinating Claude Code session (Opus 5.5, later Fable 5.1) delegated work to background
         subagents (Sonnet 5.5 for the blueprint, review and phase-1 implementation rounds; Opus 5.5
         for phase 2 and the final review), each with shell access to Lean/Lake and the Mathlib
-        sources. About 35 subagents in all, up to 10 at a time.
+        sources. About 45 subagents in all, up to 10 at a time.
 
         Isolation. Each implementation subagent worked on its own git branch, in a separate git
         worktree sharing the prebuilt Mathlib packages through a symlink, owning only its module's
