@@ -184,25 +184,72 @@ theorem exists_series_limit (D : DBData E φ) {a : ℝ → ℂ}
 
 /-! ## 7.2 The defect kernel as an element of `H(E)`; `h` is linear; `S ∈ H(E)` if `p > 0` -/
 
+/-- The series part `g_w` of the defect kernel: `Q_w = K_w - g_w` with `g_w ∈ H(E)` the series
+limit for `a_γ = K(w, γ)`. -/
+theorem exists_defect_decomp (D : DBData E φ) (w : ℂ) :
+    ∃ g : ℂ → ℂ, MemHE E g ∧
+      (∀ z, defectKer E φ α w z = deBrangesKernel E w z - g z) ∧
+      (heNormSq E g).toReal = ∑' γ : phaseLevel φ α, wt E γ * ‖deBrangesKernel E w γ‖ ^ 2 ∧
+      ∀ f : ℂ → ℂ, MemHE E f →
+        HasSum (fun γ : phaseLevel φ α ↦ conj (deBrangesKernel E w γ) * (wt E γ : ℂ) * f γ)
+          (heInner E f g) := by
+  have hb := bessel (α := α) D (memHE_deBrangesKernel D.strict.1 D.noZero w)
+  obtain ⟨g, hg, hpt, -, hn, hinner⟩ :=
+    exists_series_limit (α := α) D (a := fun t ↦ deBrangesKernel E w t) hb.1
+  refine ⟨g, hg, fun z ↦ ?_, hn, hinner⟩
+  unfold defectKer
+  rw [← (hpt z).tsum_eq]
+  congr 1
+  exact tsum_congr fun γ ↦ by ring
+
 /-- The defect kernel is an element of `H(E)`: `Q_w = K_w - g_w` with `g_w` the series limit for
 `a_γ = K(w, γ)` (`Σ wt |K(w,γ)|² < ∞` by Bessel), and `‖Q_w‖² = Q(w, w)`. -/
 theorem memHE_defectKer (D : DBData E φ) (w : ℂ) :
     MemHE E (fun z ↦ defectKer E φ α w z) ∧
       (heNormSq E (fun z ↦ defectKer E φ α w z)).toReal = (defectKer E φ α w w).re := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  obtain ⟨g, hg, hQ, hn, hinner⟩ := exists_defect_decomp (α := α) D w
+  have hK := memHE_deBrangesKernel hE h0 w
+  have hfun : (fun z ↦ defectKer E φ α w z) = fun z ↦ deBrangesKernel E w z - g z :=
+    funext hQ
+  rw [hfun]
+  refine ⟨hK.sub hg, ?_⟩
+  rw [heNormSq_sub hE h0 hK hg, heNormSq_kernel hE h0, hn, defectKer_diag w]
+  have h1 := hinner _ hK
+  have hval : ∀ γ : phaseLevel φ α,
+      conj (deBrangesKernel E w γ) * (wt E γ : ℂ) * deBrangesKernel E w γ =
+        ((wt E γ * ‖deBrangesKernel E w γ‖ ^ 2 : ℝ) : ℂ) := fun γ ↦ by
+    rw [conj_mul_wt_mul]
+  simp_rw [hval] at h1
+  rw [← h1.tsum_eq, ← Complex.ofReal_tsum, Complex.ofReal_re]
+  ring
 
 /-- `⟨f, Q_w⟩ = f(w)` for every `f ∈ H(E)` vanishing on `Γ` (`⟨f, g_w⟩ = Σ ... f(γ) = 0`). -/
 theorem heInner_defectKer_of_level_zero (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f)
     (hz : ∀ γ ∈ phaseLevel φ α, f γ = 0) (w : ℂ) :
     heInner E f (fun z ↦ defectKer E φ α w z) = f w := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  obtain ⟨g, hg, hQ, -, hinner⟩ := exists_defect_decomp (α := α) D w
+  have hK := memHE_deBrangesKernel hE h0 w
+  have hfun : (fun z ↦ defectKer E φ α w z) = fun z ↦ deBrangesKernel E w z - g z :=
+    funext hQ
+  rw [hfun, heInner_sub_right hE h0 hf hK hg, heInner_kernel hE h0 hf]
+  have h1 := hinner f hf
+  have hzero : (fun γ : phaseLevel φ α ↦
+      conj (deBrangesKernel E w γ) * (wt E γ : ℂ) * f γ) = fun _ ↦ 0 := by
+    funext γ
+    rw [hz γ γ.2, mul_zero]
+  rw [hzero] at h1
+  rw [h1.unique hasSum_zero, sub_zero]
 
 /-- `h` is `p z + q` with `p ≥ 0` (apply `entire_pick_linear` to `h` of `exists_hFun`, using
 `im_hFun_nonneg`). -/
 theorem hFun_linear (D : DBData E φ) {h : ℂ → ℂ} (hd : Differentiable ℂ h)
     (hh : ∀ z, dFun E φ α z = h z * sFun E α z) (hreal : ∀ z, h (conj z) = conj (h z)) :
-    ∃ p q : ℝ, 0 ≤ p ∧ ∀ z, h z = p * z + q := by
-  sorry
+    ∃ p q : ℝ, 0 ≤ p ∧ ∀ z, h z = p * z + q :=
+  entire_pick_linear hd hreal fun _ hz ↦ im_hFun_nonneg D hh hz
 
 /-- For linear `h = p z + q`: `Q(w, z) = (p/π) S(z) conj S(w)` for `z ≠ w̄`
 (divide `defectKer_mul` by `π (z - w̄)`). -/
@@ -210,14 +257,35 @@ theorem defectKer_eq_of_linear (D : DBData E φ) {h : ℂ → ℂ}
     (hh : ∀ z, dFun E φ α z = h z * sFun E α z) {p q : ℝ} (hlin : ∀ z, h z = p * z + q)
     {w z : ℂ} (hz : z ≠ conj w) :
     defectKer E φ α w z = (p / Real.pi : ℝ) * sFun E α z * conj (sFun E α w) := by
-  sorry
+  have h1 := defectKer_mul D hh w z
+  rw [hlin z, hlin w, map_add, map_mul, Complex.conj_ofReal, Complex.conj_ofReal] at h1
+  have hzw : z - conj w ≠ 0 := sub_ne_zero.mpr hz
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  have h2 : defectKer E φ α w z * (Real.pi * (z - conj w)) =
+      ((p / Real.pi : ℝ) * sFun E α z * conj (sFun E α w)) * (Real.pi * (z - conj w)) := by
+    rw [h1]
+    push_cast
+    field_simp
+    ring
+  exact mul_right_cancel₀ (mul_ne_zero hπ hzw) h2
 
 /-- If `p > 0`, then `S ∈ H(E)`: `S = (π / (p conj S(i))) Q_i` off `z = -i`, hence everywhere by
 continuity, and `Q_i ∈ H(E)`. -/
 theorem memHE_sFun_of_pos (D : DBData E φ) {h : ℂ → ℂ}
     (hh : ∀ z, dFun E φ α z = h z * sFun E α z) {p q : ℝ} (hp : 0 < p)
     (hlin : ∀ z, h z = p * z + q) : MemHE E (sFun E α) := by
-  sorry
+  have hQ := (memHE_defectKer (α := α) D I).1
+  set κ : ℂ := ((p / Real.pi : ℝ) : ℂ) * conj (sFun E α I) with hκ
+  have hκ0 : κ ≠ 0 := by
+    refine mul_ne_zero ?_ ((map_ne_zero _).mpr (sFun_ne_zero D (by simp)))
+    exact Complex.ofReal_ne_zero.mpr (div_pos hp Real.pi_pos).ne'
+  have heq : (fun z ↦ defectKer E φ α I z) = fun z ↦ κ * sFun E α z := by
+    refine Continuous.ext_on (dense_compl_singleton (conj I)) hQ.1.continuous
+      ((differentiable_sFun D.strict.1.1 α).continuous.const_smul κ) fun z hz ↦ ?_
+    rw [defectKer_eq_of_linear D hh hlin hz, hκ]
+    ring
+  rw [heq] at hQ
+  exact MemHE.of_const_mul hκ0 hQ
 
 /-! ## 7.3 The key proposition and the norm identity -/
 
@@ -225,7 +293,49 @@ theorem memHE_sFun_of_pos (D : DBData E φ) {h : ℂ → ℂ}
 theorem eq_zero_of_level_zero (D : DBData E φ)
     (hα : ¬ MemHE E (fun z ↦ Complex.exp (I * α) * E z - Complex.exp (-(I * α)) * fstar E z))
     {f : ℂ → ℂ} (hf : MemHE E f) (hz : ∀ γ ∈ phaseLevel φ α, f γ = 0) : ∀ z, f z = 0 := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  obtain ⟨h, hd, hh, hreal⟩ := exists_hFun D α
+  obtain ⟨p, q, hp, hlin⟩ := hFun_linear D hd hh hreal
+  have hp0 : p = 0 := by
+    rcases hp.lt_or_eq with hpos | heq
+    · exfalso
+      apply hα
+      rw [sAlpha_eq]
+      exact (memHE_sFun_of_pos D hh hpos hlin).const_mul _
+    · exact heq.symm
+  have hnonreal : ∀ w : ℂ, w.im ≠ 0 → f w = 0 := by
+    intro w hw
+    have hne : w ≠ conj w := fun h ↦ hw (by
+      have := congrArg Complex.im h
+      rw [Complex.conj_im] at this
+      linarith)
+    have hQ : defectKer E φ α w w = 0 := by
+      rw [defectKer_eq_of_linear D hh hlin hne, hp0]
+      simp
+    obtain ⟨hQm, hQn⟩ := memHE_defectKer (α := α) D w
+    rw [hQ, Complex.zero_re] at hQn
+    have h1 := norm_heInner_sq_le hE h0 hf hQm
+    rw [heInner_defectKer_of_level_zero D hf hz w, hQn, mul_zero] at h1
+    have h2 : ‖f w‖ ^ 2 = 0 := le_antisymm h1 (sq_nonneg _)
+    simpa using h2
+  intro z
+  by_cases hzi : z.im = 0
+  · have hw : Tendsto (fun n : ℕ ↦ z + ((1 / ((n : ℝ) + 1) : ℝ) : ℂ) * I) atTop (𝓝 z) := by
+      have h1 : Tendsto (fun n : ℕ ↦ ((1 / ((n : ℝ) + 1) : ℝ) : ℂ)) atTop (𝓝 0) := by
+        have := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).ofReal
+        rwa [Complex.ofReal_zero] at this
+      simpa using tendsto_const_nhds.add (h1.mul_const I)
+    have hlim := (hf.1.continuous.tendsto z).comp hw
+    have hzero : (f ∘ fun n : ℕ ↦ z + ((1 / ((n : ℝ) + 1) : ℝ) : ℂ) * I) = fun _ ↦ 0 := by
+      funext n
+      apply hnonreal
+      simp only [Complex.add_im, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+        Complex.I_re, Complex.I_im, hzi]
+      positivity
+    rw [hzero] at hlim
+    exact tendsto_nhds_unique hlim tendsto_const_nhds
+  · exact hnonreal z hzi
 
 /-- Norm identity (real form): `‖f‖²_E = Σ_γ wt(γ) |f(γ)|²`. -/
 theorem heNormSq_eq_tsum (D : DBData E φ)
@@ -233,19 +343,41 @@ theorem heNormSq_eq_tsum (D : DBData E φ)
     {f : ℂ → ℂ} (hf : MemHE E f) :
     Summable (fun γ : phaseLevel φ α ↦ wt E γ * ‖f γ‖ ^ 2) ∧
       (heNormSq E f).toReal = ∑' γ : phaseLevel φ α, wt E γ * ‖f γ‖ ^ 2 := by
-  sorry
+  have hb := bessel (α := α) D hf
+  obtain ⟨g, hg, -, hgl, hgn, -⟩ := exists_series_limit (α := α) D (a := fun t ↦ f t) hb.1
+  have hfg : ∀ z, f z - g z = 0 :=
+    eq_zero_of_level_zero D hα (hf.sub hg) fun γ hγ ↦ by rw [hgl γ hγ, sub_self]
+  have hgf : g = f := funext fun z ↦ (sub_eq_zero.mp (hfg z)).symm
+  rw [hgf] at hgn
+  exact ⟨hb.1, hgn⟩
+
+/-- `orthWeight(γ) |a(γ)|²` as `ofReal (wt(γ) |a(γ)|²)`. -/
+theorem orthWeight_mul_enorm_sq (D : DBData E φ) (x : ℝ) (c : ℂ) :
+    orthWeight E x * ‖c‖ₑ ^ 2 = ENNReal.ofReal (wt E x * ‖c‖ ^ 2) := by
+  rw [orthWeight_eq, ENNReal.ofReal_mul (wt_pos D x).le, enorm_sq_eq_ofReal]
 
 /-- **Theorem E, part 1** in the form of `TheoremE`. -/
 theorem theoremE_norm (D : DBData E φ)
     (hα : ¬ MemHE E (fun z ↦ Complex.exp (I * α) * E z - Complex.exp (-(I * α)) * fstar E z))
     {f : ℂ → ℂ} (hf : MemHE E f) :
     heNormSq E f = ∑' γ : phaseLevel φ α, orthWeight E γ * ‖f γ‖ₑ ^ 2 := by
-  sorry
+  obtain ⟨hs, heq⟩ := heNormSq_eq_tsum D hα hf
+  have hfin := MemHE.heNormSq_lt_top D.strict.1.1 D.noZero hf
+  rw [← ENNReal.ofReal_toReal hfin.ne, heq,
+    ENNReal.ofReal_tsum_of_nonneg
+      (fun γ : phaseLevel φ α ↦ mul_nonneg (wt_pos D γ).le (by positivity)) hs]
+  exact tsum_congr fun γ ↦ (orthWeight_mul_enorm_sq D γ (f γ)).symm
 
 /-- **Theorem E, part 2** (interpolation; needs neither the key proposition nor `S_α ∉ H(E)`). -/
 theorem theoremE_interp (D : DBData E φ) (a : ℝ → ℂ)
     (ha : ∑' γ : phaseLevel φ α, orthWeight E γ * ‖a γ‖ₑ ^ 2 < ∞) :
     ∃ f : ℂ → ℂ, MemHE E f ∧ ∀ γ ∈ phaseLevel φ α, f γ = a γ := by
-  sorry
+  simp_rw [orthWeight_mul_enorm_sq D] at ha
+  have hs : Summable (fun γ : phaseLevel φ α ↦ wt E γ * ‖a γ‖ ^ 2) := by
+    have := ENNReal.summable_toReal ha.ne
+    refine this.congr fun γ ↦ ?_
+    rw [ENNReal.toReal_ofReal (mul_nonneg (wt_pos D γ).le (by positivity))]
+  obtain ⟨g, hg, -, hgl, -⟩ := exists_series_limit D hs
+  exact ⟨g, hg, hgl⟩
 
 end FF

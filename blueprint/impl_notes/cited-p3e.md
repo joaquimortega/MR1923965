@@ -50,3 +50,15 @@
   double sum of the blueprint).
 * `im_hFun_nonneg`: only `Re Q(w,w) ≥ 0` is needed (imaginary part of the identity
   `Q·π·2i Im w = |S|²·2i Im h`), not the reality of `Q(w,w)`.
+
+## Complete
+* Added helpers: `tendsto_sum_exhaustion`, `heNormSq_sub_comm`, `heNormSq_partialSum_sub`,
+  `summable_mul_wt_mul` (AM–GM summability), `exists_defect_decomp` (the decomposition
+  `Q_w = K_w - g_w` shared by `memHE_defectKer` and `heInner_defectKer_of_level_zero`),
+  `orthWeight_mul_enorm_sq`.
+* `eq_zero_of_level_zero`: real points by `f(x) = lim f(x + i/(n+1))`.
+* No deviation from the blueprint otherwise.  All four files and `EAux/KernelSymm.lean` are
+  sorry-free; `#print axioms FF.theoremE_holds` shows `sorryAx` only through the Kernel/Cauchy
+  black boxes (`integrable_heInner`, `deBrangesKernel_mul`, `deBrangesKernel_diag_real`,
+  `memHE_deBrangesKernel`, `heInner_kernel`, `MemHE.heNormSq_lt_top`,
+  `exists_bound_deBrangesKernel`, `isH2Cont_of_memHE`, `IsH2Cont.lintegral_line_le`).
