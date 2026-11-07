@@ -1,4 +1,4 @@
-import FourierFrames.Cited.DeBrangesFC.Analytic
+import FourierFrames.Cited.DeBrangesFC.Space
 
 /-!
 # P4 — de Branges' Theorems C and F
@@ -37,67 +37,7 @@ def thetaFn (E : ℂ → ℂ) (z : ℂ) : ℂ := fstar E z / E z
 
 /-! §1.1–1.2 (general helpers, real zeros of `E`, `divExt`) are in `DeBrangesFC/Analytic.lean`. -/
 
-/-! ## HE. `H(E)` for `E ∈ \overline{HB}` with real zeros
-
-`h0`-free replacements of the P3 `Space.lean` lemmas that P4 needs (P3 assumes `∀ x, E x ≠ 0`).
-No inner product space structure on `H(E)` and no completeness of `H(E)` are needed. -/
-
-section HE
-
-variable {E : ℂ → ℂ}
-
-theorem MemHE.heNormSq_lt_top_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) :
-    heNormSq E f < ⊤ := by
-  sorry
-
-theorem MemHE.memLp_div_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) :
-    MemLp (fun t : ℝ ↦ f t / E t) 2 := by
-  sorry
-
-/-- Line integrals are bounded by the norm: `∫ |f/E (x + iy)|² dx ≤ ‖f‖²_E`. -/
-theorem MemHE.lintegral_line_le_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) {y : ℝ}
-    (hy : 0 < y) :
-    ∫⁻ x : ℝ, ‖f ((x : ℂ) + (y : ℂ) * I) / E ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤ heNormSq E f := by
-  sorry
-
-/-- The norm is bounded by any common bound of the line integrals (Fatou at the boundary). -/
-theorem MemHE.heNormSq_le_of_lines_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f)
-    {C : ℝ≥0∞} (hC : ∀ y : ℝ, 0 < y →
-      ∫⁻ x : ℝ, ‖f ((x : ℂ) + (y : ℂ) * I) / E ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤ C) :
-    heNormSq E f ≤ C := by
-  sorry
-
-theorem integrable_heInner_of_isHB (hE : IsHB E) {f g : ℂ → ℂ} (hf : MemHE E f)
-    (hg : MemHE E g) : Integrable fun t : ℝ ↦ f t * conj (g t) / ((‖E t‖ ^ 2 : ℝ) : ℂ) := by
-  sorry
-
-theorem heInner_add_left_of_isHB (hE : IsHB E) {f g k : ℂ → ℂ} (hf : MemHE E f)
-    (hg : MemHE E g) (hk : MemHE E k) :
-    heInner E (fun z ↦ f z + g z) k = heInner E f k + heInner E g k := by
-  sorry
-
-theorem heInner_add_right_of_isHB (hE : IsHB E) {f g k : ℂ → ℂ} (hf : MemHE E f)
-    (hg : MemHE E g) (hk : MemHE E k) :
-    heInner E f (fun z ↦ g z + k z) = heInner E f g + heInner E f k := by
-  sorry
-
-theorem heInner_self_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) :
-    heInner E f f = (((heNormSq E f).toReal : ℝ) : ℂ) := by
-  sorry
-
-/-- Cauchy–Schwarz in `H(E)`. -/
-theorem norm_heInner_le_of_isHB (hE : IsHB E) {f g : ℂ → ℂ} (hf : MemHE E f)
-    (hg : MemHE E g) :
-    ‖heInner E f g‖ ≤ Real.sqrt (heNormSq E f).toReal * Real.sqrt (heNormSq E g).toReal := by
-  sorry
-
-/-- **Reproducing formula at `w ∈ ℂ₊`** for `E ∈ \overline{HB}` with real zeros (P3
-`heInner_kernel_upper_of_isH2Cont` with the extensions of `exists_isH2Cont_of_memHE`). -/
-theorem heInner_kernel_upper_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) {w : ℂ}
-    (hw : 0 < w.im) : heInner E f (deBrangesKernel E w) = f w := by
-  sorry
-
-end HE
+/-! §1.3 (`H(E)` with real zeros, the `_of_isHB` lemmas) is in `DeBrangesFC/Space.lean`. -/
 
 /-! ## Part C: Theorem 23 -/
 
