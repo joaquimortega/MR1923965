@@ -14,6 +14,36 @@
 `OrtegaCerdaSeip/` (subset of MR1682065, [OS99] Lemma 3 and Bernstein-space tools; namespace
 `OCS`; do not edit).
 
+## Status (2026-11-07)
+
+**Phase 1 is complete.**
+- All 15 main statements of `comparator/statements.lean` are proved, with the cited results as explicit `Prop`
+  hypotheses.
+- `comparator` accepts `FFChallenge`/`FFSolution` (`comparator/last_run.log`). `#print axioms` of each main
+  theorem shows only `propext`, `Classical.choice`, `Quot.sound`.
+- No `sorry` outside `FourierFrames/Cited/`. `lake build` has no warning other than `declaration uses 'sorry'`
+  in `FourierFrames/Cited/` (lint pass, NOTEBOOK I-03).
+- `scripts/check_statements.py scaffold-reviewed` passes. The only changes to statements frozen at
+  `scaffold-reviewed` are the removals of unused hypotheses in the lint pass, recorded in its `APPROVED` list
+  (NOTEBOOK I-03). Among the main statements, `theorem2_i` lost `hlow` (`ψ' = 1/O(x)`), and `theorem2_ii` lost
+  `hPW` and is unconditional. The changes of NOTEBOOK I-01 predate the freeze.
+
+**Phase 2** (`blueprint/PHASE2.md`, files under `FourierFrames/Cited/`):
+
+| `Prop` | Lean | status |
+|---|---|---|
+| `PaleyWienerThm` | `paleyWiener_holds` (`Cited/PaleyWiener.lean`, `Cited/PaleyWiener/{Part1,L2Fourier,Spectrum,Part2}.lean`) | proved, unconditional |
+| `JohnNirenberg` | `johnNirenberg_holds` (`Cited/JohnNirenberg.lean`) | proved, unconditional |
+| `DSPerturbation` | `dsPerturbation_of_paleyWiener : PaleyWienerThm → DSPerturbation` (`Cited/DSPerturbation.lean`) | proved; unconditional with `paleyWiener_holds` |
+| `TheoremD`, `TheoremE` | `theoremD_holds`, `theoremE_holds` (`Cited/DeBrangesDE.lean` + `Cited/DeBrangesDE/*`) | in progress (`sorry`); not imported by `FourierFrames.lean`; blueprint `P3_DeBrangesDE.md` forthcoming |
+| `TheoremC`, `TheoremF` | `theoremC_holds`, `theoremF_holds` (`Cited/DeBrangesFC.lean`) | scaffold (`sorry`); contains a temporary stub of `theoremD_holds` |
+| `PavlovBMO` | — | not feasible (`P5_Pavlov.md`); stays the hypothesis `hA` of `landau_inequality` |
+
+`#print axioms` gives only the three standard axioms for `paleyWiener_holds`, `johnNirenberg_holds` and
+`dsPerturbation_of_paleyWiener`. `import FourierFrames` also brings into scope the `sorry`-backed
+`theoremC_holds`, `theoremF_holds` and the stub `theoremD_holds` (`Cited/DeBrangesFC.lean`). Before using a
+`*_holds` to discharge a hypothesis, check it with `#print axioms`.
+
 ## 0. Workflow
 
 Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2006561`):
@@ -30,29 +60,29 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
 - *Phase 1*: the paper's own arguments, with the cited results (Paley–Wiener, de Branges C/D/E/F,
   Pavlov's Theorem A, John–Nirenberg, Duffin–Schaeffer Lemma III) as explicit `Prop` hypotheses
   defined in `Defs.lean`. Every main theorem takes exactly the cited `Prop`s it uses.
-- *Phase 2*: discharge cited results, in order of feasibility: Paley–Wiener (Mathlib has the
-  `L²` Fourier transform as an isometry), Duffin–Schaeffer, John–Nirenberg, then de Branges'
-  Theorems D, E, F, C. Pavlov's theorem is the deepest and may stay a hypothesis.
+- *Phase 2*: discharge the cited results that are within reach (plan, assessments and status:
+  `blueprint/PHASE2.md` and the Status section above). Pavlov's theorem stays a hypothesis
+  (`P5_Pavlov.md`).
 
 ## 1. What is formalized (main results, `comparator/statements.lean`)
 
-| Paper | Lean (namespace `FF`) | Cited hypotheses |
-|---|---|---|
-| p. 790: Fourier frame ⟺ sampling | `isFourierFrame_iff_isSampling` | PW |
-| p. 799: `|E| ≃ e^{π Im z}` on `Im z ≥ 0` ⇒ `H(E) = PW` | `heEqPW_of_comparable` | PW |
-| Theorem 1, ⇒ | `theorem1_necessity` | PW, C, F |
-| Theorem 1, ⇐ | `theorem1_sufficiency` | PW, E |
-| Theorem 1 | `theorem1` | PW, C, E, F |
-| Remark p. 797: CIS ⇒ zero set of `E + E^*` | `completeInterpolating_zero_set` | PW, C, D |
-| Corollary 1 | `corollary1` | PW, C, E, F |
-| Claim (Landau's inequality = Theorem B) | `landau_inequality` | PW, C, E, F, A, JN |
-| Example p. 798 is CIS | `logExample_isCompleteInterpolating` | PW, E |
-| Example p. 798, counting | `logExample_count` | — |
-| Landau's inequality is sharp (no coefficient `A < 1`) | `landau_sharp` | PW, E |
-| Corollary 2 | `corollary2` | PW, E, DS |
-| Theorem 2 (i), with ψ' eventually nonincreasing (N-22), without `ψ' = 1/O(x)` (N-26, I-03) | `theorem2_i` | PW, E, DS |
-| Theorem 2 (i), with the cell density bound the proof uses | `theorem2_i_of_densityBound` | PW, E, DS |
-| Theorem 2 (ii) | `theorem2_ii` | — (unconditional, I-03) |
+| Paper | Lean (namespace `FF`) | Cited hypotheses | Lean file (`FourierFrames/`) |
+|---|---|---|---|
+| p. 790: Fourier frame ⟺ sampling | `isFourierFrame_iff_isSampling` | PW | `Frames.lean` |
+| p. 799: `|E| ≃ e^{π Im z}` on `Im z ≥ 0` ⇒ `H(E) = PW` | `heEqPW_of_comparable` | PW | `HB/Comparable.lean` |
+| Theorem 1, ⇒ | `theorem1_necessity` | PW, C, F | `Theorem1/Necessity.lean` |
+| Theorem 1, ⇐ | `theorem1_sufficiency` | PW, E | `Theorem1/Sufficiency.lean` |
+| Theorem 1 | `theorem1` | PW, C, E, F | `Theorem1/Main.lean` |
+| Remark p. 797: CIS ⇒ zero set of `E + E^*` | `completeInterpolating_zero_set` | PW, C, D | `Corollary1.lean` |
+| Corollary 1 | `corollary1` | PW, C, E, F | `Corollary1.lean` |
+| Claim (Landau's inequality = Theorem B) | `landau_inequality` | PW, C, E, F, A, JN | `Landau.lean` |
+| Example p. 798 is CIS | `logExample_isCompleteInterpolating` | PW, E | `LogExample.lean` |
+| Example p. 798, counting | `logExample_count` | — | `LogExample.lean` |
+| Landau's inequality is sharp (no coefficient `A < 1`) | `landau_sharp` | PW, E | `LogExample.lean` |
+| Corollary 2 | `corollary2` | PW, E, DS | `Corollary2.lean` |
+| Theorem 2 (i), with ψ' eventually nonincreasing (N-22), without `ψ' = 1/O(x)` (N-26, I-03) | `theorem2_i` | PW, E, DS | `Theorem2i.lean` |
+| Theorem 2 (i), with the cell density bound the proof uses | `theorem2_i_of_densityBound` | PW, E, DS | `Theorem2i.lean` |
+| Theorem 2 (ii) | `theorem2_ii` | — (unconditional, I-03) | `Theorem2ii.lean` |
 
 Not formalized: the Proposition on p. 798 (norm equivalence via [Or98]; quoted without proof and
 not used), the remarks about [Se95] (Lemma 3.11, Theorems 2.3 and 2.7), the
@@ -91,6 +121,10 @@ not used), the remarks about [Se95] (Lemma 3.11, Theorems 2.3 and 2.7), the
    on p. 797 (`completeInterpolating_zero_set`).
 2. **`φ_F' ≥ 0`** for `F ∈ \overline{HB}` without real zeros is elementary: `log|F^*| - log|F| ≤ 0`
    on `Im z > 0` and `= 0` on `ℝ`, so its `y`-derivative at `y = 0`, which is `-2 φ_F'`, is `≤ 0`.
+   In Lean both `φ_F' ≥ 0` and the strict `φ_E' > 0` for `E ∈ HB` come from the dichotomy
+   `IsHB.phaseDeriv_pos_or_eventuallyEq` (normal form of `E^*/E − c` at `x` plus the Hopf-type boundary
+   lemma of `HB/Hopf.lean`). The one-sided derivative argument alone cannot give strictness
+   (`D(y) ≈ −y³`).
 3. **`G = (EF + E^*F^*)/2` (p. 796)** follows by adding `M + 1 = EF/G` and `M - 1 = -E^*F^*/G`;
    the "real part on the real axis" argument is not needed.
 4. **Herglotz normalisation.** In (3) the paper uses `1/(z - λ_k) + 1/λ_k`, undefined if
@@ -100,41 +134,83 @@ not used), the remarks about [Se95] (Lemma 3.11, Theorems 2.3 and 2.7), the
 5. **The limit `α → π/2` (p. 797).** "By (4) we may apply dominated convergence" is not a
    domination. Use the local Plancherel–Pólya inequality: the tails
    `∑_{|λ_{α,k}| > R} |f(λ_{α,k})|²` are bounded by `C ∫∫_{|x| > R-1, |y| < 1} |f|²`, uniformly in
-   `α`, and this tends to `0`.
+   `α`, and this tends to `0`. In Lean: `plancherelPolya_tail_union` (`PW/PlancherelPolya.lean`), the
+   tail bound uniformly over unions of two `δ`-separated sets, used in `Theorem1/Sufficiency/Limit.lean`.
 6. **Meĭman's theorem is replaced.** As usually quoted (interlacing zeros + exponential type) it is
    false: `A = cos πz`, `B = e^{az} sin πz` have interlacing zeros, but for `a ≠ 0` neither
-   `A - iB` nor `A + iB` is in `\overline{HB}`. In Corollary 2, `A` and `B` are limits of the
-   symmetric partial products, which are real polynomials with interlacing zeros; for those the
-   polynomial Hermite–Biehler theorem is elementary (partial fractions, residues of constant
-   sign), and `\overline{HB}` is closed under locally uniform limits (Hurwitz). See M07.
-7. **Levin's theorem is avoided.** The example `{k + log⁺|k|}` is handled by the Corollary 2
-   construction with `F = 1`: `A` is the generating function, `E = A - iB`,
-   `|E| ≃ e^{π Im z}` on `Im z ≥ 0` (the "sine-type" estimate, which the paper asserts without
-   proof), and Theorem E gives that `Λ = {A = 0} = {E + E^* = 0}` is complete interpolating.
+   `A - iB` nor `A + iB` is in `\overline{HB}`. In Corollary 2, `A` and `B` are locally uniform limits
+   of `e^{β + c_R z}` times the symmetric partial products, which are real polynomials with
+   interlacing zeros. For those, `Im(B_R/A_R) > 0` on `ℂ₊`, because the arguments of the factors are
+   monotone (`Construction/PolyHB.lean`). The real exponential factors preserve `\overline{HB}`, and
+   `\overline{HB}` is closed under locally uniform limits (Hurwitz, `IsHB.of_tendstoLocallyUniformly`).
+   The result is `A − iλB ∈ \overline{HB}` for every `λ > 0` (`isHB_genA_sub_lam_compB`). See M07.
+7. **Levin's theorem is avoided.** The example `{k + log⁺|k|}` uses the construction of M07 §2 with
+   a step density whose barycentres are exactly `Λ + 1/2`, and `E = e^{−κz}(A − i e^{κ/2}B)` with
+   `κ = logKappa`. The sine-type estimate `|E| ≃ e^{π Im z}`, which the paper asserts without proof,
+   is proved. Theorem E at level `π/2` shows that `Λ + 1/2 = {E + E^* = 0}` is sampling and complete
+   interpolating (`logExample_shift_sampling_cis`). Translating by `−1/2` gives the claim.
 8. **Separation of `Γ_α` in Corollary 1** (needed to apply Pavlov's theorem, which is stated for
    separated sequences) follows from Theorem E: the interpolant `f_γ` of `δ_γ` has norm
    `≲ 1`, and the Bernstein/Cauchy bound `|f'| ≲ ‖f‖_PW` on `ℝ` gives `|γ - γ'| ≳ 1`.
+
+Design decisions taken during implementation:
+
+9. **Theorem 2 (i) needs a local density bound** `ψ' ≲ 1/d_n` on each cell (N-22). Two main statements:
+   `theorem2_i_of_densityBound` assumes it, through `IsLogRegularPartitionWithDensity`. `theorem2_i`
+   keeps the printed hypotheses except `ψ' = 1/O(x)`, which the proof does not use (N-26; removed in
+   I-03), and adds `hmono` (`ψ'` eventually nonincreasing), which implies the bound
+   (`RegData.densBound_of_antitoneOn`).
+10. **Theorem 2 (ii) has a new proof** (N-21, M09): a test function built from [OS99] Lemma 3 for a
+    window-dependent density, with constants uniform in the density (`lemma3_estimate_uniform`,
+    `Lemma3Uniform.lean`).
+11. **Removing the real zeros of `F`** (N-32): a Weierstrass product of variable genus
+    `p_a = m(a) + rank(a) + 1`, with `rank` an injection of the real zero set into `ℕ`
+    (`Theorem1/Sufficiency/RealFactor/*`). It needs no separation.
+12. **Complete interpolating ⇒ sampling** (p. 791, used in Corollary 1 and in the remark of p. 797): the closed
+    graph theorem for `ℓ²(Λ) → L²(ℝ)` (`Corollary1/ClosedGraph.lean`).
+13. **The phase construction** is `E_κ = e^{−κz}(A − i e^{κ/2} B)` (`compEκ`). The plain twist `e^{−κz}(A − iB)`
+    has the right modulus but the wrong phase. The first version of `exists_hb_of_density`, which had a phase
+    clause for every `m → 1`, is false. See §4 and `IMPORTS.md`.
+14. **`log|f| = (1/π) ∫ log|1 − z/t| φ_f'(t) dt + b Re z + c`** (N-36) is proved by Schwarz reflection of
+    `Φ = e^{iφ(0)} f e^{−P}`, which is real on `ℝ`, followed by Borel–Carathéodory. No holomorphic logarithm of `f`
+    on the closed half-plane is needed (`Corollary2/{Reflection,Affine,LogNorm}.lean`). Continuity of potentials of bounded measurable
+    densities uses Vitali's theorem (`Corollary2/UCont.lean`).
+15. **No real-valued `tsum` or `ncard` in helper statements on the main path.** They are `0` when the series
+    diverges or the set is infinite. The M08 estimates are proved in uniform finset form (NOTEBOOK I-04).
 
 ## 4. Modules
 
 | # | Doc | Lean | Content | Paper |
 |---|---|---|---|---|
 | M00 | `M00_Defs.md` | `Defs.lean` | definitions, cited `Prop`s, main statements | — |
-| M01 | `M01_PW.md` | `PW/Basic.lean`, `PW/Bounds.lean`, `PW/PlancherelPolya.lean`, `PW/Complete.lean` | Paley–Wiener space toolkit from `PaleyWienerThm` | §1 |
-| M02 | `M02_HB.md` | `HB/Basic.lean`, `HB/Phase.lean`, `HB/H2.lean`, `HB/DeBranges.lean`, `HB/Comparable.lean` | `f^*`, `\overline{HB}`, phase, `H(E)`, "evident fact" | §2, p. 799 |
-| M03 | `M03_Necessity.md` | `Theorem1/Necessity.lean` | Theorem 1 ⇒ | §3 |
-| M04 | `M04_Sufficiency.md` | `Theorem1/Sufficiency.lean`, `Theorem1/Main.lean`, `Corollary1.lean` | Theorem 1 ⇐ (`Sufficiency`), `theorem1` (`Main`), Corollary 1 and remark p. 797 (`Corollary1`) | §3–4 |
+| M01 | `M01_PW.md` | `PW/{Basic,Bounds,PlancherelPolya,Complete}.lean` | Paley–Wiener space toolkit from `PaleyWienerThm` | §1 |
+| M02 | `M02_HB.md` | `HB/{Basic,Phase,H2,DeBranges,Comparable}.lean`; helpers `HB/{Hopf,MeanValue}.lean` | `f^*`, `\overline{HB}`, phase, `H(E)`, "evident fact" | §2, p. 799 |
+| M03 | `M03_Necessity.md` | `Theorem1/Necessity.lean`; helper `Theorem1/Necessity/Sep.lean` | Theorem 1 ⇒ | §3 |
+| M04 | `M04_Sufficiency.md` | `Theorem1/Sufficiency.lean`, `Theorem1/Main.lean`, `Corollary1.lean`; helpers `Theorem1/Sufficiency/{Interlace,Limit,LevelSet,Phase}.lean`, `Theorem1/Sufficiency/RealFactor/{Elem,LUProd,Zeros,Product,Main}.lean`, `Corollary1/{Rotate,Kernel,ClosedGraph}.lean` | Theorem 1 ⇐ (`Sufficiency`), `theorem1` (`Main`), Corollary 1 and remark p. 797 (`Corollary1`) | §3–4 |
 | M05 | `M05_Landau.md` | `Landau.lean` | Claim (Landau from John–Nirenberg + Pavlov) | §4 |
-| M06 | `M06_LogExample.md` | `LogExample.lean` | the example `{k + log⁺|k|}` and sharpness | §4 |
-| M07 | `M07_Corollary2.md` | `Construction.lean`, `Perturbation.lean`, `Corollary2.lean` | phase construction `E = A - iB`, perturbation lemma, Corollary 2 | §5 |
-| M08 | `M08_Theorem2i.md` | `Theorem2i.lean` | Theorem 2 (i): the Lyubarskii–Malinnikova approximation | §5 |
-| M09 | `M09_Theorem2ii.md` | `Theorem2ii.lean`, `Lemma3Uniform.lean` | Theorem 2 (ii); the uniform-in-`m` form of [OS99] Lemma 3 (2) | §5 |
+| M06 | `M06_LogExample.md` | `LogExample.lean`; helpers `LogExample/{Basic,Phase,Potential}.lean` | the example `{k + log⁺|k|}` and sharpness | §4 |
+| M07 | `M07_Corollary2.md` | `Construction.lean`, `Perturbation.lean`, `Corollary2.lean`; helpers `Construction/{Gaps,Comparable,PolyHB,Limits,Rigidity,Translate}.lean`, `Corollary2/{Affine,Kernel,Density,LogInt,Reflection,PotC,PotCDiff,PotCCont,UCont,LogNorm}.lean` | phase construction `E = A - iB`, perturbation lemma, Corollary 2 | §5 |
+| M08 | `M08_Theorem2i.md` | `Theorem2i.lean`; helpers `Theorem2i/{Basic,Product,PhaseDecay,Cells,CellsAux,Taylor,CellAux,BelowAbove,FarAux,NearAux,Near,Counting,Riemann,Estimates,Assembly}.lean` | Theorem 2 (i): the Lyubarskii–Malinnikova approximation | §5 |
+| M09 | `M09_Theorem2ii.md` | `Theorem2ii.lean`, `Lemma3Uniform.lean`; helpers `Theorem2ii/{Window,UOne,Ramp,Mass,Cells}.lean` | Theorem 2 (ii); the uniform-in-`m` form of [OS99] Lemma 3 (2) | §5 |
 | M10 | `M10_Frames.md` | `Frames.lean` | Fourier frame ⟺ sampling | §1 |
 
-All Lean files are under `FourierFrames/`; `FourierFrames.lean` imports every one of them. The
-file-level import DAG, the interface reconciliation done at assembly (every temporary "Upstream
-interface" block was replaced by imports) and the module graph generated from the actual imports
-are in `IMPORTS.md` (regenerate with `python3 scripts/make_imports.py`). Helper lemmas added or moved
+Phase 2 (`PHASE2.md`):
+
+| # | Doc | Lean | Content |
+|---|---|---|---|
+| P1 | `P1_PaleyWiener.md` | `Cited/PaleyWiener.lean`, `Cited/PaleyWiener/{Part1,L2Fourier,Spectrum,Part2}.lean` | Paley–Wiener theorem (proved) |
+| P2 | `P2_DS_JN.md` | `Cited/DSPerturbation.lean`, `Cited/JohnNirenberg.lean` | Duffin–Schaeffer, John–Nirenberg (proved) |
+| P3 | `P3_DeBrangesDE.md` (forthcoming, not yet in `blueprint/`) | `Cited/DeBrangesDE.lean`, `Cited/DeBrangesDE/{Cauchy,Kernel,Space,EntireHerglotz,Orthogonal,Complete}.lean` | de Branges D, E (in progress) |
+| P4 | `P4_DeBrangesFC.md` | `Cited/DeBrangesFC.lean` | de Branges C, F (scaffold, assessment) |
+| P5 | `P5_Pavlov.md` | — | Pavlov's theorem (assessment only) |
+
+All Lean files are under `FourierFrames/`. `FourierFrames.lean` imports the module files of the
+table (helper files transitively) and `Cited/{DSPerturbation,JohnNirenberg,PaleyWiener,DeBrangesFC}.lean`,
+but not `Cited/DeBrangesDE.lean`. The file-level import DAG, the interface reconciliation done at
+assembly (every temporary "Upstream interface" block was replaced by imports) and the module graph
+computed from the actual imports are in `IMPORTS.md`. `scripts/make_imports.py` regenerates that
+graph only after the two-line fix of R8 F-74 (prefix match of helper directories, rows for P1–P4);
+as committed it stops with `KeyError: 'Cited/DSPerturbation'`. Helper lemmas added or moved
 at assembly: `IsStrictHB.mul_isHB`, `IsHB.rotate` (`HB/Basic.lean`); `IsPhaseFunction.rotate`
 (`HB/Phase.lean`); `IsSeparated.finite_inter_Icc`, `MemPW.eq_zero_of_pwNormSq_eq_zero`
 (`PW/Basic.lean`); `sampleSum_mono`, `sampleSum_eq_tsum_indicator` (`PW/PlancherelPolya.lean`).
@@ -142,14 +218,18 @@ M03's first half is exported as `exists_E` (`Necessity.lean`), not `exists_HB_of
 
 ### Dependency graph
 
+Computed from the actual `import` lines (`IMPORTS.md`):
+
 ```
-M00 ── M01 ─┬─ M02 ─┬─ M03 ──┐
-            │       ├─ M04 ──┴── M05
-            │       └─ M07 ─┬─ M06
-            │               ├─ M08
-            │               └─ M09
-            └─ M10
-OCS (vendored Lemma 3) ── M07, M09
+M00 ── M01 ─┬─ M10
+            └─ M02 ─┬─ M03 ─────────────┐
+                    └─ M04 Sufficiency ─┴─ M04 Main, Corollary1 ── M05
+                         └─ M07 (Construction ← M02; Perturbation ← M01; Corollary2 ← M04 Sufficiency)
+                              ├─ M06 (also ← M02 HB.Comparable, M04 Sufficiency)
+                              └─ M08
+M00 ── M09 (with Lemma3Uniform; no project module besides Defs)
+OCS: Bernstein → M01, M07, P1; Products.Canonical → M03, M08; Lemma3 → M06, M07, M09
+Phase 2: M00 ── P1, P4;  M01 ── P2 (DSPerturbation; JohnNirenberg ← M00 only);  M02 ── P3
 ```
 
 ### Interface names (the exported lemmas other modules may rely on)
@@ -167,11 +247,14 @@ All in namespace `FF`; `hPW : PaleyWienerThm` etc. are explicit hypotheses.
 - `plancherelPolya (hPW) (δ) : 0 < δ → ∃ C, ∀ Λ δ-separated, ∀ f ∈ PW, sampleSum Λ f ≤ C * pwNormSq f`.
 - `plancherelPolya_tail (hPW)`: for `δ`-separated `Λ` and `f ∈ PW`, the tail sums
   `∑_{λ ∈ Λ, R ≤ |λ|} |f(λ)|²` tend to `0` as `R → ∞`, uniformly over all `δ`-separated `Λ`.
+- `plancherelPolya_tail_union (hPW)`: the same tail bound uniformly over unions `A ∪ B` of two
+  `δ`-separated sets (I-01; consumed by M04, `Theorem1/Sufficiency/Limit.lean`).
 - `exists_memPW_eval_ne_zero : ∃ g, MemPW g ∧ g 0 = 1`, and `pw_eval_lower` (a uniform `c > 0`
   with: for every real `x` some `f ∈ PW` has `c * pwNormSq f ≤ ‖f x‖ₑ²`, `pwNormSq f ≠ 0, ⊤`).
-- `pw_deriv_bound (hPW)`: `‖deriv f x‖ ^ 2 ≤ C * (pwNormSq f).toReal` for real `x`.
+- `pw_deriv_bound (hPW)`: `‖deriv f x‖ ^ 2 ≤ (π e)² * (pwNormSq f).toReal` for real `x` (pointwise,
+  explicit constant).
 - `MemPW.isH2Upper_mul_exp (hPW)`: `f ∈ PW ⇒ f(z) e^{iπz} ∈ H²(ℂ₊)` with
-  `∫|f(x+iy)e^{iπ(x+iy)}|²dx ≤ ‖f‖²`.
+  `∫|f(x+iy)e^{iπ(x+iy)}|²dx ≤ ‖f‖²` (proved; used by no module).
 - `pw_complete (hPW)`: an `L²`-Cauchy sequence in `PW` converges in `L²` and locally uniformly to
   some `f ∈ PW`.
 - `pw_normal_family (hPW)`: a norm-bounded sequence in `PW` has a subsequence converging locally
@@ -188,9 +271,9 @@ All in namespace `FF`; `hPW : PaleyWienerThm` etc. are explicit hypotheses.
   phase functions `φ_E`, `φ_F`: `E z F z + E^* z F^* z = 0 ↔ z ∈ ofReal '' phaseLevel (φ_E + φ_F) (π/2)`.
 - `MemHE.mul_isHB` and `heNormSq_mul`: `f ∈ H(E)`, `F ∈ \overline{HB}` ⇒ `F f ∈ H(EF)`, same norm.
 - `HEEqPW.isStrictHB`, `HEEqPW.ne_zero_ofReal` (an `E` with `H(E) = PW` is strict, has no real
-  zeros).
+  zeros; no `hPW`).
 - `HEEqPW.phaseDeriv_mul_sq_ge (hE : TheoremE)` and `..._le (hPW) (hE : TheoremE)`: `φ_E'(x)|E(x)|² ≃ 1`.
-- `memHE_sAlpha_unique`: `S_α, S_β ∈ H(E)` ⇒ `β - α ∈ πℤ` (`E` strict).
+- `memHE_sAlpha_unique`: `S_α, S_β ∈ H(E)` ⇒ `β - α ∈ πℤ` (needs only `IsHB E`).
 - `heEqPW_of_comparable` (main result).
 
 **M07 (construction, `Construction.lean`)** — consumed by M06 and M07 (Corollary 2). The statement
@@ -231,26 +314,9 @@ M06 uses `exists_hb_of_density_phase` with `κ = logKappa`; M07's Corollary 2 us
 sequence. M08 consumes the main statement `corollary2`; M09 consumes `OCS.lemma3` directly and
 `lemma3_estimate_uniform` (`Lemma3Uniform.lean`).
 
-## 4a. Known issues in the source (seeds for `../NOTEBOOK.md`; each to be verified)
+## 4a. Issues in the source — see `../NOTEBOOK.md`
 
-- p. 790, l. 4 of §1 "1)": fine. (Placeholder: check the definition of `PW` norm.)
-- p. 793, Theorem E as printed in the tex/print has "∉" (correct); the OCR shows "∈".
-- p. 794, display after (2): `sup |f(x)|` should be `sup |f(x)|²` in the middle term (p. 796).
-- p. 795, (3): `1/λ_k` undefined when `0 ∈ Λ`; normalisation constants (`π`) to check against
-  Theorem F.
-- p. 796: "`φ_{EF} = φ_E + φ_F ≥ φ_E`" should be about derivatives.
-- p. 796, (5) and the display before it: the factor `π` of Theorem E is missing (harmless).
-- p. 796, end of §3 proof: "`α ∈ (0, π]`" then "`α ∈ [0, π)`".
-- p. 797: dominated convergence is not justified by (4) (§3.5 above).
-- p. 799, proof of the Claim: "`h'(t) = -1` for `t ∉ Λ`" should be "`t ∉ Γ`", and "the separation
-  distance of `Λ`" should be "of `Γ`" (`h = n_Γ - t`); `log|I|` needs `|I| > 1`.
-- p. 798: "is a sine-type function" is asserted without proof.
-- p. 800: `U_ψ` principal value need not exist (§2.5).
-- p. 800, proof of Corollary 2: Meĭman's theorem as quoted (§3.6); "we may assume `ω' ≃ 1`";
-  normal-family step only treats `x → +∞`.
-- p. 802: `log|f(z)| = ∑ ∫_{r_{n-1}}^{r_n} …` should integrate over `[t_{n-1}, t_n]` (mass 1 per
-  zero); the same in (10).
-- pp. 804–805, Theorem 2 (ii): `ψ_n(t)` should be `ψ(t)`; "the assumption `φ_n'(t) = o(1/t)`"
-  should be `ψ'`; `ε_n → 0` is false in general (for `ψ = log log x`, the defining equation gives
-  `ε_n ≈ 0.37`); the claims `U_n(x) + ½ log x ≃ 1` and (11) do not follow as written. The proof of
-  (ii) must be reconstructed (M09).
+The seeds listed here during the blueprint phase were verified against the print or the tex and became
+NOTEBOOK entries N-03, N-05, N-07, N-09, N-11, N-12, N-14–N-21 and N-35 (N-01 … N-42 in all). The seed
+about `φ_{EF}` was withdrawn (N-10: an OCR artifact; the print has primes), and the placeholder about the
+`PW` norm was dropped.

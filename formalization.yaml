@@ -23,8 +23,8 @@ project:
     Pavlov's Theorem A, the John–Nirenberg theorem, Lemma III of Duffin–Schaeffer). Each enters
     the formal statements as an explicit Prop hypothesis, never as an axiom. Phase 1 proves every
     argument of the paper itself from these hypotheses (all 15 main statements, accepted by
-    comparator). Phase 2 proves the cited results that are within reach: the John–Nirenberg
-    inequality and Duffin–Schaeffer's lemma are proved; the Paley–Wiener theorem and de Branges'
+    comparator). Phase 2 proves the cited results that are within reach: the Paley–Wiener
+    theorem, the John–Nirenberg inequality and Duffin–Schaeffer's lemma are proved; de Branges'
     Theorems D and E are in progress; Theorems C and F and Pavlov's theorem are assessed in
     blueprint/PHASE2.md.
 
@@ -52,10 +52,25 @@ sources:
     relationship: "formalizes"
     note: >-
       Statements of the published version (the journal PDF). Errata, gaps and simplifications
-      found in the source are recorded in NOTEBOOK.md (38 entries, confirmed by independent referee
-      agents against the printed pages). The Proposition of p. 798 (quoted from [Or98]) and the
+      found in the source are recorded in NOTEBOOK.md (42 entries; N-01–N-38 confirmed by
+      independent referee agents against the printed pages, N-39–N-42 found during the
+      implementation). The Proposition of p. 798 (quoted from [Or98]) and the
       remarks quoting [Se95] are not formalized.
     author_endorsement: "participated"
+  - title: "Fourier transforms in the complex domain"
+    authors:
+      - "Raymond E. A. C. Paley"
+      - "Norbert Wiener"
+    id: "Amer. Math. Soc. Colloquium Publications 19, 1934 (the Paley–Wiener theorem, cited on p. 790 of the paper)"
+    type: "book"
+    location: "The Paley–Wiener theorem with Plancherel's identity: PW = {∫_{−π}^{π} g(t) e^{izt} dt : g ∈ L²(−π, π)}, ‖f‖² = 2π‖g‖²"
+    relationship: "background"
+    note: >-
+      Assumed as the explicit Prop hypothesis FF.PaleyWienerThm of the main statements; proved in
+      the project (FF.paleyWiener_holds, FourierFrames/Cited/PaleyWiener*, blueprint/P1_PaleyWiener.md)
+      by a classical route: Parseval on [−π, π] for part 1; Gaussian regularisation, Mathlib's L²
+      Fourier transform and Phragmén–Lindelöf for part 2.
+    author_endorsement: "n/a"
   - title: "Hilbert spaces of entire functions"
     authors:
       - "Louis de Branges"
@@ -67,7 +82,7 @@ sources:
       Assumed as the explicit Prop hypotheses FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF of
       the main statements that use them, in the weakest form the paper uses (Theorems D, E, F for E
       in the strict Hermite–Biehler class without real zeros; Theorem F with an extra term p·y,
-      p ≥ 0). Proofs of D and E are in progress (blueprint/P3_DeBrangesDE.md); C and F are assessed
+      p ≥ 0). Proofs of D and E are in progress (blueprint/P3_DeBrangesDE.md, forthcoming); C and F are assessed
       in blueprint/P4_DeBrangesFC.md.
     author_endorsement: "n/a"
   - title: "Unconditional bases of exponentials and reproducing kernels"
@@ -144,9 +159,9 @@ status:
         inequality, Corollary 2, Theorem 2 (i) (with the regularity hypothesis its proof needs,
         NOTEBOOK N-22) and Theorem 2 (ii) (by a new proof, NOTEBOOK N-21), the equivalence of
         Fourier frames and sampling (p. 790), and the "evident fact" of p. 799.
-      - Proved (phase 2, cited results): the John–Nirenberg inequality; Duffin–Schaeffer's
-        Lemma III from the Paley–Wiener theorem.
-      - In progress (phase 2): the Paley–Wiener theorem; de Branges' Theorems D and E.
+      - Proved (phase 2, cited results): the Paley–Wiener theorem; the John–Nirenberg inequality;
+        Duffin–Schaeffer's Lemma III (from the Paley–Wiener theorem, hence unconditional).
+      - In progress (phase 2): de Branges' Theorems D and E.
       - Not formalized: Pavlov's theorem (assessed infeasible with current Mathlib), de Branges'
         Theorems C and F (assessed; see blueprint/PHASE2.md), the Proposition of p. 798 and the
         remarks quoting [Se95].
@@ -254,6 +269,11 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       literature_dependencies: ["FF.PaleyWienerThm"]
+    - declaration: "FF.paleyWiener_holds"
+      file: "FourierFrames/Cited/PaleyWiener.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      literature_dependencies: []
 
 automation:
   methods:
@@ -371,7 +391,7 @@ alignment:
       lean: "FF.PaleyWienerThm, FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF, FF.PavlovBMO, FF.JohnNirenberg, FF.DSPerturbation"
       module: "FourierFrames/Defs.lean"
       status: "proved"
-      note: "Props used as hypotheses; JohnNirenberg and DSPerturbation (from PaleyWienerThm) are proved in FourierFrames/Cited/"
+      note: "Props used as hypotheses; PaleyWienerThm, JohnNirenberg and DSPerturbation (from PaleyWienerThm) are proved in FourierFrames/Cited/"
     - source: "p. 790: Fourier frame ⟺ sampling"
       lean: "FF.isFourierFrame_iff_isSampling"
       module: "FourierFrames/Frames.lean"
@@ -424,10 +444,11 @@ alignment:
       lean: "FF.dsPerturbation_of_paleyWiener"
       module: "FourierFrames/Cited/DSPerturbation.lean"
       status: "proved"
-    - source: "Paley–Wiener theorem"
+    - source: "Paley–Wiener theorem (with Plancherel), cited on p. 790"
       lean: "FF.paleyWiener_holds"
       module: "FourierFrames/Cited/PaleyWiener.lean"
-      status: "in-progress"
+      status: "proved"
+      note: "classical proof (blueprint/P1_PaleyWiener.md); not from the paper"
     - source: "[dB68] Theorems 19, 22 (D, E)"
       lean: "FF.theoremD_holds, FF.theoremE_holds"
       module: "FourierFrames/Cited/DeBrangesDE.lean"

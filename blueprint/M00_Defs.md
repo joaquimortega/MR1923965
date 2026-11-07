@@ -3,6 +3,8 @@
 **Lean:** `FourierFrames/Defs.lean` (imports only Mathlib; copied verbatim into `FFChallenge.lean`),
 main statements in `comparator/statements.lean`.
 
+**Status (final).** Definitions only (no `sorry`); all 15 main statements are proved (README §1).
+
 **Depends on:** Mathlib only. **Used by:** every module.
 
 ## 1. Definitions and how they match the paper
@@ -26,7 +28,7 @@ main statements in `comparator/statements.lean`.
 | `MemHE E f` | `H(E)`, p. 793 | entire, `f/E`, `f^*/E ∈ H²`. |
 | `heNormSq E f` | `‖f‖²_E` | `∫⁻ |f(t)/E(t)|² dt`. Lean's `x/0 = 0` is harmless: real zeros of `E ≢ 0` form a null set. |
 | `HEEqPW E` | "`H(E) = PW`", p. 794 | same set and equivalent norms. |
-| `IsPhaseFunction E φ` | phase function, p. 794 | continuous, `E(x) = |E(x)| e^{-iφ(x)}`. |
+| `IsPhaseFunction E φ` | phase function, p. 794 | continuous, `E(x) = |E(x)| e^{-iφ(x)}`, i.e. `E(x)e^{iφ(x)} ≥ 0`. The paper (p. 794) only asks `E(x)e^{iφ(x)}` real; the two conventions differ by a shift of `φ` by `π` and have the same level sets `{φ ∈ α + πℤ}`, so `TheoremE` is still implied by de Branges' Theorem 22 (R2-11). |
 | `phaseDeriv E x` | `φ_E'(x)` | `-Im(E'(x)/E(x))`; equals `φ'` for any `C¹` phase function when `E(x) ≠ 0`. |
 | `phaseLevel φ α` | `{φ = α + kπ}` | |
 | `orthWeight E x` | `π/(φ'(x)|E(x)|²) = 1/K_E(x,x)` | `ENNReal.ofReal`. |
@@ -37,6 +39,7 @@ main statements in `comparator/statements.lean`.
 | `LambdaPsi ψ` | `Λ(ψ)`, p. 800 | `{x : x + ψ(x) ∈ ℤ}`; `x ↦ x + ψ(x)` is a strictly increasing bijection of `ℝ`. |
 | `UPsi ψ z` | `U_ψ`, p. 800 | `Re(z/t)` kept only for `|t| > 1` (README §2.5). |
 | `IsLogRegularPartition ψ` | p. 801 | existence of `t_n` with `t₀ = 0`, `ψ(t_n) = n`, `d_n ≃ d_{n+1}`, and the sup condition. |
+| `IsLogRegularPartitionWithDensity ψ` | p. 802 ("the smoothness of `ψ`") | `IsLogRegularPartition` plus `ψ' ≤ K/d_n` on each cell `[t_{n-1}, t_n]` (the local density bound the proof of Theorem 2 (i) uses; NOTEBOOK N-22). Added at I-01. |
 
 ## 2. Cited results (`Prop`s) and why each is implied by the literature
 
@@ -48,9 +51,10 @@ weaker conclusion) is always safe.
   is in `PW` with `‖f‖²_{L²(ℝ)} = 2π‖g‖²`; (b) every `f ∈ PW` has this form. This is the
   Paley–Wiener theorem plus Plancherel. (A first version stated `MemPW f ↔ ∃ g, rep ∧ norm identity`;
   its `⇐` half was useless because it assumed the norm identity. Changed on the M01 writer's
-  request, before any review.) To be proved in phase 2 from Mathlib's
-  `MeasureTheory.Lp.fourierTransformₗᵢ`; Mathlib (v4.35) lacks the lemma that the `L¹` and `L²`
-  Fourier transforms agree on `L¹ ∩ L²`, which phase 2 needs.
+  request, before any review.) **Proved in phase 2** (P1, `paleyWiener_holds`,
+  `Cited/PaleyWiener*`, no `sorry`): part (a) by Parseval on `[-π, π]`; part (b) by Gaussian
+  regularisation, the `L²` Fourier transform `MeasureTheory.Lp.fourierTransformₗᵢ` and
+  Phragmén–Lindelöf (`blueprint/P1_PaleyWiener.md`).
 - **`TheoremC`.** de Branges [dB68, Theorem 23]: a Hilbert space of entire functions satisfying
   (H1)–(H3) and containing a nonzero element is isometrically equal to some `H(E)`, `E ∈ HB`. The
   Lean version quantifies over a complete inner product space `H` with an injective linear map
@@ -74,10 +78,13 @@ weaker conclusion) is always safe.
   separated `Γ` is complete interpolating, then `h = n_Γ - t ∈ BMO(ℝ)`.
 - **`JohnNirenberg`.** [JN61], [Ga81, Ch. VI]: `|{t ∈ I : |h - h_I| > s}| ≤ C e^{-cs/‖h‖_*}|I|`.
   Stated with any upper bound `M` of the mean oscillations instead of `‖h‖_*`, which is
-  equivalent.
+  equivalent. Proved in phase 2 (`johnNirenberg_holds`, `Cited/JohnNirenberg.lean`), with `C = 2`,
+  `c = log 2/4`, by a dyadic stopping-time argument.
 - **`DSPerturbation`.** Duffin–Schaeffer [DS52, Lemma III]: if `Γ` is a (separated) frame
   sequence, perturbations `|δ_k| ≤ L` with `L` small (depending on `Γ`) preserve the frame
-  property. Proof (phase 2): Bernstein's inequality and Taylor expansion.
+  property. Proved in phase 2 from `PaleyWienerThm` (`dsPerturbation_of_paleyWiener`,
+  `Cited/DSPerturbation.lean`): `L²` Bernstein inequality, FTC and Cauchy–Schwarz on
+  `f(γ+δ) − f(γ) = ∫ f'`, finite overlap of the intervals `[γ − L, γ + L]` (no Taylor series).
 
 ## 3. Main statements
 
@@ -91,6 +98,10 @@ See `comparator/statements.lean` and the table in `README.md` §1. Points to not
 - `corollary1` enumerates `Γ` increasingly by `ℤ` (`StrictMono γ`, `range γ = Γ`).
 - `landau_inequality` uses `encard` in `ℝ≥0∞` and `ENNReal.ofReal` on the left (negative left
   sides are trivially fine).
-- `theorem2_i`: "`ψ'(x) = 1/O(x)`" is `ψ'(x) ≥ c/x` for large `x` (this hypothesis was later
-  removed as unused, NOTEBOOK I-03). `theorem2_ii`:
-  "`ψ'(x) = o(1/x)`" is `x ψ'(x) → 0`.
+- `theorem2_i`: "`ψ'(x) = 1/O(x)`" was formalized as `ψ'(x) ≥ c/x` for large `x` (`hlow`); the
+  proof does not use it (N-26) and it was removed (NOTEBOOK I-03). Instead `theorem2_i` assumes
+  `hmono`: `ψ'` eventually nonincreasing (N-22), which implies the cell density bound.
+  `theorem2_i_of_densityBound` assumes the hypotheses the proof uses,
+  `IsLogRegularPartitionWithDensity`.
+- `theorem2_ii`: "`ψ'(x) = o(1/x)`" is `x ψ'(x) → 0`. It has no cited hypothesis (its `hPW` was
+  unused and removed, I-03).

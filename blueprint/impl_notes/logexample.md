@@ -1,7 +1,9 @@
 # logexample implementation notes (M06)
 
 Files: `FourierFrames/LogExample.lean`, `FourierFrames/LogExample/Basic.lean` (log estimates),
-`FourierFrames/LogExample/Phase.lean` (`integral_cos_sq_phase_ge`).
+`FourierFrames/LogExample/Phase.lean` (`integral_cos_sq_phase_ge`),
+`FourierFrames/LogExample/Potential.lean` (the §4 analysis: `logPrimD`, `integral_log_one_add_inv_sq`,
+`integral_posLog_kern_eq`, `abs_integral_phiK_le`, `young_uv`, …).
 
 ## Deviations from the blueprint
 - `logLam_sub_ge_of_le` (new, non-strict) is proved first; `logLam_sub_ge` follows. Needed for
@@ -36,5 +38,6 @@ No statement was changed; `check_statements.py scaffold-reviewed` passes.
 - `multU_model`: real antiderivative `logPrimD` of `log((t-x)^2+y^2)` (no `Complex.log`).
 - `abs_multU_sub_multU_le` (strip): exact constant `20 pi` via `int_R log(1+1/s^2) = 2 pi`
   (antiderivative `s log(1+1/s^2) + 2 arctan s`, `LogEx.integral_log_one_add_inv_sq`).
-- `integrable_log_mul_sub_one` does not use its hypothesis `0 < Im z` (a harmless `have _ := hz`
-  silences the linter); it is deduced from `OCS.integrable_multUIntegrand` for `m` and for `1`.
+- `integrable_log_mul_sub_one` does not use the hypothesis `0 < Im z`; it is deduced from
+  `OCS.integrable_multUIntegrand` for `m` and for `1`. (The hypothesis was removed in the lint pass,
+  NOTEBOOK I-03.)

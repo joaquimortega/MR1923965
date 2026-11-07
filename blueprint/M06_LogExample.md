@@ -1,6 +1,8 @@
 # M06 — The example `Λ = {k + log⁺|k|}` and the sharpness of Landau's inequality
 
-- **Lean file:** `FourierFrames/LogExample.lean` (compiles with `lake env lean`, only `sorry` warnings).
+- **Lean file:** `FourierFrames/LogExample.lean`; helpers `FourierFrames/LogExample/{Basic,Phase,Potential}.lean`.
+- **Status:** proved (no `sorry`). The Lean blocks show the statements; where the implemented proof differs
+  from the text it is marked *Implemented:* (source: `impl_notes/logexample.md`).
 - **Paper:** p. 798 (the paragraph before the Claim); the "sine-type" assertion and the appeal to
   Levin's theorem are replaced by the construction of §3–§6 below.
 - **Main statements (identical to `comparator/statements.lean`):** `logExample_count`,
@@ -11,8 +13,8 @@
     `IsPhaseFunction.hasDerivAt` (new name, see below), `HEEqPW.phaseDeriv_mul_sq_ge`,
     `HEEqPW.phaseDeriv_mul_sq_le`, `fstar_mul`, `fstar_ofReal`.
   - M07: `exists_hb_of_density_phase` with the drifted hypothesis `∃ κ C, |U - π Im z - κ Re z| ≤ C`
-    (`Construction.lean`; replaces the old `README.md` §4 statement; the normalisation by `e^{-κ z}` is done
-    inside M07).
+    (`Construction.lean`; replaces the old `README.md` §4 statement; the normalisation
+    `E_κ = e^{-κ z}(A - i e^{κ/2} B)` (`compEκ`) is done inside M07).
   - vendored OCS: `OCS.IsMultWeight`, `OCS.multPrim`, `OCS.multPt`, `OCS.multBary`,
     `OCS.multGamma`, `OCS.multU`, `OCS.multUIntegrand`, `OCS.multPt_eq_of`,
     `OCS.integrable_multUIntegrand`, `OCS.log_norm_one_sub_div`.
@@ -35,8 +37,9 @@ We avoid Levin (README §3.7) and instead run the machinery of the paper itself:
 2. **Sine-type estimate (§4).** `OCS.multU m 0 z = π Im z + κ Re z + O(1)` on `Im z ≥ 0`, with an
    explicit constant `κ = ∫_{|t|>1} (m(t) - 1)/t dt ≈ -1.352` (numerically checked). **A linear
    term `κ Re z` does appear** (it is an artefact of the normalisation `Re(z/t)` for `|t|>1` in
-   `OCS.multU`; the symmetric product of the paper has none). It is removed by `E ↦ E e^{-κ z}`,
-   which preserves `\overline{HB}`, the zero set of `E + E^*`, and the phase.
+   `OCS.multU`; the symmetric product of the paper has none). It is removed by
+   `E_κ = e^{-κ z}(A - i e^{κ/2} B)` (`compEκ`, M07); `e^{-κ z}(A - iB)` has the right modulus but not the
+   right phase, because `A` and `B = A(· - 1/2)P/Q` have amplitude ratio `e^{-κ/2}`.
 3. **`H(E) = PW` (§5)** by `heEqPW_of_comparable`.
 4. **Theorem E at the phase level `π/2` (§6)** gives the norm identity and the interpolation with
    weights `≃ 1`, hence sampling and CIS for `Λ + 1/2`. The only non-formal point is that
@@ -541,6 +544,10 @@ For `t ≠ 0`, `log‖1 - z/t‖ = log‖t - z‖ - log|t|` (`OCS.log_norm_one_s
 `∫_{-R}^{R} (1 - 1_I(t)) Re(z/t) dt = x ∫_{1≤|t|≤R} dt/t = 0` (odd). Remains
 `I_R := ∫_{-R}^{R} [log|t - z| - log|t|] dt`.
 
+*Implemented* (`LogExample/Potential.lean`) with the real antiderivative
+`logPrimD x y t = (t-x) log((t-x)² + y²) - 2(t-x) + 2y arctan((t-x)/y)` of `log((t-x)² + y²)` (`:108`); no
+`Complex.log`.
+
 Since `y > 0`, `w = t - z` stays in the lower half-plane, in the slit plane. With
 `G(w) = w Log w - w` (`Complex.log`), `d/dt Re G(t - z) = Re Log(t - z) = log|t - z|`, so
 `∫_{-R}^{R} log|t - z| dt = Re[G(R - z) - G(-R - z)]` (`intervalIntegral.integral_eq_sub_of_hasDerivAt`;
@@ -604,7 +611,11 @@ theorem integral_log_mul_sub_one_eq {z : ℂ} (hz : 0 < z.im) :
   sorry
 ```
 
-**Proof.** Put `φ_z(t) = log‖t - z‖ - log|t|` for `t ≠ 0` (this is `log‖1 - z/t‖`), which is `C¹` on
+*Implemented* without absolute continuity: `MeasureTheory.integral_eq_of_hasDerivAt_off_countable_of_le` on
+`[-R, R]` for `Ψ = log‖1 - z/t‖ · W`, with exceptional set `{breakpoints of m} ∪ {0}` (`ftc_Psi`,
+`LogExample.lean:1295`); continuity of `Ψ` at `0` from `|W| ≤ 19|t|`.
+
+**Proof (blueprint).** Put `φ_z(t) = log‖t - z‖ - log|t|` for `t ≠ 0` (this is `log‖1 - z/t‖`), which is `C¹` on
 `(0,∞)` and on `(-∞, 0)` with `φ_z' = K_z` (`OCS.hasDerivAt_logDist`: derivative of `log‖t - z‖`
 is `(t-x)/((t-x)²+y²)`; `Real.hasDerivAt_log`). `W` is Lipschitz, hence absolutely continuous
 (`LipschitzOnWith.absolutelyContinuousOnInterval`), with `deriv W = m - 1` a.e. (Lebesgue
@@ -643,7 +654,12 @@ theorem abs_integral_posLog_mul_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z
   sorry
 ```
 
-**Proof.** Fix `z = x + iy`, `y ≥ 1`. Write `P(s) = s/(s² + y²)`; `|P(s)| ≤ 1/(2y) ≤ 1/2` and
+*Implemented* differently: integration by parts of `log t · K_z(t)` on `[1, R]` and `[-R, -1]` with the
+primitive `log D(t)/2 - log t` of `K_z` (`LogEx.integral_posLog_kern_eq`, `LogExample/Potential.lean:501`),
+reflection `t ↦ -t`, then `|φ(s) - φ(-s)| ≤ log((s+|x|)/|s-|x||)` and scaling to
+`integrableOn_log_ratio_div` (`LogEx.abs_integral_phiK_le`, `:574`). No `Q_R` splitting.
+
+**Proof (blueprint).** Fix `z = x + iy`, `y ≥ 1`. Write `P(s) = s/(s² + y²)`; `|P(s)| ≤ 1/(2y) ≤ 1/2` and
 `|P(s)| ≤ 1/|s|`. `logKernel z t = P(t - x) - 1/t`.
 *Integrability:* for `|t| ≥ 1`, `|K_z(t)| ≤ |z|/(|t| |t - z|)`, and `|t - z| ≥ y ≥ 1`, `|t - z| ≥ |t|/2`
 for `|t| ≥ 2|z|`: so `|log|t| · K_z|` is bounded on `1 ≤ |t| ≤ 2|z|` and `≲ |z| log|t|/t²` beyond.
@@ -672,7 +688,10 @@ theorem integral_abs_rho_logKernel_le : ∃ C : ℝ, ∀ z : ℂ, 1 ≤ z.im →
   sorry
 ```
 
-**Proof.** Let `ρ(t) = W(t) + log⁺|t|`, `|ρ(t)| ≤ C_ρ min(|t|, (1+|t|)^{-1/2})`. Fix `z`, `y ≥ 1`,
+*Implemented* without the three regions: `|K_z| ≤ 1/|t - z| + 1/|t|` and Young's inequality
+`uv ≤ u³/3 + 2v^{3/2}/3` (`LogEx.young_uv`, `LogExample/Potential.lean:662`) give an `x`-independent majorant.
+
+**Proof (blueprint).** Let `ρ(t) = W(t) + log⁺|t|`, `|ρ(t)| ≤ C_ρ min(|t|, (1+|t|)^{-1/2})`. Fix `z`, `y ≥ 1`,
 `R_0 = |z| ≥ 1`. Use `|K_z(t)| ≤ R_0/(|t||t - z|)`.
 - `|t| ≤ R_0/2`: `|t - z| ≥ R_0/2`, so `|K_z| ≤ 2/|t|`, and
   `∫_{|t| ≤ R_0/2} |ρ| 2/|t| ≤ 2 ∫_{|t|≤1} C_ρ dt + 2 ∫_{|t| ≥ 1} C_ρ |t|^{-3/2} dt = 4 C_ρ + 8 C_ρ`.
@@ -709,7 +728,7 @@ theorem abs_multU_sub_multU_le {z : ℂ} (h0 : 0 ≤ z.im) (h1 : z.im ≤ 1) :
 `≤ 0` and `|·| = ½ log((s² + 1)/(s² + y²)) ≤ ½ log(1 + 1/s²)` (since `s² + 1 ≤ ...`:
 `(s²+1)/(s²+y²) ≤ (s²+1)/s²`). Hence (`m ≤ 20`)
 `|U(z) - U(z')| ≤ 20 ∫_ℝ ½ log(1 + 1/s²) ds = 20 π`
-(`∫_ℝ log(1 + 1/s²) ds = 2π`: e.g. by parts, `∫_0^∞ log(1 + 1/s²) ds = [s log(1+1/s²)]_0^∞ +
+(`∫_ℝ log(1 + 1/s²) ds = 2π`, `LogEx.integral_log_one_add_inv_sq` in `LogExample/Potential.lean`: e.g. by parts, `∫_0^∞ log(1 + 1/s²) ds = [s log(1+1/s²)]_0^∞ +
 ∫_0^∞ 2/(s² + 1) ds = π`; any finite bound suffices and the exact constant `20π` can be replaced
 by any `C`). ∎
 
@@ -751,8 +770,9 @@ theorem exists_E_logExample (hPW : PaleyWienerThm) :
 **Proof.** Apply `exists_hb_of_density_phase` to `m = logDensity`, `a = 1/10`, `b = 20`
 (`measurable_logDensity`, `logDensity_bounds`, `tendsto_logDensity`) with
 `hU := ⟨logKappa, C_U, logDensity_U_estimate⟩`, `|U - πy - κx| ≤ C_U` (§4). It returns an `E` with
-`IsHB E`, no real zeros, `c e^{πy} ≤ ‖E‖ ≤ C e^{πy}` on `Im z ≥ 0` (the normalisation `E = E₀ e^{-κ z}`
-that this section used to perform is now inside M07), `E + E^* = 0 ⟺ z ∈ multGamma m` and a phase
+`IsHB E`, no real zeros, `c e^{πy} ≤ ‖E‖ ≤ C e^{πy}` on `Im z ≥ 0` (the normalisation
+`E_κ = e^{-κ z}(A - i e^{κ/2} B)` is done inside M07; the plain `E₀ e^{-κ z}` this section used to construct has
+the right modulus but not the right phase), `E + E^* = 0 ⟺ z ∈ multGamma m` and a phase
 function `φ`. The remaining items:
 - `HEEqPW E`: `heEqPW_of_comparable hPW (IsHB E) hcomp`.
 - Zero set: `multGamma_logDensity` rewrites `multGamma m` as `(· + 1/2) '' logExample`. ∎
@@ -805,7 +825,11 @@ Hence (mean value theorem, `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le` 
 so `φ(x) → ±∞` as `x → ±∞` and, by the intermediate value theorem (`intermediate_value_univ`,
 `φ` continuous), for every `k ∈ ℤ` there is `x_k` with `φ(x_k) = kπ`, `x_{k+1} - x_k ≥ π/M₁`.
 
-*Non-integrability.* Let `r = π/(4M₁)` and `J_k = [x_k - r, x_k + r]` (disjoint: `x_{k+1} - x_k ≥ 4r > 2r`).
+*Implemented* (`not_memHE_sAlpha`, `LogExample.lean:1826`) without the intervals `J_k`: FTC with the antiderivative
+`φ/2 + sin(2φ)/4` gives `∫_0^T cos² φ ≥ (m₁T/2 - 1/2)/M₁` (`LogEx.integral_cos_sq_phase_ge`,
+`LogExample/Phase.lean:11`), which needs `φ' = phaseDeriv E` continuous.
+
+*Non-integrability (blueprint).* Let `r = π/(4M₁)` and `J_k = [x_k - r, x_k + r]` (disjoint: `x_{k+1} - x_k ≥ 4r > 2r`).
 For `x ∈ J_k`: `|φ(x) - kπ| ≤ M₁ r = π/4`, so `|cos φ(x)| = |cos(φ(x) - kπ)| ≥ cos(π/4) = √2/2`, hence
 `‖S x‖² ≥ 4c² · 1/2 = 2c²`. For every `K`,
 `∫⁻_ℝ ‖S x‖ₑ² ≥ ∑_{k=1}^{K} ∫⁻_{J_k} ‖S x‖ₑ² ≥ K · 2r · 2c²` (disjoint union, `lintegral_finset_biUnion`
@@ -891,30 +915,31 @@ theorem logExample_isSampling (hPW : PaleyWienerThm) (hE : TheoremE) :
 
 ```lean
 /-- **Landau's inequality is best possible** (p. 798): `{k + log⁺|k|}` is a separated sampling
-sequence for which the logarithmic term cannot be removed. -/
+sequence for which no coefficient `A < 1` of the logarithmic term works. -/
 theorem landau_sharp (hPW : PaleyWienerThm) (hE : TheoremE) :
     IsSeparated logExample ∧ IsSampling logExample ∧
-      ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
-        ENNReal.ofReal (b - a - B) ≤ ((logExample ∩ Ioc a b).encard : ℝ≥0∞) := by
-  sorry
+      ∀ A : ℝ, A < 1 → ¬ ∃ B : ℝ, ∀ a b : ℝ, a < b →
+        ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤
+          ((logExample ∩ Ioc a b).encard : ℝ≥0∞)
 ```
+(The strengthened statement of NOTEBOOK I-01, identical to `comparator/statements.lean`; the first version had
+`¬ ∃ B, … ofReal (b - a - B) ≤ …`, i.e. only `A = 0`.)
 
-**Proof.** `logExample_isSeparated`, `logExample_isSampling`. Suppose `B` is such that for all `a < b`,
-`ofReal(b - a - B) ≤ (Λ ∩ Ioc a b).encard` (coerced to `ℝ≥0∞`). Take `a = 0`, `b = R ≥ max(1, B+1)`
-(so `R - B > 0`). `Λ ∩ Ioc 0 R` is finite (image of the finite set of `k` with `1 ≤ k ≤ R`;
-`logExample_count` gives `ncard`; or `Set.Finite` from `ncard_pos`/`Set.finite_of_ncard_pos`), so `encard = ncard`
-(`Set.Finite.cast_ncard_eq`) and `ofReal(R - B) ≤ ncard` gives `R - B ≤ ncard` (`ENNReal.ofReal_le_iff_le_toReal`).
-By `logExample_count` (first estimate, `C = 2`): `ncard ≤ R - log R + 2`. So `log R ≤ B + 2`, false for
-`R > e^{B+2}`. ∎
+**Proof** (`LogExample.lean:2063`). `logExample_isSeparated`, `logExample_isSampling`. Let `A < 1` and suppose `B`
+works. Let `C` be the constant of `logExample_count` (`C = 2`), `x = (|B| + C + 1)/(1 - A) + 1 ≥ 1` and
+`a = 0`, `b = R = e^x`, so `log⁺ R = x`. `Λ ∩ Ioc 0 R` is finite (`finite_logExample_inter_Ioc_pos`), so
+`encard = ncard` (`Set.Finite.cast_ncard_eq`) and `ofReal(R - Ax - B) ≤ ncard` gives `R - Ax - B ≤ ncard`
+(`ENNReal.ofReal_le_iff_le_toReal`). By `logExample_count`, `ncard ≤ R - x + C`. Hence `(1 - A)x ≤ B + C`,
+contradicting `(1 - A)x > |B| + C + 1`. ∎
 
 (Finiteness of `Λ ∩ Ioc 0 R`: it is contained in `logLam '' Finset.Icc 1 ⌈R⌉` because `λ_k ≥ k` for `k ≥ 1`.)
 
 ---
 
-## 8. Upstream interface used (temporary declarations at the top of the Lean file)
+## 8. Upstream lemmas used (imported; see `IMPORTS.md`)
 
-All of these must exist in the final assembly; signatures are my guesses and should be matched to
-the real ones (module owners: adjust the file or tell me).
+Before assembly these were temporary declarations at the top of the Lean file; they are now imported from
+their owners.
 
 | declaration | owner | statement as used |
 |---|---|---|
@@ -959,7 +984,8 @@ existence of a phase function.
    inequality `n(b) - n(a) ≥ b - a - B` holds (take `a = 0`, `b = R`; the deficiency is `log R`) is
    left to the reader. "Best possible" means: the `A log⁺(b - a)` term cannot be dropped (the
    example has deficiency exactly `log R`, so it matches `A = 1` up to `O(1)`). Formalised as
-   `landau_sharp` in the weakest reasonable form (no constant `B` works). *Sure.*
+   `landau_sharp` in the strengthened form: no coefficient `A < 1` of `log⁺(b - a)` works (NOTEBOOK I-01).
+   *Sure.*
 6. **A simplification.** Because `m ↦ OCS.multGamma m` with the two-level step density gives the
    zero set exactly `Λ + 1/2` (§3), no perturbation argument is needed: with a perturbation
    `δ_k → 0`, sampling would follow from M07's `IsSampling.of_perturbation`, but CIS would

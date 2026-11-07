@@ -16,5 +16,6 @@
   `dyadic_subset`, `measurableSet_dyadic`, `osc`, `locInt_osc`, `integral_osc_le`,
   `abs_intervalMean_sub_le`, `czG/cl/cr/czStop/czSel`, `czSel_disjoint`, `czSel_mean`,
   `czSel_length`, `dyadicIdx_anc`, `dyadicIdx_lt`, `czStop_exists_sel`, `czSel_good`.
-- `volume_dyadic`: hypothesis renamed `_hab` (unused). Other scaffold statements unchanged.
+- `volume_dyadic`: hypothesis renamed `_hab` (unused; *later* removed in the lint pass, NOTEBOOK I-03). Other
+  scaffold statements unchanged.
 - Lebesgue differentiation: `IsUnifLocDoublingMeasure.ae_tendsto_average` with `ι := ℕ`, `l := atTop`, K = 1.

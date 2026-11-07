@@ -10,8 +10,8 @@ identical to `comparator/statements.lean`).
   `PaleyWienerThm`.
 - M01 (PW toolkit): `memPW_zero`, `MemPW.add`, `MemPW.sub`, `MemPW.const_mul`, `MemPW.fstar`,
   `pwNormSq_fstar`, `MemPW.mul_div_sub`, `pwNormSq_ne_top`, `pw_norm_sq_le`,
-  `exists_memPW_eval_ne_zero`, `pw_complete`; **new name requested**
-  `MemPW.eq_zero_of_pwNormSq_eq_zero`.
+  `exists_memPW_eval_ne_zero`, `pw_complete`, `MemPW.eq_zero_of_pwNormSq_eq_zero` (added to
+  `PW/Basic.lean` at assembly), `IsSeparated.finite_inter_Icc` (moved to `PW/Basic.lean`).
 - M02 (HB): `fstar_fstar`, `Differentiable.fstar`, `fstar_ofReal`, `HEEqPW.isStrictHB`,
   `HEEqPW.ne_zero_ofReal`.
 - Vendored `OrtegaCerdaSeip/Products/Canonical.lean`: `OCS.canonicalProd`, `OCS.IsGenusOneData`,
@@ -22,9 +22,11 @@ identical to `comparator/statements.lean`).
 step: **exported lemmas `exists_samplingHilbertSpace` (§3.6) and `exists_E` (§4)**, which give `E ∈
 \overline{HB}` with `H(E) = PW` for any *sampling* `Λ`), M05 (via Corollary 1).
 
-The scaffold compiles with only `declaration uses 'sorry'` warnings. **The final theorem
-`theorem1_necessity` already has a complete proof assembling the lemmas below** (checked by Lean),
-so the statements of the lemmas are mutually consistent and sufficient.
+**Status (final).** All declarations proved, no `sorry`; helper file
+`Theorem1/Necessity/Sep.lean` (bucketing for §2.2), plus `PWFun.mk`, `PWFun.val_mk`,
+`IsSeparated.eventually_le_abs` in `Necessity.lean`. Lean blocks show the statements (some lemma
+hypotheses were removed as unused in the lint pass, NOTEBOOK I-03). §13 is obsolete: the interface
+block was replaced by imports (`IMPORTS.md`).
 
 ---
 
@@ -123,6 +125,8 @@ theorem IsSeparated.finite_inter_Icc {Λ : Set ℝ} (h : IsSeparated Λ) (r : �
     (Λ ∩ Icc (-r) r).Finite := sorry
 ```
 
+(Moved to `PW/Basic.lean` at assembly, with the binder `R`.)
+
 *Proof.* The map `x ↦ ⌊x/δ⌋ : ℤ` is injective on `Λ`: if `⌊x/δ⌋ = ⌊y/δ⌋` then `|x - y| < δ`
 (`Int.abs_sub_lt_one_of_floor_eq_floor` applied to `x/δ, y/δ`), so `x = y`. It maps `Λ ∩ [-r, r]` into
 `Finset.Icc ⌊-r/δ⌋ ⌊r/δ⌋` (monotonicity of `⌊·⌋`). Conclude with `Set.Finite.of_injOn` (or
@@ -138,7 +142,8 @@ theorem IsSeparated.summable_inv_one_add_sq {Λ : Set ℝ} (h : IsSeparated Λ) 
 (a) *At most `N` points per unit cell.* For `n ∈ ℤ` let `Λ_n = Λ ∩ [n, n+1)`. The map
 `x ↦ ⌊(x - n)/δ⌋` is injective on `Λ_n` (as in 2.1) with values in `{0, …, ⌊1/δ⌋}`; so
 `#Λ_n ≤ N`.
-(b) *Weights.* For `x ∈ [n, n+1)`: `1/(1+x²) ≤ 5/(1+n²)`. If `n ≥ 0`, `x ≥ n` and the constant is 1.
+(b) *Weights.* For `x ∈ [n, n+1)`: `1/(1+x²) ≤ 5/(1+n²)` (*Implemented:* `≤ 3/(1+n²)`,
+`one_add_sq_floor_le` in `Necessity/Sep.lean`; either constant works). If `n ≥ 0`, `x ≥ n` and the constant is 1.
 If `n < 0`, `x ≤ n + 1 ≤ 0`, so `x² ≥ (|n|-1)²` and `1 + n² ≤ 5(1 + (|n|-1)²)` iff
 `4m² - 10m + 9 ≥ 0` (`m = |n|`), true since the discriminant is negative.
 (c) *Sum.* Use `summable_of_sum_le` (nonneg terms; all finite partial sums bounded). For a finite
@@ -868,7 +873,7 @@ theorem theorem1_necessity (hPW : PaleyWienerThm) (hC : TheoremC) (hF : TheoremF
   simp
 ```
 
-The proof in the scaffold is complete modulo the lemmas above; here is the logic.
+The proof (`theorem1_necessity`, `Necessity.lean`) follows this logic.
 
 1. `exists_E` (§4): `E`, `IsHB E`, `HEEqPW E`, `MemHE E f ↔ MemPW f`, `heNormSq E f = sampleSum Λ f`.
    M02: `IsStrictHB E`, `∀ x, E x ≠ 0`.
@@ -962,6 +967,9 @@ None required. Comments:
   `IsStrictHB E` and no real zeros are used in `denom_ne_zero` and in `lintegral_sampMeasure_div`.
 
 ## 13. Notes for the integrator (upstream interface section of the scaffold)
+
+*Obsolete:* the interface section was replaced by imports at assembly (`IMPORTS.md`);
+`IsSeparated.finite_inter_Icc` moved to `PW/Basic.lean`. Kept for the record.
 
 The scaffold declares, with README/M01/M02 names, the following (all `sorry`), to be replaced by
 imports. Signatures already match the current `PW/Basic.lean`, `PW/Bounds.lean`, `PW/Complete.lean`,

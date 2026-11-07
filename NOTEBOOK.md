@@ -21,7 +21,10 @@ loses the prime in "φ_f'" in Corollary 2).
 
 **Status tags:** *print-checked* (verified on the page image), *tex-checked*, *referee-confirmed*
 (confirmed by an independent review agent; reports `reviews/R1`–`R5`, blueprint review round,
-2026-11-06), *open* (not yet settled).
+2026-11-06), *code-checked* (checked against the final Lean code), *numerical*, *open* (not yet
+settled). Referee R8 (2026-11-07) re-checked N-06, N-12, N-16–N-19,
+N-21–N-25 and N-30–N-36 against the final Lean code; the corrections it asked for are applied below,
+and N-39–N-42 record findings of the implementation that it found missing.
 
 Sections: N-entries are about the paper; I-entries (end of file) are the implementation log.
 
@@ -114,6 +117,10 @@ tails `∑_{|λ_{α,k}| > R} |f(λ_{α,k})|²` are bounded by a fixed multiple o
 ### N-13 (G) — p. 796: `φ_F' ≥ 0` — *referee-confirmed (R3)*
 Used without comment. For `F ∈ \overline{HB}` without real zeros it follows from
 `log|F^*| - log|F| ≤ 0` on `ℂ₊`, with equality on `ℝ`.
+- **Formalization:** `φ_F' ≥ 0`, and `φ_E' > 0` for strict `E`, both come from one dichotomy (either
+  `E^* = cE` near `x`, or `φ'(x) > 0`), proved with a Hopf-type boundary lemma
+  (`IsHB.phaseDeriv_pos_or_eventuallyEq`, `HB/Hopf.lean`). Strictness cannot be obtained from the
+  derivative argument above alone. This also gives the "`φ_E + φ_F` strictly increasing" of N-28.
 
 ## Section 4: Landau's inequality
 
@@ -141,8 +148,10 @@ The text says: if `A` and `B` have interlacing zeros, then `A - iB` or `A + iB` 
 `|cosh πy ∓ e^{iay} sinh πy|`, whose order changes with the sign of `cos(ay)`. For the specific `A`, `B`
 of the proof the conclusion holds and is proved directly: the symmetric partial products are real
 polynomials with interlacing zeros, for which `Im(B_R/A_R) > 0` on `ℂ₊` (sum of arguments of the
-factors), and `\overline{HB}` is closed under locally uniform limits (Hurwitz). No choice of sign
-(`P ↦ -P`) is needed.
+factors), and, after multiplication by real exponential factors `e^{β + c_R z}` (which preserve
+`\overline{HB}`; the bare products need not converge, N-35), they converge locally uniformly;
+`\overline{HB}` is closed under locally uniform limits (Hurwitz). No choice of sign (`P ↦ -P`) is
+needed, and `A - iλB ∈ \overline{HB}` for every `λ > 0` (`isHB_genA_sub_lam_compB`).
 
 ### N-18 (G) — p. 800: "We may assume `ω' ≃ 1`" — *referee-confirmed (R4)*
 `ω' = 1 + ψ' - φ_f'/π → 1` at infinity but may fail to be `≃ 1` on a compact set. Modifying `ω'`
@@ -182,8 +191,11 @@ entire `f`. The integrals must run over `[t_{n-1}, t_n]`, whose mass is `1`. The
   `ℤ + 1/2` there. Take the [OS99] Lemma 3 function for the density `1 + μ`, where `μ` consists of two
   negative ramps of mass `-1/2` just before and after the window, normalised and shifted so that its
   zeros are `ℤ` on the left, `ℤ + 1/2` on the window and `ℤ` after. Then `f` vanishes on
-  `Λ ∩ (-∞, 0] = ℤ_{≤0}`, `‖f‖² ≳ a log(L)` while `∑_Λ |f|² ≲ a(1 + η² log L)`, and the ratio tends
-  to `0` (blueprint M09).
+  `Λ ∩ (-∞, 0] = ℤ_{≤0}`, and, with `L = a₂/a₁` the length ratio of the window `[a₁, a₂]`,
+  `‖f‖² ≳ a₁ log(L/4)` while `∑_Λ |f|² ≲ a₁(1 + η² log L)`, so the ratio tends to `0` (blueprint M09;
+  `pwNormSq_testFn_ge`, `sampleSum_testFn_le`, `Theorem2ii.lean`).
+- The construction applies [OS99] Lemma 3 to a density that depends on the window, so it needs the
+  constants of Lemma 3 to depend only on the bounds of the density (N-42).
 
 ### N-22 (G/D) — Theorem 2 (i) needs regularity of `ψ` beyond the stated hypotheses — *referee-confirmed (R1, R5); open whether (i) holds without it*
 The proof of (i) uses "the smoothness of `ψ` ensures that `∑_{n(z)-1}^{n(z)+1} j_n(z) ≃ 1`"
@@ -194,9 +206,15 @@ Theorem 2 only assumes `ψ' = 1/O(x)` and the logarithmically regular partition.
   the spike `j_n(x) ≈ log(ℓ_n/d_n) → -∞`, so `|U_ψ - log|f||` is unbounded for the paper's `f`.
   Two half-spikes at the ends of a cell defeat every choice of one zero per cell.
 - **What the proof needs:** `ψ' ≤ K/d_n` on `[t_{n-1}, t_n]` (`DensBound`).
-- **Formalization:** `theorem2_i` assumes in addition that `ψ'` is eventually nonincreasing, which
-  covers the paper's example `√x` and gives `DensBound`. `theorem2_i_of_regular` assumes `DensBound`
-  directly. Whether (i) holds without such a regularity assumption is open.
+- **Formalization:** two main statements.
+  - `theorem2_i_of_densityBound` assumes `IsLogRegularPartitionWithDensity` (the regular partition plus
+    `ψ' ≤ K/d_n` on each cell; `Defs.lean`) and not `ψ' = 1/O(x)`.
+  - `theorem2_i` keeps the printed hypotheses except `ψ' = 1/O(x)` (removed as unused, N-26, I-03) and
+    adds `hmono` (`ψ'` eventually nonincreasing). This covers the paper's example `√x` and implies the
+    density bound (`RegData.densBound_of_antitoneOn`).
+
+  Both are proved through the internal lemma `theorem2_i_of_regular`. Whether (i) holds without such a
+  regularity assumption is open.
 
 ### N-23 (E) — p. 804: the bound for `V_2` is false for nonreal `z` — *coordinator-checked; referee-confirmed (R5)*
 "`|log|z - r_n| - log|z - z_n|| ≲ d_n²/|z - r_n|²`" fails off the real axis: for `z = i r_n` the
@@ -218,7 +236,8 @@ must be shown integrable (in Lean a non-integrable integral is `0`).
 ### N-26 (S) — Theorem 2 (i): the hypothesis `ψ' = 1/O(x)` — *referee-confirmed (R3–R5)*
 The proof only uses `t_n ≤ (1 + C) t_{n-1}`, which already follows from `d_n ≃ d_{n+1}`. The
 hypothesis is kept in the formal statement for faithfulness unless the linter forces its removal
-(removing a hypothesis strengthens the theorem). *It did: removed from `theorem2_i` in I-03.*
+(removing a hypothesis strengthens the theorem). *It did: removed from `theorem2_i` in I-03;
+`theorem2_i_of_densityBound` never had it.*
 
 ### N-27 (S) — p. 790: Fourier frames and sampling — *tex-checked; referee-confirmed (R2)*
 "By the Paley–Wiener theorem, `Λ` is sampling for PW if and only if `{e^{iλ_k x}}` is a Fourier frame":
@@ -240,7 +259,9 @@ Fatou argument for `L²(ℝ)` and a separate bound in the strip `|Im z| ≤ 1`.
 `F(z) = lim ∏_{|λ_k|<R}(1 - z/λ_k)` is undefined because `λ_0 = 0`; it should be `z ∏_{k ≠ 0}`.
 "This sequence is sampling, because … sine-type" is really sine-type ⇒ complete interpolating ⇒
 sampling. The formalization proves the needed estimate `|E(z)| ≃ e^{π Im z}` (the conjugate function
-of `log|t|` is bounded) and replaces Levin's theorem by Theorem E.
+of `log|t|` is bounded) and replaces Levin's theorem by Theorem E. No perturbation (Kadec/Avdonin) argument
+is needed either: the density can be chosen with barycentres exactly `Λ + 1/2` (`LogExample.lean`). Its
+potential has a nonzero linear drift (N-41).
 
 ### N-31 (G) — pp. 795–796: further gaps in the proof of necessity — *referee-confirmed (R3–R5)*
 - "`M - 1` vanishes whenever `E^*` vanishes": this uses that the zeros of `E^*` lie in `ℂ₊`, i.e.
@@ -256,15 +277,20 @@ of `log|t|` is bounded) and replaces Levin's theorem by Theorem E.
 "`F = S F̃`, where `F̃ ∈ \overline{HB}` without real zeros and `S` is an entire function with real
 zero set": `S` is not constructed. The real zeros of `F` lie in the separated set `Λ`, but their
 multiplicities can be unbounded (e.g. `F` real entire with prescribed multiplicities), so a genus-one
-product may not converge. A Weierstrass product of variable genus (`p_x ≥ m_x + |x|`) works; Mathlib
-has no Weierstrass factorization theorem, so the formalization constructs it. Also "If we prove that
+product may not converge. A Weierstrass product of variable genus works. The formalization constructs
+it (Mathlib has no Weierstrass factorization theorem) for any `F ∈ \overline{HB}`, `F ≢ 0`, with
+`p_a = m(a) + rank(a) + 1`, where `rank` injects the real zero set into `ℕ`
+(`Theorem1/Sufficiency/RealFactor/Product.lean`). This needs no separation. Because the zeros lie in
+the separated `Λ`, `p_x ≥ m_x + |x|` would also do. The factorisation `F = SG` depends on `F` alone
+(`exists_noRealZero_hb` does not use `E`). Also "If we prove that
 `Λ₁` is a sampling sequence, then `Λ` is also": the upper bound for `Λ ⊋ Λ₁` needs the
 Plancherel–Pólya inequality for the separated `Λ`.
 
 ### N-33 (G) — p. 796: the level sets are indexed by `ℤ` — *referee-confirmed (R3–R5)*
 `Λ_α = {λ_{α,k}}_{k ∈ ℤ}` presupposes that `φ_{EF}` maps `ℝ` onto `ℝ`. This holds (e.g. since
-`φ_E → ±∞`, which follows from Theorem E: a level set bounded on one side would contradict the
-interpolation property), but it is not shown. "We may assume it fails for `α = π/2`" is unnecessary:
+`φ_E → ±∞`, which follows from Theorem E: a level set bounded on one side would contradict the norm
+identity of Theorem E for far translates of a fixed `g ∈ PW`, by the Plancherel–Pólya tail bound;
+`HEEqPW.phase_tendsto`), but it is not shown. "We may assume it fails for `α = π/2`" is unnecessary:
 along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
 
 ### N-34 (G) — Corollary 1 and the remark of p. 797 — *referee-confirmed with corrections (R3)*
@@ -274,7 +300,7 @@ along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
 - "If `Λ` is a complete interpolating sequence, then there exists `E ∈ \overline{HB}` such that
   `H(E) = PW` and `Λ` constitutes the zero sequence of `E + E^*`. This follows from Theorems C and
   E": the argument also needs that a complete interpolating sequence is sampling (taken for granted
-  on p. 791; open mapping theorem), Theorem D (orthogonality of the kernels at `Λ` forces `Λ` into
+  on p. 791; closed graph theorem, `Corollary1/ClosedGraph.lean`), Theorem D (orthogonality of the kernels at `Λ` forces `Λ` into
   one phase level set), completeness of the kernels, and a rotation `E ↦ e^{iθ}E`.
 
 ### N-35 (T) — p. 801: details of the construction in Corollary 2 — *print-checked; referee-confirmed (R4)*
@@ -286,7 +312,11 @@ along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
 - "`E(x) = |E(x)| e^{i(π(x + ψ(x)) - φ_f(x) + o(1))}`": with the convention `E(x) = |E(x)| e^{-iφ(x)}`
   (p. 794) and (8), the exponent must be `-i(π(x + ψ(x)) - φ_f(x) + o(1))`.
 - The symmetric products `lim ∏_{|γ_k|<R}(1 - z/γ_k)` need not converge for a general density
-  `ω' ≃ 1`; the [OS99] function carries a factor `e^{-κz}` (as does `OCS.multF`), which is harmless.
+  `ω' ≃ 1`; the [OS99] function carries a factor `e^{-κz}` (as does `OCS.multF`), which is harmless
+  after rescaling `B ↦ e^{κ/2}B`: the formal phase function is `E_κ = e^{-κz}(A - i e^{κ/2}B)`
+  (`compEκ`, `Construction.lean`). Without the rescaling the modulus is right but the phase drifts,
+  since `A` and `B = A(· - 1/2)P/Q` have amplitude ratio `e^{-κ/2}`; a first interface with a phase
+  clause for every density `m → 1` was false (I-07).
 
 ### N-36 (G) — pp. 800–801: the proof of Corollary 2 — *referee-confirmed (R4)*
 - **`|E(z)| ≃ e^{π Im z}`** is asserted ("and `|E(z)| ≃ e^{π Im z}` for `Im z ≥ 0`") but never derived.
@@ -301,6 +331,9 @@ along `α_n = π/2 + π/(n+2)` at most one `α_n` is exceptional.
   ≃ 1`), and the "elementary fact" concerns moving finitely many points to new distinct positions
   (removing points is not allowed: `ℤ ∖ {0}` is not sampling). It is proved by a normal-family
   argument.
+- **The standing assumption `ψ(∞) - ψ(-∞) = ∞`** (p. 799) is not used by the proof of Corollary 2,
+  whose conclusion holds for every nondecreasing `C¹` `ψ` with `ψ' → 0` (e.g. `ψ = 0`, `f = 1`,
+  `Λ = ℤ`). `IsAdmissiblePsi` keeps it, for faithfulness (blueprint M07).
 
 ### N-37 (E) — p. 794: Theorem F as printed fails for non-strict `E` — *referee-confirmed (R3)*
 Theorem F is stated for `E ∈ \overline{HB}`. For `E = 1` (in `\overline{HB}`), `H(E) = {0}`, so the
@@ -310,10 +343,43 @@ class; the paper only applies it to `E` with `H(E) = PW`, which is strict (N-28)
 `TheoremF` is restricted to the strict class without real zeros. Similarly, Theorem E is
 meaningless (`φ' ≡ 0`) when `E^* = cE`.
 
-### N-38 (T) — p. 801, Theorem 2 (ii) proof sketch — *referee-confirmed (R5)*
+### N-38 (S) — pp. 804–805: what `ψ' = o(1/x)` is used for — *referee-confirmed (R5)*
 The reconstructed proof (N-21) uses `xψ'(x) → 0` only through the existence of arbitrarily long
 logarithmic windows where `ψ` stays within `η` of a half-integer; this is implied by, not equivalent
 to, `ψ' = o(1/x)`.
+
+## Found during implementation (recorded after referee R8)
+
+### N-39 (G) — p. 798, proof of Corollary 1 — *code-checked; R8*
+"If `Λ` is a sampling sequence, then `Λ` consists of those points such that
+`φ_{EF}(λ) = π/2 + kπ`" holds only after the real zeros of `F` are removed (N-32): with `F = SG`, the
+zero set of `EG + E^*G^*` is a subset `Λ₁ ⊆ Λ`, and only `Λ ⊇ Λ₁` is needed. "`φ_E` is an increasing
+function which grows more slowly than `φ_{EF}`" is to be read as "`φ_{EG} - φ_E = φ_G` is
+nondecreasing" (`φ_G' ≥ 0`, N-13). Then each `[γ_k, γ_{k+1})` (consecutive points of the level set
+`{φ_E ∈ α + πℤ}`) has a `φ_{EG}`-image of length `≥ π`, so it contains a point of
+`{φ_{EG} ∈ π/2 + πℤ} ⊆ Λ` (`corollary1_strong`, `Corollary1.lean`; the enumeration of `Γ` is abstract, so only
+`φ_E(γ_{k+1}) - φ_E(γ_k) ≥ π` is used).
+
+### N-40 (D) — p. 794: the phase function — *tex-checked; R2-11, R8*
+The paper writes `E(x) = |E(x)|e^{-iφ(x)}` with `φ` continuous "such that `E(x)e^{iφ(x)}` is real".
+`IsPhaseFunction` requires `E(x)e^{iφ(x)} = |E(x)| ≥ 0` (`Defs.lean`). For `E` without real zeros the
+two differ by a constant shift of `φ` by `π`; the level sets `{φ ∈ α + πℤ}` are the same, so `TheoremE`
+(quantified over Lean phase functions) is implied by the paper's Theorem E. The uniqueness of Lean phase
+functions modulo `2πℤ` is finer than the paper's.
+
+### N-41 (G) — p. 798: the example's potential has a linear drift — *numerical; code-checked; R8*
+The density of the example (barycentres `Λ + 1/2`, N-30) has potential
+`U = π Im z + κ Re z + O(1)` on `Im z ≥ 0` with `κ = ∫_{|t|>1} (m(t) - 1)/t dt ≈ -1.352 ≠ 0`
+(`logKappa`; numerical value from the blueprint M06). The linear term comes with the normalisation of
+the potential (`Re(z/t)` kept for `|t| > 1`, N-03), and the paper does not mention it. It is absorbed by
+`E_κ = e^{-κz}(A - i e^{κ/2}B)` (N-35), which still has `|E| ≃ e^{π Im z}` and zero set `{A = 0}`.
+
+### N-42 (G) — [OS99] Lemma 3 with constants uniform in the density — *code-checked; R8*
+The reconstructed proof of Theorem 2 (ii) (N-21) applies [OS99] Lemma 3 to a density that depends on the
+window. It needs the constants of Lemma 3 (2) to depend only on the bounds `a ≤ m ≤ b`. This is true by
+inspection of the proof, but not stated in [OS99]. Formalized as `lemma3_estimate_uniform`
+(`Lemma3Uniform.lean`), by re-running the proof of the vendored `OCS.multF_estimate_two` with the
+constant `K` of `OCS.exists_abs_sum_multErr_sub_log_infDist_le` fixed from `(a, b)`.
 
 ---
 
@@ -383,3 +449,78 @@ variable became explicit (noted "explicit `x`" below). Changes recorded in `APPR
   `D2.deficit_integrable`: `hd` (explicit `d`). `Theorem2i/NearAux.lean` imports
   `FourierFrames.Defs` instead of all of `Mathlib`.
 - Cited (John–Nirenberg): `volume_dyadic`: `hab` (explicit `a b`).
+
+### I-04 — no real-valued `tsum`/`ncard` statements on the main path (M08)
+A real `tsum` is `0` for a non-summable family, and `ncard` is `0` for an infinite set. So
+`RegData.card_near_le`, `RegData.sum_far_le`, `RegData.sum_far_im_le` (`Theorem2i/Estimates.lean`) and
+`RegData.exists_bound_cellTerm` (`Theorem2i/Assembly.lean`), as scaffolded, hold trivially in the
+degenerate case. The proof of Theorem 2 (i) uses uniform finset forms instead
+(`RegData.finset_card_near_le`, `RegData.finset_sum_far_le` in `Counting.lean`, `RegData.finset_sum_far_im_le`
+in `Riemann.lean`, combined in `D3.exists_finset_bound`, `Assembly.lean`). The `tsum` forms are proved
+corollaries and are used by nothing (R8 F-10). Design rule since then: no real `tsum` or `ncard` in a
+helper statement on the main path (blueprint README §3.15).
+
+### I-05 — how `rampPot_estimate` parses (M09)
+In `|(1/a) * ∫ t in a..2*a, log ‖1 - x/t‖ - log (max 1 (|x|/a))| ≤ 4` the binder of `∫` extends over
+`- log (max …)`, so the statement is `|(1/a) ∫_a^{2a} (log|1 - x/t| - ℓ)| ≤ 4`. Since the interval has
+length `a`, this equals the intended `|(1/a) ∫_a^{2a} log|1 - x/t| - ℓ|`; the proof treats both
+(`T2ii.rampPot_estimate'` is the parenthesised form, `Theorem2ii/Ramp.lean`). Harmless; noted because the
+frozen statement reads differently from the blueprint formula.
+
+### I-06 — proof routes different from the blueprint
+The implemented route, where it differs from the blueprint text (details in `blueprint/impl_notes/*.md`
+and the "*Implemented:*" lines of the module documents):
+- `φ' ≥ 0` and `φ' > 0`: the Hopf dichotomy `IsHB.phaseDeriv_pos_or_eventuallyEq` (`HB/Hopf.lean`), N-13.
+- `exists_isPhaseFunction`: `E e^{iΦ - R}` has derivative `0`; `|E|` is never differentiated.
+- `exists_realFactor`: genus `m(a) + rank(a) + 1`, bound from the tail of the log series, abstract
+  locally uniform products (`RealFactor/LUProd.lean`), N-32.
+- `levelSet_limit`: one application of `plancherelPolya_tail_union`, constant `C₀(T + 2η)`.
+- `HEEqPW.phase_tendsto`: translates of a fixed `g ∈ PW` and the tail bound, no `ℤ`-indexing (N-33).
+- Complete interpolating ⇒ sampling: closed graph theorem (`Corollary1/ClosedGraph.lean`).
+- `log_norm_eq_multU_add_affine`: Schwarz reflection of `e^{iφ(0)} f e^{-P}` and Borel–Carathéodory
+  (`Corollary2/{Reflection,Affine,LogNorm}.lean`); `multU_one` is a corollary of it.
+- `continuous_multU_of_bdd`: Vitali's theorem, since `g` is only measurable (`Corollary2/UCont.lean`).
+- `norm_compB_comparable`: `expU_bounds_on_compact` (compactness lemma of `Construction/Comparable.lean`),
+  no continuity of `U`.
+- Polynomial Hermite–Biehler step: monotone arguments (`Construction/PolyHB.lean`), not partial fractions.
+- `phase_rigidity`: the abstract `Rigidity.phase_drift_small`.
+- `not_memHE_sAlpha`: a lower bound for `∫ cos² φ` (`LogExample/Phase.lean`) instead of disjoint intervals.
+- The potential estimates of M06 §4: integration by parts with real primitives and Young's inequality
+  (`LogExample/Potential.lean`).
+- `multUIntegrand_one`: shift to `x = 0`, then an explicit antiderivative (`Theorem2ii/UOne.lean`).
+- `rampPot_estimate`: rescaling to `∫_1^2` and a split at `|ξ| = 3` (`Theorem2ii/Ramp.lean`).
+
+### I-07 — the construction interface (M07)
+The first interface `exists_hb_of_density`, with a phase clause for every density `m → 1`, was false
+(for the example's density `κ ≈ -1.35 ≠ 0`, N-41). Before implementation it was replaced by
+`exists_hb_of_density` (no phase clause, hypothesis `hshift`) and `exists_hb_of_density_phase` (drifted
+hypothesis `hU`), with `E_κ = e^{-κz}(A - i e^{κ/2}B)` (`compEκ`). A first generalisation
+`e^{-κz}·(A - iB)` was also false (wrong phase, N-35). The proof confirms that `λ e^{-κ/2} = 1` is exactly
+what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`impl_notes/construction.md`;
+`IMPORTS.md`, "Suspected false statements").
+
+### I-08 — duplications and unused lemmas
+- The frozen definitions `argUp`, `potC` are copied as `argUp'`, `potC'` in `Corollary2/PotC.lean`
+  (transfer by `rfl`).
+- `U_1 = π|Im z|` is proved three times (`multU_model` in `LogExample.lean`, `multU_one` in
+  `Corollary2.lean`, and in `Theorem2ii/UOne.lean`).
+- The sub-mean-value inequality is proved twice (`enorm_sq_le_lintegral_ball`,
+  `PW/PlancherelPolya.lean`; `enorm_sq_le_setLIntegral_ball`, `HB/H2.lean`).
+- Proved but unused: `l2piSq_eq_of_pwFT_eq` with its helpers `pwFT_sub`, `tsum_enorm_sq_pwFT_int`,
+  `fourierCoeffOn_pwFT` (`PW/Basic.lean`; the obsolete route of M01 §1.7), `MemPW.isH2Upper_mul_exp` with
+  `MemPW.lintegral_mul_exp_le` (`PW/Bounds.lean`), and the `tsum` forms of I-04.
+
+### I-09 — phase 2: implementation of P1 and P2 (2026-11-07)
+- **P1** (`paleyWiener_holds`, proved; `blueprint/P1_PaleyWiener.md`, `impl_notes/cited-p1.md`,
+  referee R6): `F2_symm_ae_eq` (true, but only a step towards `F2_symm_toLp_ae_eq`) was removed; both
+  `L¹ ∩ L²` agreement lemmas are proved by pairing with Schwartz functions through Mathlib's
+  `Lp.fourier_toTemperedDistribution_eq` and `Lp.fourierInv_toTemperedDistribution_eq`. The unused
+  hypothesis `ha : 0 ≤ a` was dropped from `integral_exp_abs_sub_sq_le` and `norm_integral_gauss_mul_le`
+  (true for every real `a`). These are phase-2 scaffold statements, not covered by the freeze.
+- **P2** (`dsPerturbation_of_paleyWiener`, `johnNirenberg_holds`, proved; `impl_notes/cited-p2.md`,
+  referee R7): `enorm_sq_sub_le` lost its unused `hPW`; `volume_dyadic` lost `hab` (I-03).
+- **Root imports.** `FourierFrames.lean` imports `Cited/DeBrangesFC.lean`, whose `theoremC_holds`,
+  `theoremF_holds` and temporary stub `theoremD_holds` are `sorry`-backed (R8 F-4); `#print axioms` shows
+  `sorryAx` for them. The stub has the same name as P3's `theoremD_holds` (`Cited/DeBrangesDE.lean`, not
+  imported by the root), and must be deleted when P3 is merged (R8 F-5, R7 finding 8). None of this
+  affects the 15 main theorems, which take the cited results as hypotheses.

@@ -6,7 +6,8 @@ remain sorry: `exists_realFactor` in Sufficiency, M01-M03 lemmas).
 Deviations / notes
 - `exists_HB_of_sampling` -> `exists_E` (M03), as in IMPORTS.md.
 - `osc_bound_of_JN`: hypothesis `hD : 0 <= D` is unused (the bound holds for any D with the constants chosen);
-  kept via `have _ := hD` to avoid a linter warning on a frozen statement.
+  kept via `have _ := hD` to avoid a linter warning on a frozen statement (*later:* removed in the lint pass,
+  NOTEBOOK I-03).
 - `corollary1_strong`: the enumeration `gamma` from `exists_levelSet_enum` is abstract, so the interlacing
   uses only that distinct points of `Gamma` have `phi_E`-values differing by a positive multiple of pi
   (so `psi(gamma_{k+1}) - psi(gamma_k) >= pi`), not the explicit formula for `gamma_{k+1}`.

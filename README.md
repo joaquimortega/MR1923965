@@ -63,12 +63,21 @@ there are no axioms. Phase 2 of the project proves them where feasible
 
 | Cited result | Lean | Status |
 |---|---|---|
+| Paley–Wiener theorem | `paleyWiener_holds` | proved |
 | John–Nirenberg | `johnNirenberg_holds` | proved |
-| Duffin–Schaeffer Lemma III | `dsPerturbation_of_paleyWiener : PaleyWienerThm → DSPerturbation` | proved |
-| Paley–Wiener theorem | `paleyWiener_holds` | in progress |
+| Duffin–Schaeffer Lemma III | `dsPerturbation_of_paleyWiener : PaleyWienerThm → DSPerturbation` | proved (unconditional with `paleyWiener_holds`) |
 | de Branges' Theorems D, E | `theoremD_holds`, `theoremE_holds` | in progress |
-| de Branges' Theorems C, F | `theoremC_holds`, `theoremF_holds` | stated; assessed (long) |
+| de Branges' Theorems C, F | `theoremC_holds`, `theoremF_holds` | stated (`sorry`); assessed (long) |
 | Pavlov's Theorem A (BMO half) | `PavlovBMO` | hypothesis; assessed infeasible with current Mathlib |
+
+The proved ones depend only on `propext`, `Classical.choice` and `Quot.sound`. So the hypotheses PW,
+JN and DS can be discharged: `isFourierFrame_iff_isSampling paleyWiener_holds` and
+`heEqPW_of_comparable paleyWiener_holds` are unconditional, and with de Branges' Theorem E (in
+progress) so would be Theorem 1 (sufficiency), Corollary 2, Theorem 2 (i), the example of p. 798
+and the sharpness of Landau's inequality. The
+comparator statements keep the hypotheses as parameters. `import FourierFrames` also brings the
+`sorry`-backed `theoremC_holds`, `theoremF_holds` and a temporary stub of `theoremD_holds` into scope;
+check any `*_holds` with `#print axioms` before using it.
 
 **Corrections to the paper.** The formalization found that two proofs do not work as printed and
 replaced them: the appeal to Meĭman's theorem on p. 801 (false as quoted) and the proof of
@@ -77,7 +86,8 @@ statement omits; `theorem2_i` assumes `ψ'` eventually nonincreasing, and
 `theorem2_i_of_densityBound` assumes the cell density bound the proof uses. Neither assumes the
 printed hypothesis `ψ'(x) = 1/O(x)`, which the proof does not use. Theorem F as printed
 (for the closed Hermite–Biehler class) is false. All errata, gaps and simplifications are in
-`NOTEBOOK.md` (38 entries, confirmed by independent referee agents against the printed pages). The
+`NOTEBOOK.md` (42 entries, N-01–N-38 confirmed by independent referee agents against the printed
+pages, N-39–N-42 found during the implementation). The
 corrected paper, with the changes marked in red, was produced locally (`fixed/`, not committed).
 
 ## Layout
@@ -85,10 +95,10 @@ corrected paper, with the changes marked in red, was produced locally (`fixed/`,
 | Path | Content |
 |---|---|
 | `FourierFrames/Defs.lean` | statement-level definitions and the cited results as `Prop`s (imports only Mathlib) |
-| `FourierFrames/**` | the formalization (namespace `FF`; about 27,000 lines in 90 files), one or more files per blueprint module |
+| `FourierFrames/**` | the formalization (namespace `FF`; about 28,000 lines in 92 files), one or more files per blueprint module |
 | `FourierFrames/Cited/` | phase 2: proofs of the cited results |
 | `OrtegaCerdaSeip/` | vendored, do not edit: the part of the companion formalization [MR1682065](https://github.com/joaquimortega/MR1682065) that proves the multiplier lemma of [OS99] and a Bernstein-space toolkit (`OrtegaCerdaSeip/VENDORED.md`) |
-| `blueprint/` | the blueprint: `README.md` (plan, conventions, design decisions, module table), one detailed document per module (`M00`–`M10`, `P1`–`P5`), `IMPORTS.md` (module graph, interface reconciliation), `impl_notes/` (implementers' deviations) |
+| `blueprint/` | the blueprint: `README.md` (plan, conventions, design decisions, module table), one detailed document per module (`M00`–`M10`, `P1`–`P5`; `P3` forthcoming), `IMPORTS.md` (module graph, interface reconciliation), `impl_notes/` (implementers' deviations) |
 | `reviews/` | the independent referee reports (`R1`–`R5` on the phase-1 blueprint, `R6`–`R8` on phase 2 and on the final code) |
 | `comparator/` | the main statements, the comparator configuration and the log of the accepted run |
 | `NOTEBOOK.md` | errata (N-xx) and implementation notes (I-xx) |

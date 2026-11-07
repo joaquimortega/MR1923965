@@ -9,7 +9,7 @@
 ## Deviations from the blueprint
 - `isSampling_of_replace_finite`: the hypothesis `hsep'` (separation of `Γ'`) is not needed (the
   replacement lemma gives separation of the intermediate sets automatically); it is kept in the
-  statement and merely unused.
+  statement and merely unused (*later:* removed in the lint pass, NOTEBOOK I-03).
 - `IsSampling.of_perturbation`: the proof follows the blueprint (finite near part replaced, far part
   perturbed by Duffin-Schaeffer); only `isSeparated_image_far` (new helper) was added.
 - `multU_compact_sub_linear`: the bound holds for all `z` (no `Im z >= 0` needed).

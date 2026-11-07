@@ -1,13 +1,18 @@
 # M04 — Theorem 1 (sufficiency and `theorem1`), Corollary 1, the remark of p. 797
 
-**Lean files** (all compile with `sorry` only, namespace `FF`; each begins with an
-*Upstream interface* section that must be replaced by imports at assembly):
-- `FourierFrames/Theorem1/Sufficiency.lean` — `theorem1_sufficiency` and its lemmas;
+**Lean files** (all proved, no `sorry`; namespace `FF`):
+- `FourierFrames/Theorem1/Sufficiency.lean` — `theorem1_sufficiency` and its lemmas; helpers
+  `Theorem1/Sufficiency/{Interlace,Limit,LevelSet,Phase}.lean` and the Weierstrass product
+  `Theorem1/Sufficiency/RealFactor/{Elem,LUProd,Zeros,Product,Main}.lean`;
 - `FourierFrames/Theorem1/Main.lean` — `theorem1` (from `theorem1_necessity`, M03, and
   `theorem1_sufficiency`);
 - `FourierFrames/Corollary1.lean` — `corollary1`, `corollary1_strong`,
-  `completeInterpolating_zero_set`;
-  (`Corollary1.lean` repeats the statements of `Sufficiency.lean` it needs as upstream interface.)
+  `completeInterpolating_zero_set`; helpers `Corollary1/{Rotate,Kernel,ClosedGraph}.lean`.
+
+**Status (final).** Lean blocks show the statements (some hypotheses were removed as unused in the
+lint pass, NOTEBOOK I-03); all are proved. The routes actually implemented, where they differ from
+the text, are marked *Implemented:* below (source: `impl_notes/sufficiency.md`,
+`impl_notes/sufficiency_cor1_landau.md`).
 
 **Paper:** §3 "Main theorem" (pp. 795–797, tex lines 396–470), the remark on p. 797 (tex 472–480),
 §4 Corollary 1 (p. 798, tex 601–621).
@@ -15,23 +20,22 @@
 **Cited `Prop`s used:** `PaleyWienerThm` (`hPW`), `TheoremC` (`hC`, only through M03 and for the remark),
 `TheoremD` (`hD`, only for the remark), `TheoremE` (`hE`), `TheoremF` (`hF`, only through M03).
 
-**Depends on** (all declared, with `sorry`, in the *Upstream interface* sections; the exact
-statements are in the scaffold files):
+**Depends on** (imported, see `IMPORTS.md`):
 - M01: `pwNormSq_ne_top`, `pw_norm_sq_le`, `MemPW.sub`, `MemPW.comp_sub_ofReal`,
   `pwNormSq_comp_sub_ofReal`, `exists_memPW_eval_ne_zero`, `plancherelPolya`, `plancherelPolya_tail`,
-  `pw_deriv_bound` (README names), and, in the proof of `isSampling_of_isCompleteInterpolating`,
+  `plancherelPolya_tail_union`, `sampleSum_mono`, `IsSepBy.mono`, `pw_deriv_bound` (README names), and, in the proof of `isSampling_of_isCompleteInterpolating`,
   `pw_complete`.
 - M02: `IsHB.mul`, `IsStrictHB.mul_isHB` (new name: product of a strict and a closed-class function),
   `IsHB.phaseDeriv_nonneg`, `IsStrictHB.phaseDeriv_pos`, `phaseDeriv_mul`, `exists_isPhaseFunction`,
   `zero_set_eq_phaseLevel`, `MemHE.mul_isHB`, `heNormSq_mul`, `HEEqPW.isStrictHB`,
   `HEEqPW.ne_zero_ofReal`, `HEEqPW.phaseDeriv_mul_sq_ge`, `memHE_sAlpha_unique`; for the remark also
-  `isHB_one` (not needed by the scaffold) and the new lemmas listed in §10.
-- M03: `theorem1_necessity`, and the new name `exists_HB_of_sampling` (the first half of the proof of
+  `isHB_one` and the rotation lemmas listed in §10.
+- M03: `theorem1_necessity`, and `exists_E` (`Necessity.lean`; the first half of the proof of
   necessity: Theorem C applied to the norm `(∑|f(λ)|²)^{1/2}` gives `E` with `H(E) = PW` and
-  `‖f‖²_E = ∑_Λ |f(λ)|²`), used for the remark of p. 797.
+  `‖f‖²_E = ∑_Λ |f(λ)|²`; no separation needed), used for the remark of p. 797.
 
-**Used by:** M05 (`corollary1_strong`); M06/M07/M09 (`theorem1_sufficiency`, through `corollary2`-type
-arguments, as the README table indicates).
+**Used by:** M05 (`corollary1_strong`); M07 (`Corollary2.lean` calls `theorem1_sufficiency`); M06 imports
+`Theorem1.Sufficiency` for its helpers only; M09 does not use M04.
 
 ## 0. Reading guide
 
@@ -111,6 +115,8 @@ theorem phaseLevel_add_pi (φ : ℝ → ℝ) (α : ℝ) :
     exact ⟨k - 1, by rw [hk]; push_cast; ring⟩
 ```
 
+(`sepBy_mono`, `sepBy_subset` below do not exist in the code; both are `IsSepBy.mono`, `PW/Basic.lean`.)
+
 ```lean
 theorem sepBy_mono {δ δ' : ℝ} (h : δ' ≤ δ) {Λ : Set ℝ} (hΛ : IsSepBy δ Λ) : IsSepBy δ' Λ :=
   fun a ha b hb hab ↦ h.trans (hΛ a ha b hb hab)
@@ -121,7 +127,7 @@ theorem sepBy_subset {δ : ℝ} {Λ Λ' : Set ℝ} (h : Λ' ⊆ Λ) (hΛ : IsSep
   fun a ha b hb hab ↦ hΛ a (h ha) b (h hb) hab
 ```
 
-These are proved in the scaffold (`tsum_subtype`, `ENNReal.tsum_le_tsum`, `ENNReal.tsum_union_le`,
+These are proved (`tsum_subtype`, `ENNReal.tsum_le_tsum`, `ENNReal.tsum_union_le`,
 `ENNReal.tsum_add`). Note that `phaseLevel_add_pi` shows that `Exceptional E` and the level set depend on
 `α` only modulo `π` (the level set trivially; exceptionality by `memHE_sAlpha_unique`).
 
@@ -142,7 +148,6 @@ theorem isPhaseFunction_mul {E F : ℂ → ℂ} {φ ψ : ℝ → ℝ} (hφ : IsP
       ring
 ```
 
-(Proved in the scaffold: `norm_mul`, `Complex.exp_add`.)
 
 ```lean
 /-- At most one `n` has `π/2 + π/(n+2)` exceptional, so eventually none has. -/
@@ -155,6 +160,9 @@ theorem eventually_not_exceptional {E : ℂ → ℂ} (hE : IsStrictHB E) :
 `k ∈ ℤ` with `α_m - α_n = kπ`, i.e. `1/(m+2) - 1/(n+2) = k`; but `0 < |1/(m+2) - 1/(n+2)| < 1/2`,
 so `k` cannot be an integer. So the set of exceptional `n` has at most one element, hence is finite,
 and the filter statement follows from `Nat.cofinite_eq_atTop` / `Set.Finite.eventually_cofinite_notMem`. ∎
+
+*Implemented:* also `Suff.exists_not_exceptional` (some `α` is non-exceptional for strict `E`), used by
+`phase_tendsto`, `phase_mul_bijective` and Corollary 1.
 
 ## 2. Step 1: the real zeros of `F`
 
@@ -214,6 +222,18 @@ non-simple zeros matter is the multiplicity; if one proves first (it is *not* kn
 hypotheses) that real zeros of `F` are simple, `OCS.canonicalProd` suffices. In general it does not
 (a real `F` with a zero of order `n` at `n`, `n ≥ 1`). ∎
 
+*Implemented* (`Theorem1/Sufficiency/RealFactor/*`; `impl_notes/sufficiency.md`):
+- the nonzero real zeros are indexed by the subtype `Zr F`, with genus `p_a = m(a) + rank(a) + 1`,
+  `rank : Zr F → ℕ` an injection (`RealFactor/Product.lean`);
+- the bound is `‖E_p(w)^m − 1‖ ≤ 4m‖w‖^{p+1}` for `‖w‖ ≤ 1/2` and `2m‖w‖^{p+1} ≤ 1`, from the tail of
+  the logarithm series (`elemFactor_eq_exp_neg_tail`, `norm_elemFactor_pow_sub_one_le`,
+  `RealFactor/Elem.lean`), not Rudin's coefficient argument;
+- convergence goes through the abstract locally uniform product of `RealFactor/LUProd.lean`;
+- `G = F/S` is extended by `limUnder` at the zeros of `S` and shown entire by the local factorisation
+  `quotG_local` (`analyticOrderAt`, `RealFactor/Main.lean`).
+
+Neither this route nor the enumeration above needs separation of the zeros.
+
 ```lean
 /-- The reduction of p. 795: `F` can be replaced by `G` without real zeros, at the price of
 shrinking `Λ`. -/
@@ -231,7 +251,7 @@ and `hzero` gives `x ∈ Λ`, `z = x`. ∎
 
 *Consequence.* If `Λ_1 := {x : E G + E^* G^* = 0}` then `Λ_1 ⊆ Λ`. The paper's claim "if `Λ_1` is sampling then so
 is `Λ`" holds because `Λ ⊇ Λ_1` and `Λ` is separated: the lower sampling bound passes to the superset
-(`Suff.sampleSum_mono`) and the upper bound for the separated `Λ` is `plancherelPolya` (M01); the paper
+(`sampleSum_mono`) and the upper bound for the separated `Λ` is `plancherelPolya` (M01); the paper
 only mentions the former.
 
 ## 3. Step 2: the phase of `E G` is a homeomorphism of `ℝ`
@@ -258,6 +278,9 @@ By `hEPW.1`, `f_γ ∈ PW`, and `c · pwNormSq f_γ ≤ heNormSq E f_γ` gives
 For `γ ≠ γ'` in `Γ`: `f_γ(γ) = 1`, `f_γ(γ') = 0`; the function `t ↦ f_γ(t)` on `ℝ` has derivative of norm
 `≤ √(C_B K₁) =: Θ` (use `HasDerivAt.comp_ofReal`, `Convex.norm_image_sub_le_of_norm_deriv_le`), so
 `1 ≤ Θ |γ - γ'|`, i.e. `|γ - γ'| ≥ 1/Θ`. (If `C_B K₁ ≤ 0` we get a contradiction, so `Θ > 0`; replace `Θ` by `max Θ 1`.) ∎
+
+*Implemented* (`Theorem1/Sufficiency/LevelSet.lean`): separation constant `1/(Θ + 1)` with
+`Θ = √((πe)² max(K, 0))`, `K = π/(c₁ c)` (`pw_deriv_bound` has the explicit constant `(πe)²`).
 
 ```lean
 /-- For `H(E) = PW` and `α` non-exceptional, `Γ_α` is a complete interpolating sequence. -/
@@ -302,6 +325,12 @@ one-point set `{x}`: `|g(x)|² ≤ ε` for `|x| ≥ R_ε`). The set `(Γ ∩ (-�
 `{x ≤ -R} ⊆ {|x| ≥ R}`, so by `plancherelPolya_tail` (with `δ`, `f = g`) its sum is `≤ ε` once `R ≥ R_ε`.
 Taking `ε` with `ofReal(π/c₁) · 2ε < c · pwNormSq g` (positive, finite) gives a contradiction for `R` large.
 The translation of the sampling sum is the bijection `x ↦ x - R` of `ℝ` (`Equiv.tsum_eq`). ∎
+
+*Implemented* (`Theorem1/Sufficiency/Phase.lean`): with `Suff.exists_not_exceptional` and `pwBump`. The norm
+identity gives a uniform lower bound `ε₀ ≤ sampleSum Γ (g(· − t))` for the translates
+(`translate_lower_bound_aux`); the level set is bounded on one side (`bddAbove_phaseLevel`), and the
+Plancherel–Pólya tail (`translate_tail`) gives the contradiction for far translates. No `ℤ`-indexing and no
+finite-part/tail split.
 
 ```lean
 /-- The phase `ψ = φ_E + φ_G` of `EG` is a continuous increasing bijection of `ℝ`
@@ -376,7 +405,7 @@ put `E' := fun z ↦ E z * G z`. Then:
                                 ≤ ofReal(π/c₁) ‖f γ‖ₑ².
    ```
    (`ENNReal.ofReal_mul`, `div_le_div_of_nonneg_left`; `‖G γ‖ ≠ 0` cancels.) **This is the step where
-   "`φ_{EF}' ≥ φ_E'`" (derivatives, not the phases as printed on p. 796) is used.**
+   "`φ_{EF}' ≥ φ_E'`" (as printed on p. 796) is used.**
 5. Summing (`ENNReal.tsum_mul_left`, `ENNReal.tsum_le_tsum`) gives `heNormSq E f ≤ ofReal(π/c₁) · sampleSum (phaseLevel ψ α) f`,
    and `c · pwNormSq f ≤ heNormSq E f` gives `pwNormSq f ≤ c⁻¹ ofReal(π/c₁) · sampleSum … = C₀ · sampleSum …`.
 
@@ -414,7 +443,7 @@ To show `pwNormSq f ≤ C₀ T` it suffices (`ENNReal.le_of_forall_pos_le_add`, 
 (b) For `n` with `hlev n` and (by `phaseLevel_sepBy_two`, using `hsep`, `hε0`, `hεπ`) `Λ_{α_n} = A_n ∪ B_n` with
 `A_n, B_n` `δ`-separated, `α_n = π/2 + ε_n`:
 `sampleSum (Λ_{α_n} ∩ {|x| ≥ R}) f ≤ sampleSum (A_n ∩ {|x| ≥ R}) f + sampleSum (B_n ∩ {|x| ≥ R}) f ≤ 2η`
-(`Set.inter_union_distrib_right`, `sampleSum_union_le`, `sampleSum_mono`, `sepBy_subset`). Hence, by `sampleSum_split` with this `R`,
+(`Set.inter_union_distrib_right`, `sampleSum_union_le`, `sampleSum_mono`, `IsSepBy.mono`). Hence, by `sampleSum_split` with this `R`,
 `sampleSum Λ_{α_n} f ≤ sampleSum (Λ_{α_n} ∩ {|x| < R}) f + 2η`. **This replaces the "dominated convergence" of the paper.**
 
 (c) *Finite part.* Let `K := {k ∈ ℤ | |x^{π/2}_k| < R + 1}` — finite, because `|x^{π/2}_k| < R+1` forces
@@ -432,6 +461,10 @@ and `‖f(·)‖ₑ²` is continuous (`Continuous.enorm`, `ENNReal.continuous_po
 are distinct elements of `Λ₀`).
 
 (e) Choose `n` large for (b)–(d): `pwNormSq f ≤ C₀ sampleSum Λ_{α_n} f ≤ C₀ (T_K + η + 2η) ≤ C₀ (T + 3η)`. ∎
+
+*Implemented* (`Theorem1/Sufficiency/Limit.lean`): one application of `plancherelPolya_tail_union` to
+`A_n ∪ B_n` replaces the two tails of (a)–(b), so the bound is `C₀(T + 2η)`; the limit `η → 0` is taken
+along `η_m = (m+1)⁻¹` in `ℝ≥0∞`.
 
 (*Remark.* No indexing issue arises at the ends: surjectivity of `ψ` guarantees `Λ_c = {x^c_k : k ∈ ℤ}` for all `c`;
 if `ψ` were bounded, one extra point could escape to infinity, which is also covered by the tail estimate, but
@@ -483,7 +516,6 @@ theorem theorem1 (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE) (hF : Th
 ```
 
 *Proof.* `(→)` is `theorem1_necessity hPW hC hF hΛ hs` (M03); `(←)` is `theorem1_sufficiency hPW hE hΛ …`. ∎
-(Proved in the scaffold.)
 
 ## 9. Corollary 1 (p. 798)
 
@@ -513,7 +545,6 @@ theorem exists_levelSet_enum {φ : ℝ → ℝ} (hm : StrictMono φ) (hs : Funct
       exact hk.symm
 ```
 
-(Proved in the scaffold: `StrictMono.orderIsoOfSurjective`.)
 
 ```lean
 /-- A half-open interval `[u, v)` with `v - u ≥ π` meets every coset `c + πℤ`. -/
@@ -531,7 +562,6 @@ theorem exists_mem_Ico_add_int_mul_pi (c u v : ℝ) (h : u + Real.pi ≤ v) :
     linarith
 ```
 
-(Proved in the scaffold: `Int.ceil`.)
 
 ```lean
 /-- **Corollary 1**, strong form: the complete interpolating sequence `Γ` can be taken
@@ -561,6 +591,10 @@ theorem corollary1_strong (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE)
    `x ≠ γ_{k+1}` since `ψ(γ_{k+1}) > π/2 + jπ`. Thus `x ∈ phaseLevel ψ (π/2)`, so `E G + E^* G^* = 0` at `x`
    (`zero_set_eq_phaseLevel`), so `x ∈ Λ` (`exists_noRealZero_hb`), and `γ_k ≤ x < γ_{k+1}`. ∎
 
+*Implemented* (`Corollary1.lean`): step 2 takes `α` from `exists_not_exceptional`. In step 3 the enumeration
+of `exists_levelSet_enum` is abstract, so the code shows `φ_E(γ_{k+1}) − φ_E(γ_k) ≥ π` (distinct points of
+`Γ` have `φ_E`-values differing by a positive multiple of `π`), not `= π`; this suffices.
+
 ```lean
 /-- **Corollary 1** (p. 798): a separated sampling sequence is "everywhere denser" than some
 complete interpolating sequence `Γ = {γ_k}`: every `[γ_k, γ_{k+1})` contains a point of `Λ`. -/
@@ -572,7 +606,6 @@ theorem corollary1 (hPW : PaleyWienerThm) (hC : TheoremC) (hE : TheoremE) (hF : 
   exact ⟨γ, h1, h3, h4⟩
 ```
 
-(Proved in the scaffold from `corollary1_strong`.)
 
 **Why the strong form.** `PavlovBMO` is stated for *separated* `Γ`, and M05 applies it to the `Γ` of Corollary 1.
 `corollary1` as stated in `comparator/statements.lean` loses the separation; so M05 uses `corollary1_strong`.
@@ -607,7 +640,12 @@ By the closed graph theorem (`LinearMap.continuous_of_isClosed_graph`, or the op
 take `a = (f(λ))_λ`: `f_a = f` (uniqueness), so `pwNormSq f ≤ C² · sampleSum Λ f` (lower sampling bound, `A = C⁻²`);
 the upper bound is `plancherelPolya`. (Existence of `a` in `ℓ²`: `sampleSum Λ f < ∞` by `plancherelPolya`.) ∎
 
-*New M02 lemmas used below* (statements in `Corollary1.lean`; all elementary):
+*Implemented:* the closed graph theorem for `T : ℓ²(Λ) → L²(ℝ)` as `LinearMap.continuous_of_seq_closed_graph`
+(`Corollary1/ClosedGraph.lean`).
+
+*Rotation lemmas used below* (all elementary): `IsHB.rotate` is in `HB/Basic.lean`, `IsPhaseFunction.rotate`
+in `HB/Phase.lean` (moved at assembly); only `HEEqPW.rotate` is in `Corollary1.lean`, proved in
+`Corollary1/Rotate.lean`.
 
 ```lean
 theorem IsHB.rotate {E : ℂ → ℂ} (hE : IsHB E) (θ : ℝ) :
@@ -677,6 +715,9 @@ by `TheoremD`, `K ∈ H(E) = PW`, so `k := ‖K‖²_E = heNormSq E K` is finite
 By `hnorm` for `K`: `k = ∑_{γ ∈ Λ} |K(γ)|² ≥ |K(a)|² + ∑_{γ ≠ a} |K(γ)|² = k² + ∑_{γ ≠ a}|K(γ)|²`.
 Since `k ≥ 1`, this forces `k = 1` and `∑_{γ ≠ a} |K(γ)|² = 0`, i.e. `K(b) = deBrangesKernel E a b = 0` for `b ∈ Λ`, `b ≠ a`. ∎
 
+*Implemented* (`Corollary1/Kernel.lean`): instead of Cauchy–Schwarz, `uv ≤ (u² + v²)/2` gives
+`1 ≤ (‖e_a‖²_E + k)/2 = (1 + k)/2`, i.e. `k ≥ 1`.
+
 ```lean
 /-- Completeness: a complete interpolating `Λ` is a full level set of the phase. -/
 theorem levelSet_eq_of_cis (hPW : PaleyWienerThm) (hD : TheoremD) {E : ℂ → ℂ}
@@ -706,7 +747,7 @@ theorem completeInterpolating_zero_set (hPW : PaleyWienerThm) (hC : TheoremC) (h
   sorry
 ```
 
-*Proof.* `isSampling_of_isCompleteInterpolating` gives `IsSampling Λ`; `exists_HB_of_sampling` (M03) gives `E₀ ∈ \overline{HB}`,
+*Proof.* `isSampling_of_isCompleteInterpolating` gives `IsSampling Λ`; `exists_E hPW hC hs` (M03) gives `E₀ ∈ \overline{HB}`,
 `HEEqPW E₀`, `heNormSq E₀ f = sampleSum Λ f` (`PW`). `E₀` is strict without real zeros; take a phase `φ`
 (`exists_isPhaseFunction`). `levelSet_eq_of_cis` gives `β` with `Λ = phaseLevel φ β`. Put `θ := β - π/2` and
 `E := fun z ↦ e^{iθ} E₀ z`: `IsHB E` (`IsHB.rotate`), `HEEqPW E` (`HEEqPW.rotate`), `E` strict without zeros on `ℝ`
@@ -733,9 +774,8 @@ theorem completeInterpolating_zero_set (hPW : PaleyWienerThm) (hC : TheoremC) (h
    identity and Plancherel–Pólya tails, and `φ_G` monotone.
 3. **p. 796, "`α ∈ (0, π]`" and later "`α ∈ [0, π)`"** (*certain*, cosmetic). The exceptional set is "at most one `α` modulo `π`";
    we use `α = π/2 + ε`, `0 < ε < π`.
-4. **p. 796, "`φ_{EF} = φ_E + φ_F ≥ φ_E`", display after (equiv)** (*certain*): what is used (and true) is `φ_{EF}' = φ_E' + φ_F' ≥ φ_E'`
-   (the phase `φ_F` is only nondecreasing, and the sign of `φ_F` itself is meaningless; phases are defined up to
-   `2πℤ`). Fix: §5, step 4.
+4. *Withdrawn*: OCR artifact. The print has `φ'_{EF} = φ'_E + φ'_F ≥ φ'_E`, which is what §5, step 4 uses
+   (NOTEBOOK N-10).
 5. **p. 796, `1 = sup_{f ∈ PW, ‖f‖² ≤ 1} |f(x)|² ≃ sup_{f ∈ H(E),...}|f(x)| = K_E(x,x) = π^{-1}φ_E'(x)|E(x)|²`** (*certain*):
    the second `sup` lacks the square (`sup_{‖f‖_E ≤ 1}|f(x)|² = K_E(x,x)`). Harmless; the bound `φ_E'|E|² ≃ 1`
    is proved in M02 (`HEEqPW.phaseDeriv_mul_sq_ge`, README §3.1) without Theorem D.

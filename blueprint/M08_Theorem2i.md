@@ -1,27 +1,35 @@
 # M08 — Theorem 2 (i)
 
-**Lean:** `FourierFrames/Theorem2i.lean` (compiles, only `sorry` warnings).
+**Lean:** `FourierFrames/Theorem2i.lean` (§7 glue, main theorems) and `FourierFrames/Theorem2i/`:
+- `Basic` (§1–2), `Product` (§3), `PhaseDecay` (§4), `Cells`/`CellsAux` (§5);
+- `Taylor`, `CellAux`, `BelowAbove`, `FarAux` (§6.2–6.6), `NearAux`/`Near` (§6.7);
+- `Counting`/`Riemann` (§6.8, finset forms), `Estimates` (statements of §6.4–6.8), `Assembly` (§6.9).
+
+`Basic` imports `FourierFrames.Corollary2`. **Status:** proved (no `sorry`). The Lean blocks of this document
+show the statements; where the implemented proof differs from the text it is marked *Implemented:* (source:
+`impl_notes/theorem2i.md`).
 **Paper:** pp. 801–804, "We consider first statement (i)" to "are done with the proof of (10)"
 (tex: `literature/ArxivOrtega.tex` lines 841–950; the two displays called `(logcent)` = (9) and
 `(deff)` = (10) here).
-**Depends on:** M07 `corollary2` (copied under the same name in the upstream-interface section);
-vendored `OCS.canonicalProd`, `OCS.IsGenusOneData`, `OCS.hasSum_log_norm_canonicalProd`,
-`OCS.canonicalProd_eq_zero_iff`, `OCS.differentiable_canonicalProd`,
+**Depends on:** M07 `corollary2` (imported); vendored `OCS.canonicalProd`, `OCS.IsGenusOneData`,
+`OCS.hasSum_log_norm_canonicalProd`, `OCS.canonicalProd_eq_zero_iff`, `OCS.differentiable_canonicalProd`,
 `OCS.hasProdLocallyUniformlyOn_canonicalProd`; Mathlib `logDeriv_tprod_eq_tsum`.
 **Used by:** nothing (it is a main statement).
 
-> **READ FIRST — status.** The paper's argument proves `theorem2_i` only under an *extra*
-> hypothesis, `DensBound`: `ψ'(s) ≤ K/d_n` on `[t_{n-1}, t_n]` (§A of "Issues"). This is not
-> implied by the hypotheses of the theorem, and without it the function `f` constructed
-> below does **not** satisfy `|U_ψ - log|f|| ≲ 1` (explicit family of counterexamples to the
-> *construction* in §A). Everything else is proved here with explicit constants. The scaffold
-> contains `theorem2_i_of_regular` (with `DensBound`; fully proved on paper) and `theorem2_i`
-> (statement identical to `comparator/statements.lean`, no honest proof from the paper's
-> argument). **Requested change to M00 / `statements.lean`:** add `DensBound` (equivalently
-> add the clause `∃ K, ∀ n ≥ 1, ∀ s ∈ [t_{n-1}, t_n], ψ'(s) ≤ K/(t_n - t_{n-1})` to
-> `IsLogRegularPartition`), or find another proof. It holds automatically when `ψ'` is
-> eventually nonincreasing (§A.4), which covers `√x`, `x^a`, `x/log x`, `log log`, ….
-> I do not know whether `theorem2_i` is true for spiky `ψ`; I only know the paper's `f` fails.
+> **Status (final).** The paper's argument needs the local bound `DensBound` (`ψ' ≤ K/d_n` on
+> `[t_{n−1}, t_n]`, §A of "Issues"), which the printed hypotheses do not imply: without it the
+> function `f` constructed below does **not** satisfy `|U_ψ - log|f|| ≲ 1` (explicit family of
+> counterexamples to the *construction* in §A). Two main statements are proved:
+> - `theorem2_i_of_densityBound`, under `IsLogRegularPartitionWithDensity` (regular partition plus
+>   `DensBound`; no hypothesis `ψ' = 1/O(x)`);
+> - `theorem2_i`, under the printed hypotheses without `ψ' = 1/O(x)` (the hypothesis `hlow` was
+>   unused and removed, NOTEBOOK I-03) plus `hmono` (`ψ'` eventually nonincreasing), which implies
+>   `DensBound` (`RegData.densBound_of_antitoneOn`, `Theorem2i.lean:63`; covers `√x`, `x^a`,
+>   `x/log x`, `log log`, …).
+>
+> Both reduce to `theorem2_i_of_regular (h : RegData ψ t C M) (hK : DensBound ψ t K)`
+> (`Theorem2i.lean:45`). Whether (i) holds for spiky `ψ` is open (NOTEBOOK N-22); only the paper's
+> `f` is known to fail.
 
 ## 0. Plan and notation
 
@@ -186,6 +194,10 @@ injectivity: `Equiv.ofInjective`/`Function.Injective.summable_iff`); `∑ |convF
 All four contributions → 0 as `x → +∞`; together with (a): `Φ → 0` along `cocompact ℝ`
 (`Filter.cocompact_eq_atBot_atTop`/`Real.cocompact_eq`).
 
+*Implemented* (`Theorem2i/PhaseDecay.lean`): instead of the four-way split, a termwise bound
+`P_n ≤ E q_n` with `q_n = d_n/((x - t_n)² + d_n²)` (`RegData.term_le`, `:356`), then finset sums of `q`
+on four ranges (`RegData.tendsto_phaseDeriv_of_hasSum`, `:409`).
+
 ## 5. `U_ψ` as a sum over cells (`§4` of the Lean file)
 
 **5.1 Integrability** (`integrable_UPsi`). `F_z(s) = (log|1 - z/s| + 1_{|s|>1} Re(z/s)) ψ'(s)`.
@@ -273,6 +285,9 @@ rewriting `|j_1| ≤ 2 t_1/|z| + 2 r_1/|z| ≤ 4 d_1/|z|`.
 `s ≤ t_n ≤ (1+C) t_{n-1}`, so `d_n/t_{n-1}² ≤ (1+C)² ∫_{I_n} s^{-2} ds` and
 `∑_{Above} d_n/t_{n-1}² ≤ (1+C)² ∫_{2|z|}^∞ s^{-2} = (1+C)²/(2|z|)`:
 **`∑_{Above} |j_n| ≤ (log(1+C) + 1)(1+C)²`.**
+*Implemented* with a better constant: telescoping `d_n/t_{n−1}² ≤ (1+C)(1/t_{n−1} − 1/t_n)` gives
+`∑_{Above} d_n/t_{n−1}² ≤ (1+C)/(2|z|)`, so `∑_{Above}|j_n| ≤ (log(1+C)+1)(1+C)` (`above_sum`,
+`Theorem2i/Assembly.lean:92`; `D3.sum_Tabove`, `:392`).
 
 ### 6.6 Middle, far: `|z - r_n| ≥ K₀ d_n`, `n ≥ 2` (`abs_cellTerm_far`)
 Write `u = |z - r_n|`, `d = d_n`.
@@ -318,7 +333,18 @@ Let `x₀ = |z| > 0`. For `n ∈ W⁺`: `|x₀ - r_n| ≤ |z - r_n|` and `|x₀ 
   or `MeasureTheory.integral_univ_inv_one_add_sq` after the substitution `s = x + y w`; `y = 0`: term `0`);
 * **`n_1`**: bounded by `max(C_near, (2ρ₁(1+C)³+3+ρ₁)/K₀² + 2/K₀)` (near, or far with `d/u ≤ 1/K₀`).
 
+*Implemented in uniform finset form* (`RegData.finset_card_near_le`, `RegData.finset_sum_far_le`,
+`Theorem2i/Counting.lean:95,137`; `RegData.finset_sum_far_im_le`, `Theorem2i/Riemann.lean:58`; wrapped as
+`RegData.K0_finset_*`, `Assembly.lean:23-49`), because real `tsum`/`ncard` statements hold trivially when
+the series diverges or the set is infinite. The `tsum` forms `card_near_le`, `sum_far_le`, `sum_far_im_le`
+(`Theorem2i/Estimates.lean`) are proved corollaries that nothing uses.
+
 ### 6.9 Conclusion (`exists_bound_cellTerm`, `exists_approx`)
+*Implemented:* `exists_approx` (`Theorem2i/Assembly.lean:512`) uses the uniform finset bound
+`D3.exists_finset_bound` (`:483`): `∑_{n ∈ F} |j_{n+1}(z)| ≤ B` for every finite `F`, with
+`B = max 0 (a1/2 + a2(1+C)/2 + cnear·3(1+K₀²)M + c1·3(1+K₀⁻²)M + (cnear + c1/K₀²) + 2·(9π/4))`
+(`a1 = 4 + 2(1+C)log(1+C)`, `a2 = 2log(1+C) + 2`, `c1 = 2ρ₁(1+C)³ + 3 + ρ₁`, `cnear` the near constant).
+`exists_bound_cellTerm` (the `tsum` form) is a corollary, unused. Blueprint version:
 `∑_n |j_n(z)| ≤ B`,
 `B = [2 + (1+C)log(1+C)] + [(log(1+C)+1)(1+C)²] + (2ρ₁(1+C)³+3+ρ₁)·3(1+K₀^{-2})M + 2·(9π/4)
  + 3(1+K₀²)M·C_near + max(C_near, …)`,
@@ -337,8 +363,11 @@ Given `RegData ψ t C M` and `DensBound ψ t K`: `f = fProd` is entire, in `\ove
 `exp(U_ψ z - B) ≤ ‖f z‖ ≤ exp(U_ψ z + B)` (`Real.exp_log`, `Real.exp_le_exp`). Apply
 `corollary2 hPW hE hDS hψ hf hφ ⟨B, _⟩`. The hypothesis `hlow` is not used (and was removed from
 `theorem2_i`, NOTEBOOK I-03).
-`theorem2_i` follows from `theorem2_i_of_regular` once `DensBound` is available
-(`RegData.of_isLogRegularPartition` produces `t, C, M`).
+The two main statements are reductions to `theorem2_i_of_regular`:
+- `theorem2_i_of_densityBound`: `RegData.of_isLogRegularPartitionWithDensity` produces `t, C, M, K` with
+  `RegData` and `DensBound`;
+- `theorem2_i`: `RegData.of_isLogRegularPartition` produces `t, C, M`, and `RegData.densBound_of_antitoneOn`
+  turns `hmono` into `DensBound`.
 
 ## Issues in the source
 
@@ -356,9 +385,13 @@ help in general (a cell whose mass is split into two far-apart bumps cannot be m
 Fix: add `DensBound` (`ψ' ≤ K/d_n` on `I_n`), used only in 6.7 (the "near" cells), with
 `C_near = 2K + …`. Sufficient: `ψ'` eventually nonincreasing, with `K = C`: `ψ'|_{I_n} ≤ ψ'(t_{n-1}) ≤
 1/d_{n-1} ≤ C/d_n` (`ψ'` nonincreasing ⇒ `ψ'(t_{n-1}) ≤ mean_{I_{n-1}} ψ' = 1/d_{n-1}`).
+*Implemented* with `K = max(C, max(B₀, 0)·t_{N+1})` (`Theorem2i.lean:77`), because `ψ'` is antitone only
+beyond `X`: the finitely many early cells are bounded by `B₀ = sup ψ'` on `[0, t_{N+1}]`.
 Whether Λ(ψ) is actually sampling for such spiky `ψ` I do not know. Confidence in the failure of the
 construction: high; in the necessity of an extra hypothesis for the theorem: unknown.
 **Requested change (M00/statements):** add this clause to `IsLogRegularPartition` or to `theorem2_i`.
+*Resolved (I-01) differently:* a separate definition `IsLogRegularPartitionWithDensity` and a new main
+statement `theorem2_i_of_densityBound`; `theorem2_i` gained `hmono`.
 
 **B. [certain] Wrong integration ranges in (10) and the display of `log|f|`.** Paper:
 `log|f(z)| = ∑_{n=1}^∞ ∫_{r_{n-1}}^{r_n} (log|1 - z/z_n| + Re(z/t)) dψ(t)` and
@@ -408,6 +441,8 @@ the series converges uniformly on compact sets and `V = O(1)`". Both `f` entire 
 otherwise Lean's `∫` silently returns `0`.
 
 ## Requested changes to M00
+*Resolved (NOTEBOOK I-01):* item 1 by the new definition `IsLogRegularPartitionWithDensity` and the main
+statement `theorem2_i_of_densityBound` (not by a clause in `IsLogRegularPartition`), plus `hmono` in `theorem2_i`.
 1. Add `DensBound` (see A) to `IsLogRegularPartition` (or as a separate hypothesis of `theorem2_i`);
    suggested form: in `IsLogRegularPartition`, `∃ K : ℝ, ∀ n, 1 ≤ n → ∀ s ∈ Icc (t (n-1)) (t n),
    deriv ψ s ≤ K / (t n - t (n-1))`.

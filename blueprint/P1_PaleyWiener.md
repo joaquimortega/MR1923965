@@ -1,8 +1,13 @@
 # P1 — The Paley–Wiener theorem (`FF.PaleyWienerThm`)
 
-**Lean files** (all compile with `lake env lean`; only `sorry` warnings):
-`FourierFrames/Cited/PaleyWiener.lean` (ends with `theorem paleyWiener_holds : PaleyWienerThm`,
-already fully proved from the two parts below), and under `FourierFrames/Cited/PaleyWiener/`:
+**Status: proved** (merged 2026-11-07). No `sorry`; `#print axioms FF.paleyWiener_holds` gives
+`[propext, Classical.choice, Quot.sound]`. 1018 lines: `Part1` 277, `L2Fourier` 117, `Spectrum` 410,
+`Part2` 195, top file 19 (the estimate below was about 1300). Implementer's deviations:
+`impl_notes/cited-p1.md`; referee report: `reviews/R6_PaleyWiener.md` (0 critical, 0 major, 6 minor,
+applied below). The statement blocks below are those of the code, which adds helper lemmas not listed.
+
+**Lean files:** `FourierFrames/Cited/PaleyWiener.lean` (ends with
+`theorem paleyWiener_holds : PaleyWienerThm`), and under `FourierFrames/Cited/PaleyWiener/`:
 `Part1.lean` (§1), `L2Fourier.lean` (§2), `Spectrum.lean` (§3), `Part2.lean` (§4).
 Dependency order: `L2Fourier` → `Spectrum`; `Part1` independent; `Part2` imports `Part1`,
 `Spectrum` and `OrtegaCerdaSeip.Bernstein.PhragmenLindelof`; `PaleyWiener.lean` imports `Part1`,`Part2`.
@@ -42,11 +47,12 @@ Notation: `ft g z = ∫_{-π}^{π} g(t) e^{izt} dt`.
   (iii) log-convexity of `y ↦ ∫|f(x+iy)|²dx` (second derivative under the integral): much heavier than §3.
 
 Mathlib facts: the `L²` transform `Lp.fourierTransformₗᵢ ℝ ℂ` (Plancherel, `inner_fourier_eq`), Schwartz agreement
-(`SchwartzMap.toLp_fourier_eq`, `toLp_fourierInv_eq`) exist; the agreement with the integral on `L¹ ∩ L²` does **not**
-(grep of `Mathlib/Analysis/Fourier`, `Distribution` finds nothing), hence §2.
+(`SchwartzMap.toLp_fourier_eq`, `toLp_fourierInv_eq`) exist. There is no packaged lemma for the agreement with the
+integral on `L¹ ∩ L²`, but `Lp.fourier_toTemperedDistribution_eq` and `Lp.fourierInv_toTemperedDistribution_eq`
+(`Analysis/Fourier/LpSpace.lean`) give the pairing of `F2 Φ` with Schwartz functions at once; §2 uses them (R6-03).
 
 Size estimate (Lean lines, proofs only): Part1 ≈ 350, L2Fourier ≈ 200, Spectrum ≈ 450, Part2 ≈ 300; total
-≈ 1300 lines. Hardest pieces: `integral_line_shift`/`norm_integral_gauss_mul_le` (§3), `F2_toLp_ae_eq` (§2).
+≈ 1300 lines. Actual: 277, 117, 410, 195 (+ 19 for the top file), 1018 in all. Hardest pieces: `integral_line_shift`/`norm_integral_gauss_mul_le` (§3), `F2_toLp_ae_eq` (§2).
 
 Conventions. `𝓕 φ w = ∫ x, 𝐞(-x w) • φ x = ∫ x, exp(-2πi x w) φ x` (Mathlib; `Real.fourier_real_eq_integral_exp_smul`
 is the unfolding lemma), `𝓕⁻ φ x = 𝓕 φ (-x) = ∫ w, exp(2πi x w) φ w` (`Real.fourierInv_eq_fourier_neg`,
@@ -171,14 +177,24 @@ to the left side of `pwNormSq_ft`).
 abbrev F2 : Lp (α := ℝ) ℂ 2 ≃ₗᵢ[ℂ] Lp (α := ℝ) ℂ 2 := Lp.fourierTransformₗᵢ ℝ ℂ
 theorem F2_toLp_ae_eq {φ : ℝ → ℂ} (h1 : Integrable φ) (h2 : MemLp φ 2) :
     (F2 (h2.toLp φ) : ℝ → ℂ) =ᵐ[volume] 𝓕 φ
-theorem F2_symm_ae_eq (Φ : Lp (α := ℝ) ℂ 2) :
-    ((F2.symm Φ : Lp (α := ℝ) ℂ 2) : ℝ → ℂ) =ᵐ[volume] fun x ↦ (F2 Φ : ℝ → ℂ) (-x)
 theorem F2_symm_toLp_ae_eq {φ : ℝ → ℂ} (h1 : Integrable φ) (h2 : MemLp φ 2) :
     ((F2.symm (h2.toLp φ) : Lp (α := ℝ) ℂ 2) : ℝ → ℂ) =ᵐ[volume] 𝓕⁻ φ
 ```
-(`open scoped FourierTransform` for `𝓕`, `𝓕⁻`.)
+(`open scoped FourierTransform` for `𝓕`, `𝓕⁻`.) The scaffold also had `F2_symm_ae_eq` (`F2.symm` is `F2`
+followed by the reflection `x ↦ -x`); it is true but was only a step towards `F2_symm_toLp_ae_eq` and was removed
+(R6-02). Helpers in the file: `integral_fourier_smul`, `integral_fourierInv_smul` (self-adjointness of the `L¹`
+transforms), `integral_smul_F2`, `integral_smul_F2_symm`, `ae_eq_of_schwartz_pairing`.
 
-**`F2_toLp_ae_eq`.** Write `Φ = h2.toLp φ`, `u = ⇑(F2 Φ)`, `v = 𝓕 φ`. `u` is locally integrable (`L²`: `(Lp.memLp _).locallyIntegrable`
+***Implemented* (distributional route, R6-03).** `integral_smul_F2`: `∫ ψ • F2 Φ = ∫ 𝓕ψ • Φ` for every
+`ψ ∈ 𝓢(ℝ, ℂ)`, by `Lp.fourier_toTemperedDistribution_eq` evaluated at `ψ` (`TemperedDistribution.fourier_apply`,
+`Lp.toTemperedDistribution_apply`). On the `L¹` side, `integral_fourier_smul` is
+`VectorFourier.integral_fourierIntegral_smul_eq_flip` with `L = innerₗ ℝ` (`(innerₗ ℝ).flip = innerₗ ℝ` by
+`ext; simp`). So `F2(toLp φ)` and the continuous `𝓕φ` have the same pairings with all Schwartz functions, and
+`ae_eq_of_schwartz_pairing` (from `ae_eq_of_integral_contDiff_smul_eq`, with a real `C_c^∞` function viewed as a
+Schwartz function) gives the a.e. equality. `F2_symm_toLp_ae_eq` is the same argument with
+`Lp.fourierInv_toTemperedDistribution_eq` and `L = -innerₗ ℝ`.
+
+*Alternative (the planned route; correct, R6 §C, not formalized).* **`F2_toLp_ae_eq`.** Write `Φ = h2.toLp φ`, `u = ⇑(F2 Φ)`, `v = 𝓕 φ`. `u` is locally integrable (`L²`: `(Lp.memLp _).locallyIntegrable`
 via `MemLp.locallyIntegrable`), `v` is continuous (`VectorFourier.fourierIntegral_continuous Real.continuous_fourierChar
 (innerSL ℝ).continuous₂ h1`, as in `Real.Lp.fourierTransform` in `FourierTransform.lean` l. 508) hence locally integrable.
 By `ae_eq_of_integral_contDiff_smul_eq` (`Analysis/Distribution/AEEqOfIntegralContDiff.lean` l. 195) it suffices to show, for
@@ -200,18 +216,19 @@ Combine: `∫ g • u = ∫ conj χ * φ = ∫ φ * 𝓕 ψ = ∫ 𝓕 φ * g = 
 (If the sesquilinear lemma `integral_sesq_fourierIntegral_eq_neg_flip` (l. 252) is preferred, it removes the reality
 bookkeeping at the cost of the `-L.flip` kernel.)
 
-**`F2_symm_ae_eq`.** Let `R : Lp ℂ 2 →ₗᵢ[ℂ] Lp ℂ 2` be the reflection `Lp.compMeasurePreservingₗᵢ ℂ (fun x ↦ -x) (Measure.measurePreserving_neg volume)`
+*Removed from the code.* **`F2_symm_ae_eq`.** Let `R : Lp ℂ 2 →ₗᵢ[ℂ] Lp ℂ 2` be the reflection `Lp.compMeasurePreservingₗᵢ ℂ (fun x ↦ -x) (Measure.measurePreserving_neg volume)`
 (`LpSpace/Basic.lean`; look for the exact name `Lp.compMeasurePreservingₗᵢ`). Claim `F2.symm = R ∘ F2` as maps. Both are continuous
 (isometries); they agree on the range of `SchwartzMap.toLpCLM` (dense: `SchwartzMap.denseRange_toLpCLM`, `Distribution/SchwartzSpace/Basic.lean` l. 1375):
 for `ψ ∈ 𝓢`, `F2.symm (ψ.toLp) = (𝓕⁻ ψ).toLp` (`SchwartzMap.toLp_fourierInv_eq`), `R (F2 (ψ.toLp)) = R ((𝓕 ψ).toLp) = ((𝓕ψ)∘neg).toLp`, and
 `𝓕⁻ ψ = (𝓕 ψ) ∘ neg` (`fourierInv_eq_fourier_neg`). Conclude with `DenseRange.equalizer` (or `Continuous.ext_on` / `closure` argument).
 Then `Lp.coeFn_compMeasurePreserving`.
 
-**`F2_symm_toLp_ae_eq`.** `F2_symm_ae_eq` with `Φ = h2.toLp φ`, then `F2_toLp_ae_eq` composed with `x ↦ -x`
+*Planned, superseded.* **`F2_symm_toLp_ae_eq`.** `F2_symm_ae_eq` with `Φ = h2.toLp φ`, then `F2_toLp_ae_eq` composed with `x ↦ -x`
 (a.e. statements pull back along the measure preserving `neg`: `Measure.QuasiMeasurePreserving.ae_eq_comp`/`(measurePreserving_neg _).quasiMeasurePreserving.ae_eq_comp`),
 and `𝓕⁻ φ x = 𝓕 φ (-x)` (`fourierInv_eq_fourier_neg`).
 
 *Alternative*: prove `F2_symm_toLp_ae_eq` directly like `F2_toLp_ae_eq` (swap `F2` and `F2.symm`, `𝓕` and `𝓕⁻`); equivalent effort.
+This is what the code does.
 
 ---
 
@@ -224,13 +241,13 @@ theorem integral_line_shift {H : ℂ → ℂ} (hH : Differentiable ℂ H) (y : �
     (hR' : Tendsto (fun R : ℝ ↦ ∫ s in (0 : ℝ)..y, ‖H (-R + s * I)‖) atTop (𝓝 0)) :
     ∫ x : ℝ, H x = ∫ x : ℝ, H (x + y * I)
 
-theorem integral_exp_abs_sub_sq_le {a : ℝ} (ha : 0 ≤ a) {η : ℝ} (hη : 0 < η) :
+theorem integral_exp_abs_sub_sq_le {a : ℝ} {η : ℝ} (hη : 0 < η) :
     ∫ x : ℝ, Real.exp (a * |x| - η * x ^ 2) ≤ 2 * Real.sqrt (Real.pi / η) * Real.exp (a ^ 2 / (4 * η))
 theorem integrable_exp_abs_sub_sq {a η : ℝ} (hη : 0 < η) :
     Integrable (fun x : ℝ ↦ Real.exp (a * |x| - η * x ^ 2))
 
 theorem norm_integral_gauss_mul_le {f : ℂ → ℂ} (hd : Differentiable ℂ f) {C a b : ℝ}
-    (ha : 0 ≤ a) (hb : 0 ≤ b) (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|))
+    (hb : 0 ≤ b) (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|))
     {η : ℝ} (hη : 0 < η) {ξ : ℝ} (hξ : b ≤ |ξ|) :
     ‖∫ x : ℝ, f x * Complex.exp (-(η : ℂ) * (x : ℂ) ^ 2) * Complex.exp (-I * ξ * x)‖ ≤
       2 * |C| * Real.sqrt (Real.pi / η) * Real.exp ((a ^ 2 - (|ξ| - b) ^ 2) / (4 * η))
@@ -256,10 +273,9 @@ theorem spectrum_vanish {f : ℂ → ℂ} (hd : Differentiable ℂ f) (hL2 : Mem
 `∫_{-R}^{R} H(x + 0 I) - ∫_{-R}^{R} H(x + y I) + I•∫_0^y H(R + s I) ds - I•∫_0^y H(-R + s I) ds = 0`. (Careful: `simp` the `z.im*I = 0`;
 the `(↑x + ↑0 * I)` must become `↑x`.) Let `R → ∞`: the horizontal integrals converge to the full integrals by
 `MeasureTheory.intervalIntegral_tendsto_integral` (`IntegralEqImproper.lean` l. 609, with `tendsto_neg_atTop_atBot`,
-`tendsto_id`) using `hint0`, `hinty`; the vertical ones have norm `≤ ∫_0^y ‖H(±R + s I)‖` (`intervalIntegral.norm_integral_le_integral_norm`,
-for `y ≥ 0`; for `y < 0` use `intervalIntegral.integral_symm`/`norm_integral_le_abs_integral_norm`, i.e. work with `|∫|`; simplest is to
-first treat `y ≥ 0` and obtain `y<0` by applying the result to `z ↦ H(conj ...)`, or directly bound by `|∫_0^y ‖·‖|`; adjust `hR` statement accordingly
-if implementation prefers `|∫|`) tending to `0` by `hR`, `hR'`. Conclude by uniqueness of limits (`tendsto_nhds_unique`) in
+`tendsto_id`) using `hint0`, `hinty`; the vertical ones have norm `≤ |∫_0^y ‖H(±R + s I)‖|` (`intervalIntegral.norm_integral_le_abs_integral_norm`, valid for
+both signs of `y`), which tends to `0` by `hR.abs`, `hR'.abs` (R6-05: no case split on the sign of `y` and no change of
+`hR` is needed). Conclude by uniqueness of limits (`tendsto_nhds_unique`) in
 `ℂ` after `sub_eq_zero`.
 
 **`integral_exp_abs_sub_sq_le`.** `exp (a|x|) ≤ exp (a x) + exp (-a x)`; `∫ exp (a x - η x²) = exp (a²/(4η)) √(π/η)`:
@@ -267,7 +283,9 @@ if implementation prefers `|∫|`) tending to `0` by `hR`, `hR'`. Conclude by un
 `x ↦ -x` (`integral_neg_eq_self`/`MeasurePreserving`) for the other term. (Or `integral_cexp_quadratic`, `Gaussian/FourierTransform.lean` l. 174, with `b = -η`.)
 `integrable_exp_abs_sub_sq`: `exp (a|x| - ηx²) ≤ exp (ax - ηx²) + exp (-ax - ηx²)` and each is integrable (`integrable_exp_neg_mul_sq` + shift;
 `integrable_cexp_quadratic`-type lemma in `Gaussian/FourierTransform.lean`), `Integrable.mono'`.
-(For `a < 0` the statement is still true with `|a|`; the scaffold only needs `a ≥ 0` for the first.)
+The statement holds verbatim for every real `a` (`e^{a|x|}` is one of `e^{±ax}`, and `a² = |a|²`), so the scaffold's
+hypothesis `ha : 0 ≤ a` was dropped here and in `norm_integral_gauss_mul_le` (R6-04). `spectrum_vanish` keeps
+`ha`, `hb`.
 
 **`norm_integral_gauss_mul_le`.** `H z := f z * cexp (-η z²) * cexp (-I ξ z)` is entire. Put `κ = |ξ| - b ≥ 0`, `Y = κ/(2η) ≥ 0`,
 `y = -Y` if `ξ ≥ 0`, `y = Y` if `ξ < 0`; thus `ξ y = -|ξ| Y`.
@@ -332,6 +350,7 @@ theorem paleyWiener_part2 : ∀ f : ℂ → ℂ, MemPW f → ∃ g : ℝ → ℂ
     MemLp g 2 (volume.restrict (Ioc (-Real.pi) Real.pi)) ∧
     ∀ z : ℂ, f z = ∫ t in (-Real.pi)..Real.pi, g t * Complex.exp (I * z * t)
 ```
+Helpers added in the code: `stronglyMeasurable_specOf`, `norm_le_exp_re_im` (R6-04).
 
 **`memLp_specOf`.** `Lp.memLp (F2 _)`.
 
@@ -342,7 +361,9 @@ theorem paleyWiener_part2 : ∀ f : ℂ → ℂ, MemPW f → ∃ g : ℝ → ℂ
 * `Φ = (hΦ₀.toLp Φ₀)` as `Lp` elements (`Lp.ext`, `MemLp.coeFn_toLp`, a.e. equality).
 * `u = F2.symm Φ` (`F2.symm_apply_apply`); by `F2_symm_toLp_ae_eq`, `u =ᵐ 𝓕⁻ Φ₀`, and `u =ᵐ f|ℝ` (`MemLp.coeFn_toLp`). So `f x = 𝓕⁻ Φ₀ x` for a.e. `x`.
 * Both sides are continuous: `f` is (differentiable composed with `ofReal`), `𝓕⁻ Φ₀ = fun x ↦ 𝓕 Φ₀ (-x)` is continuous by
-  `VectorFourier.fourierIntegral_continuous` (`Φ₀` integrable). `Continuous.ae_eq_iff_eq` (`Measure/OpenPos.lean` l. 141, `volume` is `IsOpenPosMeasure`)
+  `VectorFourier.fourierIntegral_continuous` (`Φ₀` integrable). *Implemented:* directly with `L = -innerₗ ℝ`, not
+  through `𝓕Φ₀ ∘ neg`; the kernel is matched by `Real.fourierInv_eq_fourier_neg`, `fourier_real_eq_integral_exp_smul`,
+  `push_cast` and `ring`. `Continuous.ae_eq_iff_eq` (`Measure/OpenPos.lean` l. 141, `volume` is `IsOpenPosMeasure`)
   upgrades a.e. to everywhere.
 * Unfold `𝓕⁻ Φ₀ x = ∫ w, exp (2πi w x) • Φ₀ w` (`Real.fourierInv_eq` / `fourierInv_eq`, `Real.fourierChar_apply`) and
   `∫ w, indicator = ∫ w in Icc, specOf …` (`integral_indicator measurableSet_Icc`), `integral_Icc_eq_integral_Ioc`, `intervalIntegral.integral_of_le`.
@@ -352,7 +373,8 @@ theorem paleyWiener_part2 : ∀ f : ℂ → ℂ, MemPW f → ∃ g : ℝ → ℂ
 `2π I w x = ((2π w x : ℝ) : ℂ) * I`).
 
 **`pw_bounded`.** `he 1 one_pos` gives `C₁` with `‖f z‖ ≤ C₁ exp ((π+1)‖z‖)`; `‖z‖ ≤ |z.re| + |z.im|` (`Complex.norm_le_abs_re_add_abs_im`) ⇒
-hypothesis `hC` of `spectrum_vanish` with `C = C₁`, `a = b = π+1`. Then a.e. `w` with `ρ < |w|` where `ρ := 1 + 1/π`
+hypothesis `hC` of `spectrum_vanish` with `C = |C₁|`, `a = b = π+1` (monotonicity of `C₁·exp(·)` needs `0 ≤ C₁`, which
+`he` does not supply; `|C₁|` avoids it, R6-01). In the code this step is the helper `norm_le_exp_re_im`. Then a.e. `w` with `ρ < |w|` where `ρ := 1 + 1/π`
 satisfies `2(π+1) = 2πρ < 2π|w|`, so `hsp` of `bounded_of_spectrum` holds (`hρ : 0 < ρ`). Finish with `bounded_of_spectrum`.
 
 **`pw_spectrum`.** `M` from `pw_bounded`; `OCS.norm_le_mul_exp_abs_im hd he (Real.pi_pos.le) hM z : ‖f z‖ ≤ M * exp (π |z.im|)`
@@ -366,11 +388,15 @@ satisfies `2(π+1) = 2πρ < 2π|w|`, so `hsp` of `bounded_of_spectrum` holds (`
   (`Real.map_volume_mul_right`, `Measure/Lebesgue/Basic.lean`; `MemLp.comp_measurePreserving` (`LpSeminorm/Basic.lean` l. 1049) after `memLp_map_measure_iff`
   and `MemLp.smul_measure`/`MemLp.of_measure_le_smul`); then `.const_mul`/`.div_const` and `MemLp.restrict`.
   (Alternatively use `MemLp.comp_quasiMeasurePreserving` with `Real.quasiMeasurePreserving_mul_right`/`quasiMeasurePreserving_smul`, `EqHaar.lean` l. 345, if available.)
+  *Implemented* (R6-06): `memLp_two_iff_integrable_sq_norm` plus `Integrable.comp_div`. Measurability of `t ↦ Φ(t/2π)`
+  uses the everywhere strongly measurable representative (`stronglyMeasurable_specOf`, from `Lp.stronglyMeasurable`)
+  and `comp_measurable`, which avoids composing an a.e.-measurable function with a map that is not measure
+  preserving.
 * *Identity*: `ft g x = ∫ t in -π..π, Φ (t/(2π))/(2π) * exp (I x t)`; `intervalIntegral.integral_comp_div` (`Basic.lean` l. 944: `∫ x in a..b, f (x / c) = c • ∫ x in a/c..b/c, f x`)
   applied to `w ↦ Φ w * exp (2π I w x)` (note `2π I (t/(2π)) x = I x t`, `field_simp`) with `c = 2π`, `π/(2π) = 1/2`.
   So `ft g x = (2π)⁻¹ • (2π) • ∫_{-1/2}^{1/2} ... = f x`.
 
-**`eq_of_eq_on_real`.** `H = F - G` is entire, hence analytic (`Differentiable.analyticAt` / `DifferentiableOn.analyticOnNhd`,
+**`eq_of_eq_on_real`.** (*Implemented* with `AnalyticOnNhd.eq_of_frequently_eq` at `z₀ = 0` along `1/(n+1)`.) `H = F - G` is entire, hence analytic (`Differentiable.analyticAt` / `DifferentiableOn.analyticOnNhd`,
 `Complex.differentiableOn.analyticOnNhd`); `H = 0` on `ℝ`, in particular `∃ᶠ z in 𝓝[≠] 0, H z = 0` (points `1/(n+1)`), so
 `AnalyticOnNhd.eqOn_zero_of_preconnected_of_frequently_eq_zero` (`Analysis/Analytic/Uniqueness.lean`, with `isPreconnected_univ`) gives `H ≡ 0`.
 
@@ -402,11 +428,12 @@ Names marked "look for" in §2/§4 (`Lp.compMeasurePreservingₗᵢ` exact signa
 ## 6. Risks
 
 * *Lean plumbing in `F2_toLp_ae_eq`* (Schwartz coercions, `Lp`-valued `inner`, `𝓕` on `Lp` vs on functions): medium. Fallback: prove the
-  a.e. equality by density of `C_c^∞` in `L¹ ∩ L²` (heavier).
-* *`integral_line_shift`*: orientation/sign bookkeeping of the rectangle formula, `y<0`: medium. A cleaner variant is to prove the lemma
-  for `y ≥ 0` and obtain `y ≤ 0` via `H̃(z) = H(conj z)‑conj`, or to apply the rectangle with `(z,w) = (-R + yI, R)`; either is routine.
+  a.e. equality by density of `C_c^∞` in `L¹ ∩ L²` (heavier). *Outcome:* unnecessary; the tempered-distribution lemmas give it in a few
+  lines (§2).
+* *`integral_line_shift`*: orientation/sign bookkeeping of the rectangle formula, `y<0`: medium. *Outcome:* the signed hypotheses as stated
+  suffice for both signs (§3, R6-05); about 30 lines.
 * *Gaussian estimates* (`integral_exp_abs_sub_sq_le`, `tendsto_gauss_bound`): routine but long.
-* `F2_symm_ae_eq` (density argument): small/medium. Mathlib may by now (later versions) contain `Lp.fourierTransform` ↔ integral agreement; if so §2 shrinks.
+* `F2_symm_ae_eq` (density argument): small/medium. *Outcome:* not needed and removed (§2).
 * No statement in `PaleyWienerThm` is unprovable as written: part (1) (`MemPW`, norm identity with `ofReal(2π)`) and part (2) (exponent `e^{izt}`,
   all `z ∈ ℂ`, `g ∈ L²(Ioc(-π,π))`) are exactly the classical theorem. Edge cases checked: the `IsExpTypeLE` formulation (`∀ ε, ∃ C`) is what the
   Phragmén–Lindelöf lemma and `isExpTypeLE_ft` use; `pwNormSq` is an `ℝ≥0∞` integral so finiteness is part of the statement and is proved by `memLp_ft_real`.

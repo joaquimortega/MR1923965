@@ -6,7 +6,11 @@
 Romanov, *Canonical systems and de Branges spaces* (arXiv 1408.6022), Appendix II = proof of the
 direction of "Theorem 8" that is our `TheoremF` (his "⇒"); Remling's book for the kernel route to Thm 23.
 **Depends on:** `Defs`; P3 `theoremD_holds : TheoremD` (Part F only; declared in an "Upstream interface"
-section of the scaffold); project `HB/H2.lean` (H² mean value bounds, `not_isH2Upper_div_of_zero`).
+section of the scaffold — this stub clashes with P3's `theoremD_holds` and must be replaced by
+`import FourierFrames.Cited.DeBrangesDE` at P3 assembly, §6); project `HB/H2.lean` (H² mean value bounds,
+`not_isH2Upper_div_of_zero`).
+**Status (2026-11-07):** assessment and `sorry` scaffold only. Referee R7 checked the mathematics; its
+corrections are in §6 and supersede the text they refer to.
 Does **not** use `hPW`.  **Used by:** `Theorem1/Necessity` (`exists_E` uses `hC`, `exists_herglotz_data` uses `hF`).
 
 Notation: `K(w,z) := ι(k w)(z)`; `E^*(z)=conj E(conj z)`; `Θ=E^*/E`; `UHP={Im z>0}`.
@@ -77,6 +81,7 @@ which is `deBrangesKernel` off `z=w̄` (**checked** against `E=e^{-iπz}`, `H=PW
 `|E^*(w)|<|E(w)|`, hence `E(w)≠0`: `E∈HB` (even strict inequality).
 
 ### C.9 `kernel_gram`
+(*R7:* C.9–C.12 re-prove Theorem D; the recommended route is through P3, §6 (R7-7).)
 For `w∈ℂ₊`, `E(t)^{-1}K(w,t) = (i/2π)(Ē(w) − Ē^*(w)Θ(t))/(t − w̄)` on `ℝ` (`E^*(t)=Ē(t)`).  Write `φ_w=1/(z-w̄)`.
 Facts about `H²(ℂ₊)` needed (**to be proved**, from `HB/H2.lean`):
 (H²-a) for `g∈H²` (`IsH2Upper`) and `w∈ℂ₊`: Cauchy formula `g(w) = (1/2πi)∫_ℝ g̃(t)/(t-w) dt` where `g̃` is the boundary
@@ -142,6 +147,7 @@ For `w,v∈ℂ₊` with `E^*(w)=E^*(v)=0`: `K(w,t)/E(t)=(i/2π)Ē(w)/(t−w̄)` 
 ### F.4 `cauchy_pairing_general`
 Pair `K(w₀,·)` (`w₀∈Z`) with `K(z,·)`, `z∈ℂ₊`: `K(z,t)/E(t)=(i/2π)(Ē(z)−Ē^*(z)Θ(t))/(t−z̄)`; the `Θ`-term is bounded in modulus by
 `|Ē^*(z)|·(∫dμ/|t−w̄₀|²)^{1/2}(∫dμ/|t−z|²)^{1/2}` and `∫dμ/|t−z|²=πP[μ](z)/y` with `P≲1`.  Dividing by `Ē(z)` (`|Ē^*(z)/Ē(z)|=|Θ(z)|`) gives the stated error `C|Θ(z)|/√y` (use F.5 for `P(z)≤2`).
+(*R7-11:* F.5 gives `P(z) ≤ 2` only where `|Θ(z)| ≤ 1/2`; the statement needs that hypothesis, §6.)
 
 ### F.5 `poisson_diag_estimate`
 Isometry on `K(z,·)`: `‖K_z‖²=K(z,z)=(|E(z)|²−|E^*(z)|²)/(4π y)` and
@@ -156,7 +162,7 @@ Isometry on `K(z,·)`: `‖K_z‖²=K(z,z)=(|E(z)|²−|E^*(z)|²)/(4π y)` and
 `Θ` is holomorphic on `ℂ₊`, `|Θ|≤1`, continuous on a neighbourhood of `ℝ` with `|Θ|=1` there (no real zeros of `E`).  Claim `Θ=e^{i(az+θ)}B`, `a≥0`, `B` Blaschke product of the zeros of `Θ` (the zeros of `E^*` in `ℂ₊`).
 Proof outline: (i) Blaschke condition `∑ Im z_j/(1+|z_j|²)<∞` from boundedness: Jensen on discs/Carleman's formula for the half-plane (Mathlib has `JensenFormula` for discs; map half-plane to disc by Cayley, `Mathlib/Analysis/Complex/UpperHalfPlane`).
 (ii) The product `B` converges (standard), `|B|≤1`, `Θ/B` zero-free holomorphic with `|Θ/B|≤1` (finite partial products and maximum principle/PL, as in (iii)).
-(iii) `log|Θ/B|` is a non-positive harmonic function on `ℂ₊` with boundary values `0` on `ℝ` (continuity of `Θ` and `|B|→1` at the boundary away from accumulation... careful: `B` has no accumulation on `ℝ` since `Θ` is analytic/unimodular near `ℝ`, so zeros are discrete and bounded away from compacts... needs an argument).  A non-positive harmonic function on `ℂ₊` vanishing on `ℝ` is `−a y` (Herglotz/Poisson representation with zero boundary measure — **or** reflect across `ℝ` using Schwarz reflection (harmonic function vanishing on a line extends oddly), then Liouville for harmonic functions with a one-sided bound: `Mathlib/Analysis/Complex/Harmonic/Liouville.lean`).  This reflection trick avoids Herglotz and is the recommended route.  So `Θ/B=e^{−ay+i(\ldots)}=e^{i(az+θ)}`.
+(iii) `log|Θ/B|` is a non-positive harmonic function on `ℂ₊` with boundary values `0` on `ℝ` (continuity of `Θ` and `|B|→1` at the boundary away from accumulation... careful: `B` has no accumulation on `ℝ` since `Θ` is analytic/unimodular near `ℝ`, so zeros are discrete and bounded away from compacts... needs an argument).  A non-positive harmonic function on `ℂ₊` vanishing on `ℝ` is `−a y` (Herglotz/Poisson representation with zero boundary measure — **or** reflect across `ℝ` using Schwarz reflection (harmonic function vanishing on a line extends oddly), then Liouville for harmonic functions with a one-sided bound: `Mathlib/Analysis/Complex/Harmonic/Liouville.lean`).  This reflection trick avoids Herglotz and is the recommended route.  (*R7-12:* the reflected function has no one-sided bound on `ℂ`; finish instead with the entire-Pick lemma, §6.)  So `Θ/B=e^{−ay+i(\ldots)}=e^{i(az+θ)}`.
 Blaschke division (second conjunct): if `Ψ` bounded by `M`, vanishing on zeros of `B` with multiplicity, then `|Ψ|≤M|B|`: for finite sub-products `B_n`, `Ψ/B_n` is holomorphic and `limsup |Ψ/B_n|≤M` at the boundary and at `∞` (the finite Blaschke product is unimodular on `ℝ`, tends to a unimodular limit at `∞`) — maximum principle in `ℂ₊` for bounded functions (Phragmén–Lindelöf, `Mathlib/Analysis/Complex/PhragmenLindelof.lean` has half-plane versions); let `n→∞`.
 Orders: `analyticOrderAt`.
 
@@ -167,7 +173,7 @@ Orders: `analyticOrderAt`.
 ### F.9 Assembly (`theoremF_holds`)
 Let `Z={z∈ℂ₊: Θ(z)=0}={zeros of E^*}`; `a` from F.7.  Let `g_0=herglotzG μ 0`.
 * **Case `a>0`.**  By F.5 (note `|Θ(z)|≤e^{−ay}`), `|Re g_0−1|≤4e^{−ay}` for `y≥y_0`; F.6 gives `c`, `|g_0−1−ic|≲e^{−a'y}`.  If `Z≠∅`: F.4 and the Herglotz formula give for `w₀∈Z`: `g_0(z)+conj g_0(w₀)→2` as `y→∞`, so `g_0(w₀)=1+ic`: **the constant `c` from decay and the constant from `Z` agree** (this repairs a gap in Romanov: he fixes the constant by decay and claims `Ξ(z)=0` on `Z` from `Re g=1` alone).  For zeros of order `m>1` use the same pairings for the derivative kernels `∂_{w̄}^jK(w,·)` (reproducing property of derivatives; `⟨f,∂^jK_w⟩=f^{(j)}(w)`) — **sketch only, to be checked**.
-* **Case `a=0`.**  `Θ=e^{iθ}B`, `Z` is then infinite and `Re g_0=1` on `Z` (F.3); F.3 shows `Im g_0` is the same constant `c_Z` on `Z`, choose `c=−c_Z`... (`Z≠∅` since `Θ` nonconstant by strictness).  No decay is needed: `Ξ/B` is bounded by 1 by Blaschke division, `hdec` is vacuous (`a'<0`... the division lemma with `a=0` follows from F.7 directly with `M=1`).
+* **Case `a=0`.**  `Θ=e^{iθ}B`, `Re g_0=1` on `Z` (F.3; `Z` need not be infinite, R7-13, but `Z≠∅`); F.3 shows `Im g_0` is the same constant `c_Z` on `Z`, choose `c=−c_Z`... (`Z≠∅` since `Θ` nonconstant by strictness).  No decay is needed: `Ξ/B` is bounded by 1 by Blaschke division, `hdec` is vacuous (`a'<0`... the division lemma with `a=0` follows from F.7 directly with `M=1`).
 Set `g=g_0−ic`, `Ξ=(g−1)/(g+1)` (`Re g>0` so `g+1≠0`, `|Ξ|<1`), `A:=Ξ/Θ` (zero set: removable).  By F.8 `|A|≤1`.  `1−ΘA=1−Ξ=2/(g+1)≠0`, `(E+E^*A)/(E−E^*A)=(1+ΘA)/(1−ΘA)=(1+Ξ)/(1−Ξ)=g`,
 so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `UHP`.
 
@@ -179,7 +185,7 @@ so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `
 * Missing (must be written): `H²(ℂ₊)` Cauchy formula + boundary identification (used by C.9, C.11, F); Blaschke products with convergence, Blaschke division, factorization of meromorphic inner functions (F.7); harmonic derivative estimates (F.6).
 
 ## 4. Issues in the source / the statements
-1. **Romanov, App. II (⇒)** (the proof we follow): "`Re g=1` at a zero of `S` implies `Ξ(z)=0`" needs `Im g=0` there; the imaginary constant is claimed to be fixed by two incompatible requirements (zeros, decay); compatibility is a genuine step (F.4/F.9 above).  Also multiplicities ("easy") are not proved.  Also "`w` a root of `W`" should read root of `W^*` in the upper half-plane (his `W` is HB).  Confidence: high for the first point, medium for the multiplicity gap being real.
+1. **Romanov, App. II (⇒)** (the proof we follow): "`Re g=1` at a zero of `S` implies `Ξ(z)=0`" needs `Im g=0` there; the imaginary constant is claimed to be fixed by two requirements (zeros, decay) that are independent a priori (R7-10; "incompatible" in an earlier version of this note was wrong); compatibility is a genuine step (F.4/F.9 above).  Also multiplicities ("easy") are not proved.  Also "`w` a root of `W`" should read root of `W^*` in the upper half-plane (his `W` is HB).  Confidence: high for the first point, medium for the multiplicity gap being real.
 2. Romanov's theorem has `c_0≥0` only in the converse; in our direction `p=0` always, so the `p` of `TheoremF` is slack (kept as stated, supply `p=0`).
 3. `TheoremC`: statement true; note the conclusion cannot require `E` without real zeros (example `{f∈PW: f(0)=0}`); the project already uses closed `IsHB`.  The `E` produced is even strict on `ℂ₊`.
 4. `TheoremF` needs `TheoremD` (P3) for `K(w,·)∈H(E)` and its reproducing property; hence P4-F imports P3's `theoremD_holds`.  (No cycle: D does not use F.)
@@ -190,3 +196,74 @@ so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `
 * Multiplicity-`>1` zeros of `Θ` in F.9 (derivative kernels): unchecked.
 * C.9/C.11: the four-term `H²` bookkeeping must be done carefully (shared with TheoremD).
 * If a Lean implementer must cut: do Part C (3–4 k lines, moderate risk) and leave `hF` as a hypothesis.
+
+---------------------------------------------------------------------------------------------------
+## 6. Referee corrections (R7)
+
+From `reviews/R7_Cited.md`, Part 2 (2026-11-07). R7 confirms C.1–C.8 (including the formula
+`E = √π (z+i)K(i,z)/√K(i,i)`, checked independently on `PW`), F.1–F.3, F.5, F.6, and that `TheoremC`
+and `TheoremF` are true as stated. The items below supersede the text they refer to.
+
+1. **Part C through P3 (R7-7; replaces C.9–C.12).** C.9–C.12 re-prove Theorem D plus a completeness
+   argument, which P3 builds. Route: by C.7, `ι(k_w) = K_E(w,·)` as entire functions. With Theorem D for
+   this `E`:
+   - the Gram matrices `⟪k_w, k_v⟫_H` and `⟨K_E(w,·), K_E(v,·)⟩_E` coincide, so `ι` is isometric on
+     `span{k_w}`;
+   - the span is dense in `H`: `h ⊥ k_w` for all `w` gives `ι h = 0` on `ℂ ∖ ℝ`, hence `ι h = 0`;
+   - by completeness of `H(E)` (P3 `memHE_of_cauchy`) and continuity of evaluation at nonreal points,
+     `ι(H) ⊆ H(E)` isometrically;
+   - if `f ∈ H(E)` is orthogonal to `ι(H)`, then `f(w) = ⟨f, K_E(w,·)⟩_E = 0` for nonreal `w`, so `f = 0`.
+
+   The clean form of C.11 has two terms: `conj(K(w,t)/E(t)) = (−i/2π)(E(w) − E^*(w) conj Θ(t))/(t − w)`;
+   `∫ (f/E)(t)/(t − w) dt = 2πi (f/E)(w)` (P3 `IsH2Cont.cauchy_upper`); on `ℝ`,
+   `(f/E)·conj Θ = f/E^* = conj(f^*/E)`, so the second term is `∫ conj((f^*/E)(t))/(t − w) dt = 0`
+   (P3 `IsH2Cont.cauchy_conj_upper`).
+
+   *Obstacle.* P3's kernel layer assumes `IsStrictHB E` and no real zeros (`isH2Cont_of_memHE`,
+   `memHE_deBrangesKernel`, `heInner_kernel_nonreal`); the `E` of Theorem C is strict but may have real zeros
+   (C.10). Generalise P3's *internal* kernel lemmas (not the frozen `TheoremD`) to strict `E` with real
+   zeros. Two facts are needed: `f ∈ H(E)` vanishes at a real zero `t₀` of `E` to at least its order (an
+   order version of `not_isH2Upper_div_of_zero`), which makes `f/E` `IsH2Cont`; and `Θ = E^*/E` extends
+   analytically across `ℝ` with `|Θ| = 1` (`E` and `E^*` have the same real zeros with the same orders).
+   P3's Cauchy layer (`Cauchy.lean`) is stated for general `IsH2Cont F` and needs no change. Cost: about
+   1.5–2.5k lines on top of P3, against 2.5–4k from scratch. (P3 names as in the master scaffold of
+   2026-11-07; P3's blueprint `P3_DeBrangesDE.md` is forthcoming.)
+2. **Stub clash (R7-8).** `DeBrangesFC.lean` declares `theorem FF.theoremD_holds : TheoremD := by sorry`,
+   and P3 declares the same name. Importing both gives a duplicate-declaration error, and every Part F
+   lemma that uses the stub carries `sorryAx`. Fix at P3 assembly: `import FourierFrames.Cited.DeBrangesDE`
+   here and delete the stub (no cycle: D uses neither C nor F).
+3. **Romanov's gap (R7-10).** The two requirements on the imaginary constant (`Im g = 0` on `Z`,
+   `Im g → 0` at `i∞`) are independent a priori, not incompatible; F.3 and F.4/F.9 show that they agree.
+   *Multiplicities* (§5 "unchecked"): let `w₀` be a zero of `E^*` of order `m`. For `k < m` the kernel of
+   `f ↦ f^{(k)}(w₀)`, divided by `E`, has no `Θ`-term, because the derivatives of `Ē^*` up to order `k`
+   vanish at `w₀`. Pairing it with `K_{w₀}` gives
+   `∂_z^k[(g(z) + conj g(w₀) − 2)/(z − w̄₀)]|_{z=w₀} = 0` for `k < m`. With `g(w₀) = 1`, `g − 1` has a zero
+   of order `m` at `w₀`, and so does `Ξ`. Derivative kernels are needed on one side only.
+4. **F.4 is overstated (R7-11).** `cauchy_pairing_general` (scaffold) claims the error `C|Θ(z)|/√(Im z)` for
+   all `Im z ≥ 1`, but the proof needs `P(z) ≤ 2`, which F.5 gives only where `|Θ(z)| ≤ 1/2`. On
+   `{Im z ≥ 1}` the Poisson integral need not be bounded (for a Clark measure,
+   `P = (1 − |Θ|²)/|α − Θ|²`, and `|Θ(x + i)|` can approach `1` when the zeros of `E^*` are sparse), so the
+   lemma is unproved as stated and may be false. Repair: add the hypothesis `‖thetaFn E z‖ ≤ 1/2`, as in
+   F.5. F.9 uses F.4 only for `y → ∞` with `|Θ(z)| ≤ e^{−ay}`, so nothing downstream changes.
+5. **F.7(iii): reflection, then the entire-Pick lemma (R7-12).** A non-positive harmonic `u = log|Θ/B|` on
+   `ℂ₊` with zero boundary values, reflected oddly, is `≤ 0` on `ℂ₊` and `≥ 0` on `ℂ₋`: there is no
+   one-sided bound on `ℂ`, and Mathlib's harmonic Liouville theorem covers only bounded functions. Finish:
+   the odd extension `U` is entire harmonic, `U = Re H` with `H` entire
+   (`HarmonicOnNhd.exists_analyticOnNhd_univ_re_eq`); `G := −iH` is real on `ℝ` and `Im G = −U ≥ 0` on
+   `ℂ₊`, so `G` is an entire Pick function, hence `az + b` with `a ≥ 0` (P3 `im_div_im_eq`,
+   `EntireHerglotz.lean`); so `u = −ay`. Equivalently, reflect `Φ = Θ/B` by `Φ(z) := 1/conj Φ(z̄)` on `ℂ₋`,
+   which gives a zero-free entire `Φ = e^H`. The reflection lemma costs about 0.3–0.5k lines (it needs `B`
+   continuous up to `ℝ`).
+   *Limits in F.7 and F.8.* For a finite Blaschke product `B_n` with zeros `x_j + iy_j`,
+   `|B_n(x + iδ)| ≥ ∏ (y_j − δ)/(y_j + δ)` uniformly in `x`. Apply Mathlib's bounded half-plane
+   Phragmén–Lindelöf (`PhragmenLindelof.right_half_plane_of_bounded_on_real`, after rotation) to
+   `Ξ e^{−ia'z}/B_n` on `{Im z > δ}`, then let `δ → 0`, `n → ∞`, `a' → a`. This gives `|Ξ| ≤ e^{−ay}|B| = |Θ|`
+   with constant `1` and without dividing by `Θ`, and merges the division clause of F.7 with F.8.
+6. **F.9, case `a = 0` (R7-13).** "`Z` is then infinite" is false (if `E` is a polynomial with zeros in
+   `ℂ₋`, `Θ` is a finite Blaschke product with `a = 0`). Only `Z ≠ ∅` is used, and it holds since `Θ` is
+   nonconstant.
+7. **Scope (R7-15).** `hC` occurs in `theorem1_necessity`, `theorem1`, `corollary1` and
+   `landau_inequality`, all of which also need `hF`, and in `completeInterpolating_zero_set` (with `hD`).
+   So Part C alone (with P1 and P3) makes only `completeInterpolating_zero_set` unconditional. Recommended
+   plan (`PHASE2.md`): do C after P3, through Theorem D (item 1); defer F and keep `hF`. If F is ever
+   attempted, first apply items 4 and 5; estimate 5–8k lines plus about 0.5k.
