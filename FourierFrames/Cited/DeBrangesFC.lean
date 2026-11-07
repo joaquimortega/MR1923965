@@ -3,10 +3,12 @@ import FourierFrames.Cited.DeBrangesFC.Kernel
 /-!
 # P4 — de Branges' Theorems C and F
 
-See `blueprint/P4_DeBrangesFC.md`.  Scaffold: lemma proofs are `sorry`, definitions are real, and
-the assembly `theoremC_holds` is written from the lemmas.
+See `blueprint/P4_DeBrangesFC.md`.  **Part C is proved**: `theoremC_holds` depends only on
+`propext`, `Classical.choice`, `Quot.sound`.  Part F is deferred (statements only, `sorry`).
 
-**Part C** (Theorem 23) goes through P3 (`Cited/DeBrangesDE`):
+**Part C** (Theorem 23) goes through P3 (`Cited/DeBrangesDE`); the proofs are split over
+`DeBrangesFC/Analytic.lean` (§1.1–1.2), `DeBrangesFC/Space.lean` (§1.3) and
+`DeBrangesFC/Kernel.lean` (C.1–C.8); C.9–C.14 and the assembly are here.
 * §C.1–C.4 the reproducing kernel `k` of `H` (Riesz, `K(ζ,ζ) > 0` by iterating (H1), symmetry,
   `K_w^* = K_{w̄}` from (H3));
 * §C.5–C.8 the identity obtained from (H1), the explicit `E = √π (z+i) K(i,z)/√K(i,i)`, and
@@ -126,15 +128,17 @@ theorem kernelSpan_topologicalClosure [CompleteSpace H] (hax : DBAxioms ι) {k :
   rw [hk z hz.ne']
   exact (Submodule.mem_orthogonal _ _).mp hh (k z) (Submodule.subset_span ⟨z, hz, rfl⟩)
 
-theorem exists_seq_kernelSpan [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
-    (h : H) : ∃ x : ℕ → H, (∀ n, x n ∈ kernelSpan k) ∧ Tendsto x atTop (𝓝 h) := by
+theorem exists_seq_kernelSpan [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H}
+    (hk : IsKernelFamily ι k) (h : H) :
+    ∃ x : ℕ → H, (∀ n, x n ∈ kernelSpan k) ∧ Tendsto x atTop (𝓝 h) := by
   have hmem : h ∈ closure (kernelSpan k : Set H) := by
     rw [← Submodule.topologicalClosure_coe, kernelSpan_topologicalClosure hax hk]
     trivial
   exact mem_closure_iff_seq_limit.mp hmem
 
 /-- C.12 `ι` maps `H` into `H(E)` contractively (Fatou on lines along a sequence of the span). -/
-theorem memHE_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
+theorem memHE_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
+    (h : H) :
     MemHE (kernelE ι k) (ι h) ∧ heNormSq (kernelE ι k) (ι h) ≤ ENNReal.ofReal (‖h‖ ^ 2) := by
   set E := kernelE ι k with hEdef
   have hE := (isStrictHB_kernelE hax hk).1
@@ -178,7 +182,8 @@ theorem memHE_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : I
   exact ⟨hmem, hmem.heNormSq_le_of_lines_of_isHB hE h1⟩
 
 /-- C.13 `ι : H → H(E)` is isometric (`‖h‖² = lim ⟪x_n, h⟫ ≤ ‖ι h‖_E ‖h‖`). -/
-theorem heNormSq_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
+theorem heNormSq_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
+    (h : H) :
     heNormSq (kernelE ι k) (ι h) = ENNReal.ofReal (‖h‖ ^ 2) := by
   have hE := (isStrictHB_kernelE hax hk).1
   obtain ⟨hmem, hle⟩ := memHE_iota hax hk h
@@ -218,8 +223,8 @@ theorem heNormSq_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk 
 
 /-- C.14 `ι` is onto `H(E)`: Riesz in `H` for `h ↦ ⟨ι h, f⟩_E`, then the reproducing formula
 in `H(E)` and the identity theorem. -/
-theorem mem_range_of_memHE [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
-    {f : ℂ → ℂ} (hf : MemHE (kernelE ι k) f) : f ∈ Set.range ι := by
+theorem mem_range_of_memHE [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H}
+    (hk : IsKernelFamily ι k) {f : ℂ → ℂ} (hf : MemHE (kernelE ι k) f) : f ∈ Set.range ι := by
   set E := kernelE ι k with hEdef
   have hE := (isStrictHB_kernelE hax hk).1
   have hmem : ∀ h, MemHE E (ι h) := fun h ↦ (memHE_iota hax hk h).1

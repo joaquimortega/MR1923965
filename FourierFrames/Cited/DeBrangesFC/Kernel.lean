@@ -301,7 +301,8 @@ theorem kernelE_eq {k : ℂ → H} (hk : IsKernelFamily ι k) (z : ℂ) :
 /-- C.6 `E^*(z) = √π (z - i) K(-i, z) / √K(i, i)`. -/
 theorem fstar_kernelE (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) :
     fstar (kernelE ι k) =
-      fun z ↦ (Real.sqrt Real.pi : ℂ) * (z - I) * ι (k (-I)) z / (Real.sqrt (ι (k I) I).re : ℂ) := by
+      fun z ↦ (Real.sqrt Real.pi : ℂ) * (z - I) * ι (k (-I)) z /
+        (Real.sqrt (ι (k I) I).re : ℂ) := by
   funext z
   have hK := congrFun (kernel_fstar hax hk (w := I) (by simp)) z
   rw [Complex.conj_I] at hK
