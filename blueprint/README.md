@@ -21,16 +21,16 @@
   hypotheses.
 - `comparator` accepts `FFChallenge`/`FFSolution` (`comparator/last_run.log`). `#print axioms` of each main
   theorem shows only `propext`, `Classical.choice`, `Quot.sound`.
-- No `sorry` in the default target `FourierFrames`; the only file with `sorry` is the phase-2 scaffold
-  `Cited/DeBrangesFC.lean`, built only by `lake build FourierFramesScaffold`. `lake build` has no warning
-  (lint pass, NOTEBOOK I-03).
+- No `sorry` in the default target `FourierFrames`; the only file with `sorry` is the phase-2 scaffold of
+  Theorem F, `Cited/DeBrangesFC/PartF.lean`, built only by `lake build FourierFramesScaffold`. `lake build` has no
+  warning (lint pass, NOTEBOOK I-03; again after the P4 merge, I-11).
 - `scripts/check_statements.py scaffold-reviewed` passes. The only changes to statements frozen at
   `scaffold-reviewed` are the removals of unused hypotheses in the lint pass, recorded in its `APPROVED` list
   (NOTEBOOK I-03). Among the main statements, `theorem2_i` lost `hlow` (`ψ' = 1/O(x)`), and `theorem2_ii` lost
   `hPW` and is unconditional. The changes of NOTEBOOK I-01 predate the freeze.
 
-**Phase 2** (`blueprint/PHASE2.md`, files under `FourierFrames/Cited/`): P1–P3 proved, P4-C in progress,
-P4-F deferred, P5 infeasible.
+**Phase 2** (`blueprint/PHASE2.md`, files under `FourierFrames/Cited/`): P1–P3 and P4-C proved, P4-F deferred,
+P5 infeasible.
 
 | `Prop` | Lean | status |
 |---|---|---|
@@ -38,23 +38,22 @@ P4-F deferred, P5 infeasible.
 | `JohnNirenberg` | `johnNirenberg_holds` (`Cited/JohnNirenberg.lean`) | proved, unconditional |
 | `DSPerturbation` | `dsPerturbation_of_paleyWiener : PaleyWienerThm → DSPerturbation` (`Cited/DSPerturbation.lean`); `dsPerturbation_holds` (`Unconditional.lean`) | proved, unconditional |
 | `TheoremD`, `TheoremE` | `theoremD_holds`, `theoremE_holds` (`Cited/DeBrangesDE.lean` + `Cited/DeBrangesDE/*`) | proved, unconditional (`P3_DeBrangesDE.md`, referee R9) |
-| `TheoremC` | `theoremC_holds` (`Cited/DeBrangesFC.lean`) | in progress along the route through Theorem D (R7 finding 7); scaffold (`sorry`) |
-| `TheoremF` | `theoremF_holds` (`Cited/DeBrangesFC.lean`) | deferred; scaffold (`sorry`) |
+| `TheoremC` | `theoremC_holds` (`Cited/DeBrangesFC.lean` + `Cited/DeBrangesFC/{Analytic,Space,Kernel}.lean`) | proved, unconditional, through Theorem D (R7 finding 7; `P4_DeBrangesFC.md`, referee R10) |
+| `TheoremF` | `theoremF_holds` (`Cited/DeBrangesFC/PartF.lean`, target `FourierFramesScaffold`) | deferred; scaffold (`sorry`); its `division_lemma` is false as stated (R10) |
 | `PavlovBMO` | — | not feasible (`P5_Pavlov.md`); stays the hypothesis `hA` of `landau_inequality` |
 
 `#print axioms` gives only the three standard axioms for every proved `*_holds` and for every theorem of
-`Unconditional.lean`; all of them are among the 33 theorems that comparator accepts. `FourierFrames.lean`
-imports only sorry-free modules. The scaffold `Cited/DeBrangesFC.lean`, with `theoremC_holds`,
-`theoremF_holds` and a temporary `sorry` stub of `theoremD_holds` (to be replaced by an import of
-`Cited/DeBrangesDE.lean`), belongs to the separate Lake target `FourierFramesScaffold`.
+`Unconditional.lean`; all of them are among the 39 theorems that comparator accepts. `FourierFrames.lean`
+imports only sorry-free modules. The scaffold `Cited/DeBrangesFC/PartF.lean` contains `theoremF_holds` and the
+Part F lemmas, all `sorry`. It belongs to the separate Lake target `FourierFramesScaffold`.
 
 **Unconditional versions** (`FourierFrames/Unconditional.lean`). With the proved cited results supplied,
 `isFourierFrame_iff_isSampling`, `heEqPW_of_comparable`, `theorem1_sufficiency`,
-`logExample_isCompleteInterpolating`, `landau_sharp`, `corollary2`, `theorem2_i` and
-`theorem2_i_of_densityBound` become unconditional (`*_unconditional`). The rest keep exactly the cited
-hypotheses that are not proved: `completeInterpolating_zero_set_of_theoremC` (C);
-`theorem1_necessity_of_theoremCF`, `theorem1_of_theoremCF`, `corollary1_of_theoremCF` (C, F);
-`landau_inequality_of_theoremCF_pavlov` (C, F, A).
+`completeInterpolating_zero_set`, `logExample_isCompleteInterpolating`, `landau_sharp`, `corollary2`,
+`theorem2_i` and `theorem2_i_of_densityBound` become unconditional (`*_unconditional`). The rest keep exactly
+the cited hypotheses that are not proved: `theorem1_necessity_of_theoremF`, `theorem1_of_theoremF`,
+`corollary1_of_theoremF` (F); `landau_inequality_of_theoremF_pavlov` (F, A). The intermediate versions
+`*_of_theoremC`, `*_of_theoremCF`, `*_of_theoremCF_pavlov`, stated before Theorem C was proved, are kept.
 
 ## 0. Workflow
 
@@ -74,7 +73,8 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
   defined in `Defs.lean`. Every main theorem takes exactly the cited `Prop`s it uses.
 - *Phase 2*: discharge the cited results that are within reach (plan, assessments and status:
   `blueprint/PHASE2.md` and the Status section above), and state the main results with them supplied
-  (`Unconditional.lean`). Pavlov's theorem stays a hypothesis (`P5_Pavlov.md`).
+  (`Unconditional.lean`). De Branges' Theorem F (`P4_DeBrangesFC.md`, deferred) and Pavlov's theorem
+  (`P5_Pavlov.md`) stay hypotheses.
 
 ## 1. What is formalized (main results, `comparator/statements.lean`)
 
@@ -96,7 +96,7 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
 | Theorem 2 (i), with the cell density bound the proof uses | `theorem2_i_of_densityBound` | PW, E, DS | `Theorem2i.lean` |
 | Theorem 2 (ii) | `theorem2_ii` | — (unconditional, I-03) | `Theorem2ii.lean` |
 
-The cited hypotheses PW, D, E, JN and DS are proved in phase 2; `Unconditional.lean` states each main
+The cited hypotheses PW, C, D, E, JN and DS are proved in phase 2; `Unconditional.lean` states each main
 result with them supplied (Status section above).
 
 Not formalized: the Proposition on p. 798 (norm equivalence via [Or98]; quoted without proof and
@@ -216,19 +216,18 @@ Phase 2 (`PHASE2.md`):
 | P1 | `P1_PaleyWiener.md` | `Cited/PaleyWiener.lean`, `Cited/PaleyWiener/{Part1,L2Fourier,Spectrum,Part2}.lean` | Paley–Wiener theorem (proved) |
 | P2 | `P2_DS_JN.md` | `Cited/DSPerturbation.lean`, `Cited/JohnNirenberg.lean` | Duffin–Schaeffer, John–Nirenberg (proved) |
 | P3 | `P3_DeBrangesDE.md` | `Cited/DeBrangesDE.lean`, `Cited/DeBrangesDE/{Cauchy,Kernel,Space,EntireHerglotz,Orthogonal,Complete}.lean`; helpers `Cited/DeBrangesDE/{CauchyAux/Basic,EAux/KernelSymm}.lean` | de Branges D, E (proved) |
-| P4 | `P4_DeBrangesFC.md` | `Cited/DeBrangesFC.lean` (target `FourierFramesScaffold`) | de Branges C, F (scaffold; C in progress, F deferred) |
+| P4 | `P4_DeBrangesFC.md` | `Cited/DeBrangesFC.lean`, `Cited/DeBrangesFC/{Analytic,Space,Kernel}.lean`; scaffold `Cited/DeBrangesFC/PartF.lean` (target `FourierFramesScaffold`) | de Branges C (proved), F (scaffold, deferred) |
 | P5 | `P5_Pavlov.md` | — | Pavlov's theorem (assessment only) |
 | — | `PHASE2.md` | `Unconditional.lean` | the main results with the proved cited results discharged |
 
 All Lean files are under `FourierFrames/`. `FourierFrames.lean` imports the module files of the
-table (helper files transitively), `Cited/{DSPerturbation,JohnNirenberg,PaleyWiener,DeBrangesDE}.lean`
-and `Unconditional.lean`; `Cited/DeBrangesFC.lean` is imported only by `FourierFramesScaffold.lean`. The
+table (helper files transitively), `Cited/{DSPerturbation,JohnNirenberg,PaleyWiener,DeBrangesDE,DeBrangesFC}.lean`
+and `Unconditional.lean`; `Cited/DeBrangesFC/PartF.lean` is imported only by `FourierFramesScaffold.lean`. The
 file-level import DAG, the interface reconciliation done at assembly (every temporary "Upstream
-interface" block was replaced by imports, except the stub `theoremD_holds` of `Cited/DeBrangesFC.lean`)
-and the module graph computed from the actual imports are in `IMPORTS.md`. `scripts/make_imports.py`
-regenerates that graph (with the fix of R8 F-74 and rows for P1–P4), but it has no row for
-`Unconditional.lean` and stops with `KeyError: 'Unconditional'`; the generated part of `IMPORTS.md`
-predates the P3 merge (its P3 row still counts the scaffold's `sorry`s). Helper lemmas added or moved
+interface" block was replaced by imports; the last one, the stub `theoremD_holds` of the P4 scaffold, was
+deleted at the P4 merge) and the module graph computed from the actual imports are in `IMPORTS.md`.
+`scripts/make_imports.py` regenerates that graph (with the fix of R8 F-74 and rows for P1–P4 and
+`Unconditional.lean`; regenerated after the P4 merge). Helper lemmas added or moved
 at assembly: `IsStrictHB.mul_isHB`, `IsHB.rotate` (`HB/Basic.lean`); `IsPhaseFunction.rotate`
 (`HB/Phase.lean`); `IsSeparated.finite_inter_Icc`, `MemPW.eq_zero_of_pwNormSq_eq_zero`
 (`PW/Basic.lean`); `sampleSum_mono`, `sampleSum_eq_tsum_indicator` (`PW/PlancherelPolya.lean`).
@@ -247,8 +246,8 @@ M00 ── M01 ─┬─ M10
                               └─ M08
 M00 ── M09 (with Lemma3Uniform; no project module besides Defs)
 OCS: Bernstein → M01, M07, P1; Products.Canonical → M03, M08; Lemma3 → M06, M07, M09
-Phase 2: M00 ── P1, P4;  M01 ── P2 (DSPerturbation; JohnNirenberg ← M00 only);  M02 ── P3
-Unconditional ← M02 (HB.Comparable), M04 (Main, Corollary1), M05, M06, M07 (Corollary2), M08, M10, P1, P2, P3
+Phase 2: M00 ── P1;  M01 ── P2 (DSPerturbation; JohnNirenberg ← M00 only);  M02 ── P3 ── P4
+Unconditional ← M02 (HB.Comparable), M04 (Main, Corollary1), M05, M06, M07 (Corollary2), M08, M10, P1, P2, P3, P4
 ```
 
 ### Interface names (the exported lemmas other modules may rely on)

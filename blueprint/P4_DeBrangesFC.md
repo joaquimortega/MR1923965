@@ -1,29 +1,55 @@
 # P4 — de Branges' Theorems C (book Thm 23) and F (book Thm 32)
 
-**Lean file:** `FourierFrames/Cited/DeBrangesFC.lean`. It imports `FourierFrames.Cited.DeBrangesDE` (P3) and
-compiles with only `declaration uses 'sorry'` warnings: 43 sorried lemmas for Part C, 8 for Part F, plus
-`theoremF_holds`. **Definitions are real** (`UHP`, `thetaFn`, `divExt`, `DBAxioms`, `IsKernelFamily`, `kernelE`,
-`kernelSpan`, `IsIsometricMeasure`, `herglotzG`). **`theoremC_holds : TheoremC` has a complete assembly proof**
-(no `sorry` in it; it uses only the Part C lemmas). `theoremF_holds : TheoremF` is `sorry` (Part F deferred).
+**Status: Part C proved; Part F deferred** (Part C merged 2026-11-07 from branch `impl/cited-p4`). Part C has no
+`sorry`; `#print axioms FF.theoremC_holds` gives `[propext, Classical.choice, Quot.sound]`. `theoremC_holds` is among
+the 39 theorems accepted by comparator, and `FourierFrames/Unconditional.lean` uses it. Part C has 1046 lines in 4
+files: `DeBrangesFC.lean` 269, `Analytic` 248, `Space` 140, `Kernel` 389 (estimate in §0: 1.6–2.5k).
+Implementer's notes: `impl_notes/cited-p4.md`. Referee report on the Part C blueprint and scaffold:
+`reviews/R10_TheoremC.md`. For Part C it found no false statement (0 critical, 0 major, 5 minor), and it found one
+critical issue in Part F (below). The statement blocks below match the code, with `sorry` in place of the proofs
+(checked mechanically for all 52 declarations). Six of them take `[CompleteSpace H]` explicitly (the *Implemented:*
+note of §1.4). The code adds helper lemmas not listed here (`impl_notes/cited-p4.md`). Part F (Theorem 32) is
+deferred. Its statements form a scaffold with `sorry`, and its `division_lemma` (F.8) is **false as stated** (R10
+finding 1, with a Lean disproof; §2).
+
+**Lean files.**
+* `FourierFrames/Cited/DeBrangesFC.lean`: `UHP`, `thetaFn`, `kernelSpan`, C.9–C.14 (§1.6) and the assembly
+  `theoremC_holds : TheoremC` (§1.7). It is in the default target `FourierFrames`.
+* Subfiles (`FourierFrames/Cited/DeBrangesFC/`): `Analytic.lean` (§1.1–1.2), `Space.lean` (§1.3) and `Kernel.lean`
+  (`DBAxioms`, `IsKernelFamily`, `kernelE`, C.1–C.8: §1.4–1.5). Import chain:
+  `Cited/DeBrangesDE → Analytic → Space → Kernel → DeBrangesFC`.
+* `FourierFrames/Cited/DeBrangesFC/PartF.lean`: Part F (§2): `IsIsometricMeasure`, `herglotzG`, F.1–F.8 and
+  `theoremF_holds`, all `sorry`. It imports `DeBrangesFC.lean` and is built only by the separate Lake target
+  `FourierFramesScaffold`, so `import FourierFrames` brings no `sorry` into scope.
+
+R10's minor findings were handled as follows:
+* finding 2: the Mathlib name `analyticOrderAt_eq_top_iff_eq_zero` is namespaced; fixed below and in the code;
+* finding 3: the stale P3 text is updated, and `heInner_self_of_isHB` is P3's `heInner_self`;
+* finding 4: the optional simplification of `mem_range_of_memHE` was not adopted;
+* finding 5: the draft `Analytic.lean` duplicated declarations of the scaffold; the scaffold copies were removed
+  when the scaffold was split into the files above.
+
 **Sources:** de Branges, *Hilbert spaces of entire functions* (1968), Thms 19, 23, 32;
 Romanov, *Canonical systems and de Branges spaces* (arXiv 1408.6022), Appendix II = proof of the
 direction of "Theorem 8" that is our `TheoremF` (his "⇒"); Remling's book for the kernel route to Thm 23.
-Referee reports: `reviews/R7_Cited.md` (findings 6–15), `reviews/R9_DeBrangesDE.md` (F4, F5).
+Referee reports: `reviews/R7_Cited.md` (findings 6–15), `reviews/R9_DeBrangesDE.md` (F4, F5),
+`reviews/R10_TheoremC.md` (Part C; truth of the Part F statements).
 
 **Depends on.**
-* P3 (`Cited/DeBrangesDE`, imported; its lemmas are `sorry` and are being proved in parallel; P4 uses them as black
-  boxes, and only those that do **not** assume `∀ x, E x ≠ 0`):
+* P3 (`Cited/DeBrangesDE`, imported and proved; P4 uses its lemmas as black boxes, and only those that do **not**
+  assume `∀ x, E x ≠ 0`):
   * `Cauchy.lean`: `IsH2Cont`, `IsH2Cont.lintegral_real_lt_top`, `IsH2Cont.memLp_real`, `IsH2Cont.lintegral_line_le`;
   * `Kernel.lean`: `heInner`, `kernelNum`, `heInner_eq_integral_div`, `deBrangesKernel_mul`,
     `differentiable_deBrangesKernel`, `deBrangesKernel_diag`, `memHE_deBrangesKernel_of_isHB`,
     `heInner_kernel_upper_of_isH2Cont`;
   * `Space.lean` (the `h0`-free ones only): `MemHE.add`, `MemHE.const_mul`, `memHE_zero`, `memHE_fstar`,
-    `heNormSq_fstar`, `heInner_conj_symm`, `heInner_smul_left`, `heInner_smul_right`;
+    `heNormSq_fstar`, `heInner_conj_symm`, `heInner_smul_left`, `heInner_smul_right`, `heInner_self` (it lost its
+    `h0` in the P3 implementation; R10 finding 3);
   * Part F: `theoremD_holds` can be passed for the explicit hypothesis `hD : TheoremD`.
 * P3 lemmas **not usable** here because they assume `h0 : ∀ x : ℝ, E x ≠ 0`, while the `E` of Theorem C may have
   real zeros: `isH2Cont_of_memHE`, `MemHE.heNormSq_lt_top`, `integrable_heInner`, `heInner_kernel_upper`,
-  `heInner_kernel`, `memHE_deBrangesKernel`, and all of `Space.lean` §4.2–4.4 (`heInner_self`,
-  `heInner_add_left`, `norm_heInner_sq_le`, `MemHE.lintegral_line_le`, `memHE_of_cauchy`, …). P4 states its own
+  `heInner_kernel`, `memHE_deBrangesKernel`, and the rest of `Space.lean` §4.2–4.4
+  (`heInner_add_left`, `norm_heInner_sq_le`, `MemHE.lintegral_line_le`, `memHE_of_cauchy`, …). P4 states its own
   `_of_isHB` replacements (§1.3); if P3 later weakens `h0` to `IsHB E`, they become redundant, not wrong.
 * Project: `HB/H2` (`IsH2Upper.congr`, `measurable_line_sq`, `not_isH2Upper_div_of_zero`), `HB/Comparable`
   (`lintegral_real_le_of_isH2`), `HB/DeBranges` (`countable_real_zeros`), `HB/MeanValue` (`enorm_sq_eq_ofReal`),
@@ -32,8 +58,10 @@ Referee reports: `reviews/R7_Cited.md` (findings 6–15), `reviews/R9_DeBrangesD
 
 **Used by:** `Theorem1/Necessity` (`exists_E` uses `hC`, `exists_herglotz_data` uses `hF`). By R7-15, `hC` alone
 (with P1 and P3) makes only `completeInterpolating_zero_set` unconditional; every other use of `hC` also needs `hF`.
+*Implemented* (`Unconditional.lean`): `completeInterpolating_zero_set_unconditional`; `theorem1_necessity_of_theoremF`,
+`theorem1_of_theoremF`, `corollary1_of_theoremF` keep `hF`, and `landau_inequality_of_theoremF_pavlov` keeps `hF`, `hA`.
 
-**Status (2026-11-07).** Part C rewritten on the route recommended by R7 finding 7 (through P3, RKHS uniqueness),
+**Blueprint history (2026-11-07).** Part C rewritten on the route recommended by R7 finding 7 (through P3, RKHS uniqueness),
 with real zeros of `E` handled as in R9 F5. Part F unchanged except R7-11 (F.4 now assumes `‖Θ(z)‖ ≤ 1/2`); the
 stub `theoremD_holds` (R7-8) is deleted and P3 imported.
 
@@ -49,7 +77,7 @@ Hence the Gram identity reads `⟨ι x, ι y⟩_E = ⟪y, x⟫` (order swapped),
 | | route | new infrastructure | est. size | verdict |
 |---|---|---|---|---|
 | **C** | kernel of `H` from the axioms (C.1–C.8) → `ι(k_w) = K_E(w,·)` for an explicit strict `E` → P3's `K_w ∈ H(E)` and reproducing formula (with real zeros, §1.2–1.3) → RKHS uniqueness: isometric on the span of kernels, Fatou extends to a contraction, reproducing formula upgrades to an isometry, Riesz in `H` gives onto (§1.6) | none beyond P3: Riesz (`InnerProductSpace.toDual`), orthogonal complements, meromorphic normal form (`toMeromorphicNFOn`) are in Mathlib; **no** inner-product-space structure and **no** completeness of `H(E)` needed | **1.5–2.5 k lines on top of P3** (P3's Cauchy + Kernel layer, ≈ 2–2.5 k, is budgeted in P3) | feasible, moderate risk |
-| **F** | Romanov's Appendix II (repaired): Herglotz transform `g` of `μ`, `Ξ=(g-1)/(g+1)`, `A = Ξ/Θ`; `|A| ≤ 1` by Blaschke division + Phragmén–Lindelöf | Herglotz transform (explicit, easy), factorization `Θ = e^{i(az+θ)}B` of a meromorphic inner function with Blaschke division (**big, absent from Mathlib**), kernel computations, Phragmén–Lindelöf (Mathlib has half-plane versions) | 5–8 k lines (+0.3–0.5 k, R7-12) | deferred; feasible only as a long project |
+| **F** (scaffold; F.8 false as stated, R10) | Romanov's Appendix II (repaired): Herglotz transform `g` of `μ`, `Ξ=(g-1)/(g+1)`, `A = Ξ/Θ`; `|A| ≤ 1` by Blaschke division + Phragmén–Lindelöf | Herglotz transform (explicit, easy), factorization `Θ = e^{i(az+θ)}B` of a meromorphic inner function with Blaschke division (**big, absent from Mathlib**), kernel computations, Phragmén–Lindelöf (Mathlib has half-plane versions) | 5–8 k lines (+0.3–0.5 k, R7-12) | deferred; feasible only as a long project |
 
 Size of Part C by group (Lean lines, estimates):
 
@@ -63,9 +91,11 @@ Size of Part C by group (Lean lines, estimates):
 | §1.6 C.9–C.14 + assembly | 9 + 1 | 300–450 | low–moderate |
 | **total** | 43 | **≈ 1.6–2.5 k** | **moderate; no missing deep theory** |
 
-This agrees with R7's 1.5–2.5k. It is **blocked downstream** on P3's `Cauchy.lean`/`Kernel.lean` (in particular
+This agrees with R7's 1.5–2.5k. It depends on P3's `Cauchy.lean`/`Kernel.lean` (in particular
 `heInner_kernel_upper_of_isH2Cont`, `memHE_deBrangesKernel_of_isHB`, the kernel algebra, and the `IsH2Cont` line and
-boundary bounds). Nothing else in P3 (Theorem E, completeness of `H(E)`) is needed.
+boundary bounds), which were proved first. Nothing else in P3 (Theorem E, completeness of `H(E)`) is needed.
+*Implemented:* 1046 lines, below the estimate. By group: `Analytic` 248 (§1.1–1.2), `Space` 140 (§1.3), `Kernel` 389
+(§1.4–1.5), and `DeBrangesFC.lean` 269 (§1.6–1.7 and the shared definitions).
 
 Special cases for the paper: `PW` with the sampling norm (C) and `μ=∑|E(λ)|²δ_λ` with `H(E)=PW` (F).
 (a) For C nothing simplifies: one still needs the kernel/`H²` machinery.  (b) For F the measure is discrete
@@ -183,8 +213,8 @@ theorem analyticOrderAt_le_of_isH2Upper_div {E f : ℂ → ℂ} (hE : Differenti
 ```
 (Statement verbatim from R9 F5.)
 *Proof.* Write `x = (x₀ : ℂ)`, `m = ord_x E`, `k = ord_x f` (`analyticOrderAt`, values in `ℕ∞`).
-1. `m ≠ ⊤`: otherwise `E = 0` (`analyticOrderAt_eq_top_iff_eq_zero`, `Analysis/Analytic/Order.lean:720`, with
-   `hE.analyticAt`), contradicting `hE0 I (by simp)`.
+1. `m ≠ ⊤`: otherwise `E = 0` (`AnalyticOnNhd.analyticOrderAt_eq_top_iff_eq_zero`,
+   `Analysis/Analytic/Order.lean:720`, with `fun z ↦ hE.analyticAt z`; R10 finding 2), contradicting `hE0 I (by simp)`.
 2. If `k = ⊤`, done (`le_top`). Otherwise `k = (k₀ : ℕ)`, `m = (m₀ : ℕ)`, and suppose `k₀ < m₀`.
 3. *Global division by `(z-x)^k₀`.* `AnalyticAt.analyticOrderAt_eq_natCast` gives `u` analytic at `x`, `u x ≠ 0`,
    `f = (z-x)^k₀ u` near `x`; similarly `E = (z-x)^m₀ v` near `x`, `v x ≠ 0`. Define the entire functions
@@ -197,6 +227,10 @@ theorem analyticOrderAt_le_of_isH2Upper_div {E f : ℂ → ℂ} (hE : Differenti
 4. `f₁ x = u x ≠ 0`, `E₁ x = 0`, `E₁ z ≠ 0` on `ℂ₊` (there `E z = (z-x)^k₀ E₁ z` and `E z ≠ 0`), and on `ℂ₊`,
    `f₁ z / E₁ z = f z / E z` (cancel `(z-x)^k₀ ≠ 0`). So `IsH2Upper (f₁/E₁)` by `h.congr`, contradicting
    `not_isH2Upper_div_of_zero hE₁ hf₁ hE₁0 (E₁ x = 0) (f₁ x ≠ 0)` (`HB/H2.lean:236`). ∎
+
+*Implemented:* step 3 divides with `divExt (fun z ↦ (z - x)^k₀) f` and `divExt (fun z ↦ (z - x)^k₀) E` (meromorphic
+normal form, with the orders computed by the new helper `analyticOrderAt_divExt`) instead of `Function.update`
+quotients. `toMeromorphicNFOn` worked without trouble, and the `limUnder` fallback for `divExt` was not needed.
 
 ```lean
 def divExt (E f : ℂ → ℂ) : ℂ → ℂ :=
@@ -316,6 +350,8 @@ theorem integrable_heInner_of_isHB (hE : IsHB E) {f g : ℂ → ℂ} (hf : MemHE
 `u_f`, `u_g` are in `L²` (`MemHE.memLp_div_of_isHB`); `‖u_f conj u_g‖ ≤ (‖u_f‖² + ‖u_g‖²)/2`, integrable by
 `memLp_two_iff_integrable_sq_norm`; measurability from `AEStronglyMeasurable.mul` and
 `Complex.continuous_conj.comp_aestronglyMeasurable`. `Integrable.mono'`. ∎
+*Implemented:* by `MemLp.integrable_mul` (Hölder `2,2`) on `u_f` and `conj u_g`. The pointwise identity is the
+helper `heInner_integrand_eq`.
 
 ```lean
 theorem heInner_add_left_of_isHB (hE : IsHB E) {f g k : ℂ → ℂ} (hf : MemHE E f)
@@ -344,6 +380,7 @@ theorem heInner_self_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) :
 where `E t = 0`). So `heInner E f f = ((∫ ‖u_f‖² : ℝ) : ℂ)` (`integral_ofReal`), and
 `∫ ‖u_f‖² = (∫⁻ ofReal (‖u_f‖²)).toReal = (heNormSq E f).toReal` (`integral_eq_lintegral_of_nonneg_ae` with
 `sq_nonneg`, measurability from `memLp_div_of_isHB`; `enorm_sq_eq_ofReal`, `HB/MeanValue.lean:50`). ∎
+*Implemented* as `heInner_self hE hf`: P3's lemma needs only `IsHB E` (R10 finding 3).
 
 ```lean
 theorem norm_heInner_le_of_isHB (hE : IsHB E) {f g : ℂ → ℂ} (hf : MemHE E f)
@@ -356,6 +393,8 @@ theorem norm_heInner_le_of_isHB (hE : IsHB E) {f g : ℂ → ℂ} (hf : MemHE E 
 (`integral_mul_le_Lp_mul_Lq_of_nonneg` with `Real.HolderConjugate.two_two`, `Bochner/Basic.lean:1237`; the `rpow 2`
 and `rpow (1/2)` become `sq` and `Real.sqrt` by `Real.sqrt_eq_rpow`, `Real.rpow_natCast`), and
 `∫‖u_f‖² = (heNormSq E f).toReal` as in `heInner_self_of_isHB`. ∎
+*Implemented* through the squared form `norm_heInner_sq_le_of_isHB`. Its proof is P3's `ℝ≥0∞`-Hölder proof of
+`norm_heInner_sq_le`, with `MemHE.heNormSq_lt_top_of_isHB` in place of `h0`; square roots follow.
 
 ```lean
 theorem heInner_kernel_upper_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE E f) {w : ℂ}
@@ -368,8 +407,11 @@ theorem heInner_kernel_upper_of_isHB (hE : IsHB E) {f : ℂ → ℂ} (hf : MemHE
 
 ### 1.4 Data, and C.1–C.4: the reproducing kernel of `H`
 
-Section variables: `{H : Type} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]`,
-`{ι : H →ₗ[ℂ] (ℂ → ℂ)}`.
+Section variables: `{H : Type} [NormedAddCommGroup H] [InnerProductSpace ℂ H]`, `{ι : H →ₗ[ℂ] (ℂ → ℂ)}`.
+*Implemented:* `[CompleteSpace H]` is not a section variable. It was unused in most lemmas and was being
+auto-included. It is an explicit instance argument of exactly the six declarations that use Riesz or the orthogonal
+complement: `exists_kernel`, `kernelSpan_topologicalClosure`, `exists_seq_kernelSpan`, `memHE_iota`,
+`heNormSq_iota` and `mem_range_of_memHE`. `TheoremC` supplies the instance.
 
 ```lean
 structure DBAxioms (ι : H →ₗ[ℂ] (ℂ → ℂ)) : Prop where
@@ -402,7 +444,7 @@ theorem DBAxioms.eq_zero_of_upper (hax : DBAxioms ι) {h : H}
 *Proof.* `eq_of_eqOn_upper (hax.entire h) (differentiable_const 0) h0` gives `ι h = 0 = ι 0` (`map_zero`); `hax.inj`. ∎
 
 ```lean
-theorem exists_kernel (hax : DBAxioms ι) : ∃ k : ℂ → H, IsKernelFamily ι k := by
+theorem exists_kernel [CompleteSpace H] (hax : DBAxioms ι) : ∃ k : ℂ → H, IsKernelFamily ι k := by
   sorry
 ```
 *Proof.* For nonreal `ζ`, `Λ_ζ : H →L[ℂ] ℂ`, `Λ_ζ h = ι h ζ`: linear (`map_add`, `map_smul`, `Pi.add_apply`,
@@ -429,7 +471,7 @@ Claim: for all `n : ℕ` and `h : H`, `analyticOrderAt (ι h) ζ ≠ n`. Inducti
 * `n+1`: `ι h ζ = 0`, so (H1) gives `g` with `ι g z = ι h z (z-ζ̄)/(z-ζ)` for `z ≠ ζ`;
   `analyticOrderAt_eq_of_mul_div` gives `analyticOrderAt (ι g) ζ = n`, contradicting the induction hypothesis.
 Now take `h ≠ 0` (`hax.nontrivial`). `ι h ≠ 0` (`hax.inj`, `map_zero`), so `analyticOrderAt (ι h) ζ ≠ ⊤`
-(`analyticOrderAt_eq_top_iff_eq_zero`), i.e. `= n` for some `n` (`ENat.ne_top_iff_exists`): contradiction. ∎
+(`AnalyticOnNhd.analyticOrderAt_eq_top_iff_eq_zero`), i.e. `= n` for some `n` (`ENat.ne_top_iff_exists`): contradiction. ∎
 (The norm clause `‖g‖ = ‖h‖` of (H1) is not used here.)
 
 ```lean
@@ -490,6 +532,11 @@ agree off `ζ`, hence everywhere, hence `T (f + c • f') = T f + c • T f'` (`
 `ι g' z = ι g z (z − ζ)/(z − ζ̄)` for `z ≠ ζ̄`. At `z = ζ` (`ζ ≠ ζ̄`, since `Im ζ ≠ 0`) this gives `ι g' ζ = 0`, so
 `g' ∈ H_ζ`. For `z ∉ {ζ, ζ̄}`: `ι (T g') z = ι g z (z−ζ)/(z−ζ̄) · (z−ζ̄)/(z−ζ) = ι g z`; so `ι (T g') = ι g` and
 `T g' = g`. ∎
+*Implemented:* "equal off a point" (and off `{ζ, ζ̄}`) uses `DBAxioms.eq_of_eq_off_finite`, i.e. the identity theorem on
+the open complement of a finite set (`eq_of_eq_off_finite`), not `Continuous.ext_on`. Linearity on
+`H_ζ = ker (proj ζ ∘ ι)` comes from injectivity. `T` is bundled as `H_ζ →ₗᵢ[ℂ] H`, and the second clause is
+`LinearIsometry.inner_map_map`, without polarization. `exists_conjMap` is conjugate-linear, so it uses polarization
+(`inner_eq_sum_norm_sq_div_four`) as planned.
 
 ```lean
 theorem kernel_identity (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) {ζ w z : ℂ}
@@ -551,6 +598,8 @@ The coefficient of `K(w,z)` is `(z+I)(w̄−I) − (z−I)(w̄+I) = −2I(z − 
 By the definition of `kernelE` and `fstar_kernelE`, `kernelNum (kernelE ι k) w z = (π/s²)[P₀(z) conj P₀(w) −
 Q₀(z) conj Q₀(w)]` (`((√π : ℝ) : ℂ)² = π`, `Real.sq_sqrt`). Hence `K(w,z)·π(z − w̄) = kernelNum/(−2I) = (I/2)·kernelNum`.
 (`field_simp` with `s ≠ 0`, then `linear_combination` of the identity.) ∎
+*Implemented* with the helpers `kernelE_eq` and `fstar_kernelE_eq` (normalised forms with `√K(i,i) = ‖k i‖`),
+`kernel_diag_ne_zero` and `kernel_diag_neg_I` (`K(-i,-i) = K(i,i)`).
 *Check* (R7-6): on `PW`, `K(i,z) = sin π(z+i)/(π(z+i))`, `K(i,i) = sinh 2π/(2π)` and `kernelE = √(2/sinh 2π)·sin π(z+i)`,
 which reproduces `sin π(z−w̄)/(π(z−w̄))`; so `√π` is the right normalisation.
 
@@ -563,6 +612,7 @@ theorem kernel_eq_deBrangesKernel (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKe
 On `{conj w}ᶜ`: `kernel_mul_eq` and P3 `deBrangesKernel_mul` (no hypothesis) give
 `ι (k w) z · π(z − w̄) = deBrangesKernel E w z · π(z − w̄)`, and `π(z − w̄) ≠ 0`. Conclude with `Continuous.ext_on`
 and `dense_compl_singleton (conj w)`. ∎
+*Implemented* with `eq_of_eq_off_finite` (off `{w̄}`) instead of `Continuous.ext_on`.
 
 ```lean
 theorem isStrictHB_kernelE (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) :
@@ -622,7 +672,7 @@ theorem heNormSq_iota_of_mem_kernelSpan (hax : DBAxioms ι) {k : ℂ → H}
 (`MemHE.heNormSq_lt_top_of_isHB`), `heNormSq = ENNReal.ofReal ((heNormSq).toReal)` (`ENNReal.ofReal_toReal`). ∎
 
 ```lean
-theorem kernelSpan_topologicalClosure (hax : DBAxioms ι) {k : ℂ → H}
+theorem kernelSpan_topologicalClosure [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H}
     (hk : IsKernelFamily ι k) : (kernelSpan k).topologicalClosure = ⊤ := by
   sorry
 ```
@@ -632,7 +682,7 @@ theorem kernelSpan_topologicalClosure (hax : DBAxioms ι) {k : ℂ → H}
 (`DBAxioms.eq_zero_of_upper`). ∎
 
 ```lean
-theorem exists_seq_kernelSpan (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
+theorem exists_seq_kernelSpan [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
     (h : H) : ∃ x : ℕ → H, (∀ n, x n ∈ kernelSpan k) ∧ Tendsto x atTop (𝓝 h) := by
   sorry
 ```
@@ -641,7 +691,7 @@ theorem exists_seq_kernelSpan (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernel
 (`Topology/Sequences.lean:108`). ∎
 
 ```lean
-theorem memHE_iota (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
+theorem memHE_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
     MemHE (kernelE ι k) (ι h) ∧ heNormSq (kernelE ι k) (ι h) ≤ ENNReal.ofReal (‖h‖ ^ 2) := by
   sorry
 ```
@@ -659,7 +709,7 @@ theorem memHE_iota (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k
 5. `heNormSq E (ι h) ≤ ofReal ‖h‖²`: `MemHE.heNormSq_le_of_lines_of_isHB` with step 3. ∎
 
 ```lean
-theorem heNormSq_iota (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
+theorem heNormSq_iota [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) (h : H) :
     heNormSq (kernelE ι k) (ι h) = ENNReal.ofReal (‖h‖ ^ 2) := by
   sorry
 ```
@@ -672,7 +722,7 @@ as above. For each `n`: `⟪x_n, h⟫ = heInner E (ι h) (ι x_n)` (`heInner_iot
 `a = ‖h‖²` and `heNormSq E (ι h) = ofReal a = ofReal ‖h‖²` (`ENNReal.ofReal_toReal`). ∎
 
 ```lean
-theorem mem_range_of_memHE (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
+theorem mem_range_of_memHE [CompleteSpace H] (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
     {f : ℂ → ℂ} (hf : MemHE (kernelE ι k) f) : f ∈ Set.range ι := by
   sorry
 ```
@@ -687,7 +737,7 @@ For `z ∈ ℂ₊`:
 (`hk`, `inner_conj_symm`, `toDual_symm_apply`, P3 `heInner_conj_symm`, `kernel_eq_deBrangesKernel`,
 `heInner_kernel_upper_of_isHB hE hf`). `eq_of_eqOn_upper (hax.entire u) hf.1` gives `ι u = f`. ∎
 
-### 1.7 Assembly (complete in the scaffold)
+### 1.7 Assembly (proved)
 
 ```lean
 theorem theoremC_holds : TheoremC := by
@@ -704,9 +754,15 @@ theorem theoremC_holds : TheoremC := by
 ---------------------------------------------------------------------------------------------------
 ## 2. Part F (Theorem 32) — deferred
 
-*Unchanged from the assessment version except the R7-11 note on F.4; the R7 corrections in §6 (items 3–6) supersede
-the text they refer to. The Lean statements are in the scaffold (`section PartF`); they take `hD : TheoremD`
-explicitly, and P3's `theoremD_holds` (now imported) can be supplied.*
+**Status: deferred** (not attempted; estimate 5–8k lines, §0). The statements are in
+`FourierFrames/Cited/DeBrangesFC/PartF.lean` (`section PartF` and `theoremF_holds`, all `sorry`), which is built
+only by the Lake target `FourierFramesScaffold`; `TheoremF` stays a hypothesis of the main results.
+**`division_lemma` (F.8) is false as stated** (R10 finding 1; see F.8). R10 checked the truth of the other Part F
+statements, and they are true.
+
+*Unchanged from the assessment version except the R7-11 note on F.4 and the R10 note on F.8; the R7 corrections in
+§6 (items 3–6) supersede the text they refer to. The lemmas take `hD : TheoremD` explicitly, and P3's
+`theoremD_holds` (imported) can be supplied.*
 
 Hypotheses: `E` strict, no real zeros; `μ` with `∫⁻‖f/E‖²dμ = ‖f‖_E²` on `H(E)` (`IsIsometricMeasure`).  Conclusion with `p=0`.
 
@@ -762,6 +818,17 @@ Orders: `analyticOrderAt`.
 `Ξ_1=Ξe^{−ia'z}` is bounded on `ℂ₊` (by `max(C,e^{a'})`: use `|Ξ|≤1` on `0<y<1`, decay on `y≥1`), vanishes with multiplicity where `Θ` does, so by F.7 `|Ξ_1|≤C_1|B|`, i.e. `|Ξ|≤C_1e^{−a'y}|B|=C_1 e^{(a−a')y}|Θ|`.  Thus `Ψ=Ξ/Θ` (holomorphic: removable singularities at zeros of `Θ`) satisfies `|Ψ|≤C_1e^{(a-a')y}` on `ℂ₊`, and
 `limsup |Ψ(z)|≤1` at every real point (`|Ξ|≤1`, `|Θ|→1`).  Apply Phragmén–Lindelöf (bounded version) to `Ψe^{iεz}` with `ε=a−a'`: `|Ψ|≤e^{εy}`; let `ε→0`: `|Ψ|≤1`.
 
+**False as stated (R10 finding 1; Lean disproof in `reviews/R10_TheoremC.md`, Appendix A).** In the Lean statement
+the only link between `(a, θ, B)` and `Θ` is `hfac : Θ = e^{i(az+θ)}B` on `ℂ₊`, and every real `a` satisfies it (take
+`B := Θe^{−i(az+θ)}`). Counterexample: `E = e^{−iz/2}`, `Θ = e^{iz}`, `a = θ = 0`, `B = Θ`, `Ξ ≡ 1/2`. The
+conclusion at `z = 10i` would give `1/2 ≤ e^{−10}`. The argument above applies F.7's division clause to *this* `B`,
+which is valid only for the `B` of `inner_factorization`.
+*Repair* (before any attempt): add the rest of F.7's conclusion as hypotheses: `0 ≤ a`, `‖B z‖ ≤ 1` on `ℂ₊`, and
+the Blaschke-division clause. The division clause pins `a` to the true type; the first two alone do not repair the
+lemma. Alternatively, merge the division clause into F.8 (R7-12, §6 item 5). F.9 applies F.8 only to the
+`(a, θ, B)` of F.7, so nothing downstream changes. The scaffold keeps the false statement with `sorry`, marked
+`-- FALSE`.
+
 ### F.9 Assembly (`theoremF_holds`)
 Let `Z={z∈ℂ₊: Θ(z)=0}={zeros of E^*}`; `a` from F.7.  Let `g_0=herglotzG μ 0`.
 * **Case `a>0`.**  By F.5 (note `|Θ(z)|≤e^{−ay}`), `|Re g_0−1|≤4e^{−ay}` for `y≥y_0`; F.6 gives `c`, `|g_0−1−ic|≲e^{−a'y}`.  If `Z≠∅`: F.4 and the Herglotz formula give for `w₀∈Z`: `g_0(z)+conj g_0(w₀)→2` as `y→∞`, so `g_0(w₀)=1+ic`: **the constant `c` from decay and the constant from `Z` agree** (this repairs a gap in Romanov: he fixes the constant by decay and claims `Ξ(z)=0` on `Z` from `Re g=1` alone).  For zeros of order `m>1` use the same pairings for the derivative kernels `∂_{w̄}^jK(w,·)` (reproducing property of derivatives; `⟨f,∂^jK_w⟩=f^{(j)}(w)`) — **sketch only, to be checked**.
@@ -777,11 +844,12 @@ so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `
   `inner_eq_sum_norm_sq_div_four`, `LinearIsometry.inner_map_map`, `Submodule.topologicalClosure_eq_top_iff`,
   `Submodule.topologicalClosure_coe`, `mem_closure_iff_seq_limit`, `Filter.Tendsto.inner`, `LinearMap.mkContinuous`,
   `analyticOrderAt` API (`AnalyticAt.analyticOrderAt_eq_natCast`, `analyticOrderAt_eq_zero`,
-  `analyticOrderAt_eq_top_iff_eq_zero`), meromorphic normal form (`toMeromorphicNFOn`, `meromorphicOrderAt_div`,
+  `AnalyticOnNhd.analyticOrderAt_eq_top_iff_eq_zero`), meromorphic normal form (`toMeromorphicNFOn`, `meromorphicOrderAt_div`,
   `MeromorphicNFAt.meromorphicOrderAt_nonneg_iff_analyticAt`), identity theorem (`AnalyticOnNhd.eq_of_eventuallyEq`),
-  `Continuous.ext_on`, `dense_compl_singleton`, Fatou (`lintegral_liminf_le`), Hölder
-  (`integral_mul_le_Lp_mul_Lq_of_nonneg`). Mathlib also has RKHS theory (`Analysis/InnerProductSpace/Reproducing.lean`,
-  `RKHS.equiv`), not used (§1.0).
+  Fatou (`lintegral_liminf_le`), Hölder (`ENNReal.lintegral_mul_le_Lp_mul_Lq`, as in P3, in place of the planned
+  `integral_mul_le_Lp_mul_Lq_of_nonneg`). Mathlib also has RKHS theory (`Analysis/InnerProductSpace/Reproducing.lean`,
+  `RKHS.equiv`), not used (§1.0). `Continuous.ext_on` and `dense_compl_singleton` were planned (§1.5) but not
+  used: the identity theorem on the complement of a finite set replaced them.
 * Present in Mathlib for Part F: Phragmén–Lindelöf (`Analysis/Complex/PhragmenLindelof`), harmonic functions
   (`HarmonicOnNhd.exists_analyticOnNhd_univ_re_eq`), parametric holomorphic integrals. Absent: half-plane Poisson kernel,
   Herglotz measure representation, Blaschke products, inner–outer factorization.
@@ -799,13 +867,14 @@ so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `
 4. `TheoremF` needs `TheoremD` (P3) for `K(w,·)∈H(E)` and its reproducing property; P4 now imports P3 (`theoremD_holds` is available; the Part F lemmas keep `hD : TheoremD` as an explicit hypothesis).  (No cycle: D does not use C or F.)
 5. Constant check: with `K` in the norm of `H` and `‖f‖²_E=∫|f/E|²`, `E=√π P` (not `P`), verified on `PW` (also independently by R7-6).
 6. **de Branges' proof of Theorem 23 vs. ours.** de Branges (and Remling) identify the spaces through the reproducing kernel and a completeness argument in `H(E)`.  The route here never uses completeness of `H(E)`: the inclusion `H ⊆ H(E)` is obtained by Fatou along a sequence from the span of kernels, and the reverse inclusion by Riesz in `H` together with the reproducing formula of `H(E)` at `ℂ₊` (§1.0, step 4).  This is a simplification for the formalization, not a correction.  Confidence: high.
-7. **Superseded statements of the previous scaffold** (all true, replaced by cheaper ones): `kernel_formula` (pointwise, `z ≠ w̄`) by the function equality `kernel_eq_deBrangesKernel`; `isHB_kernelE` by `isStrictHB_kernelE` (same content); `kernel_gram`, `range_subset`, `reproducing_HE`, `range_eq` (the from-scratch `H²` route) by §1.3 + §1.6.  The stub `theoremD_holds` is deleted (R7-8).  **No statement of the scaffold is false**; the previous `cauchy_pairing_general` was unproved and possibly false as stated (R7-11) and now carries `‖thetaFn E z‖ ≤ 1/2`.
+7. **Superseded statements of the previous scaffold** (all true, replaced by cheaper ones): `kernel_formula` (pointwise, `z ≠ w̄`) by the function equality `kernel_eq_deBrangesKernel`; `isHB_kernelE` by `isStrictHB_kernelE` (same content); `kernel_gram`, `range_subset`, `reproducing_HE`, `range_eq` (the from-scratch `H²` route) by §1.3 + §1.6.  The stub `theoremD_holds` is deleted (R7-8).  **No Part C statement of the scaffold is false** (confirmed by R10). In Part F, `division_lemma` is false as stated (R10 finding 1, §2 F.8). The previous `cauchy_pairing_general` was unproved and possibly false as stated (R7-11) and now carries `‖thetaFn E z‖ ≤ 1/2`.
 
 ## 5. Risks
-* **Part C (moderate).**
+* **Part C (moderate; written before the implementation).** *Outcome:* proved in 1046 lines. P3 was proved first,
+  `toMeromorphicNFOn` worked, and the global factorisation went through `divExt` (§1.2).
   * *Dependency on P3.* `heInner_kernel_upper_of_isH2Cont`, `memHE_deBrangesKernel_of_isHB`, the kernel algebra
-    (`deBrangesKernel_mul`, `deBrangesKernel_diag`, `differentiable_deBrangesKernel`) and the `IsH2Cont` bounds are
-    `sorry` today; Part C is not unconditional until P3's `Cauchy.lean` and `Kernel.lean` are proved. If P3's
+    (`deBrangesKernel_mul`, `deBrangesKernel_diag`, `differentiable_deBrangesKernel`) and the `IsH2Cont` bounds were
+    `sorry` when this was written; Part C could not be unconditional until P3's `Cauchy.lean` and `Kernel.lean` were proved. If P3's
     signatures change (e.g. hypotheses weakened from `IsHB` to `Differentiable`), only the sorried P4 proofs are
     affected; the P4 statements and the assembly are unaffected.
   * *C.5 (`exists_mulMap`, `kernel_identity`).* The heaviest Hilbert-space bookkeeping (choice-defined `T`, linearity
@@ -816,7 +885,7 @@ so `Re(...)=Re g=poissonInt μ z` (F.2) with `p=0`.  `A` is `DifferentiableOn` `
   * *Integral plumbing* (§1.3): Hölder with `rpow`, `ofReal`/`toReal` conversions; routine.
 * **Part F (high; deferred).** F.7 (factorization of a meromorphic inner function) is the largest single missing
   piece; multiplicity-`>1` zeros of `Θ` in F.9 need derivative kernels (R7-10 sketches the fix); F.7(iii) must end with
-  the entire-Pick lemma, not Liouville (R7-12).
+  the entire-Pick lemma, not Liouville (R7-12); `division_lemma` (F.8) must first be restated (R10 finding 1).
 * **Scope (R7-15).** Part C alone (with P1, P3) makes only `completeInterpolating_zero_set` unconditional;
   `theorem1_necessity`, `theorem1`, `corollary1`, `landau_inequality` also need `hF`.
 

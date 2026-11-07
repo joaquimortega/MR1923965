@@ -140,7 +140,16 @@ constant `B`.
 ### N-16 (G) — p. 798: the sine-type claim — *referee-confirmed (R4)*
 "`F(z) = lim ∏(1 - z/λ_k)` is a sine-type function" is asserted without proof. The formalization
 proves the needed estimate `|E(z)| ≃ e^{π Im z}` for an associated `E`, and avoids Levin's
-theorem (blueprint README §3.7).
+theorem (blueprint README §3.7). The short justification "`n_Λ(t) - t = -log⁺|t| + O(1)`, and the
+conjugate function of `log|t|` is bounded" is not enough. The remainder is a sawtooth with unit jumps
+at the `λ_k`, and boundedness alone does not bound its conjugate-type integral (the conjugate function
+of a bounded function need not be bounded). What works is the density smoothing of [OS99] Lemma 3.
+For `|Im z| ≥ 1`, replace the point masses by a density `m ≃ 1` with the same mass and barycentre on
+each interval between the midpoints of consecutive `λ_k`. Then
+`∫_0^t (m - 1) = -log⁺|t| + c + O((1 + |t|)^{-1/2})`, and the conjugate function of `log|t|` plus an
+`O(1)` remainder give the bound. The formalization also replaces the point masses by a density,
+`m ≃ 1` with [OS99] barycentres exactly `Λ + 1/2` (N-30; M06 §3–4). (Found in the second pass of the
+corrected paper, whose first pass used the short justification.)
 
 ## Section 5: Corollary 2 and Theorem 2
 
@@ -263,7 +272,8 @@ Fatou argument for `L²(ℝ)` and a separate bound in the strip `|Im z| ≤ 1`.
 `F(z) = lim ∏_{|λ_k|<R}(1 - z/λ_k)` is undefined because `λ_0 = 0`; it should be `z ∏_{k ≠ 0}`.
 "This sequence is sampling, because … sine-type" is really sine-type ⇒ complete interpolating ⇒
 sampling. The formalization proves the needed estimate `|E(z)| ≃ e^{π Im z}` (the conjugate function
-of `log|t|` is bounded) and replaces Levin's theorem by Theorem E. No perturbation (Kadec/Avdonin) argument
+of `log|t|` is bounded, applied after the density smoothing of N-16) and replaces Levin's theorem by
+Theorem E. No perturbation (Kadec/Avdonin) argument
 is needed either: the density can be chosen with barycentres exactly `Λ + 1/2` (`LogExample.lean`). Its
 potential has a nonzero linear drift (N-41).
 
@@ -355,10 +365,14 @@ to, `ψ' = o(1/x)`.
 
 ## Found during implementation (recorded after referee R8)
 
-### N-39 (G) — p. 798, proof of Corollary 1 — *code-checked; R8*
+### N-39 (G) — p. 798, proof of Corollary 1 — *code-checked; R8; tex-checked*
 "If `Λ` is a sampling sequence, then `Λ` consists of those points such that
-`φ_{EF}(λ) = π/2 + kπ`" holds only after the real zeros of `F` are removed (N-32): with `F = SG`, the
-zero set of `EG + E^*G^*` is a subset `Λ₁ ⊆ Λ`, and only `Λ ⊇ Λ₁` is needed. "`φ_E` is an increasing
+`φ_{EF}(λ) = π/2 + kπ`" is false as printed when `F` has real zeros. Such a zero is a zero of
+`EF + E^*F^*`, hence a point of `Λ`, but the phase condition does not describe it. The sentence must
+read "contains", after the real zeros of `F` are removed as in the proof of Theorem 1 (N-32). With
+`F = SG`, the zero set `Λ₁` of `EG + E^*G^*` consists of the points where `φ_{EG} ∈ π/2 + πℤ`,
+`Λ₁ ⊆ Λ`, and only `Λ ⊇ Λ₁` is needed. The corrected paper (second pass) writes `F = S F̃` and
+"contains". "`φ_E` is an increasing
 function which grows more slowly than `φ_{EF}`" is to be read as "`φ_{EG} - φ_E = φ_G` is
 nondecreasing" (`φ_G' ≥ 0`, N-13). Then each `[γ_k, γ_{k+1})` (consecutive points of the level set
 `{φ_E ∈ α + πℤ}`) has a `φ_{EG}`-image of length `≥ π`, so it contains a point of
@@ -554,7 +568,8 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   `sorryAx` for them. The stub has the same name as P3's `theoremD_holds` (`Cited/DeBrangesDE.lean`, not
   imported by the root), and must be deleted when P3 is merged (R8 F-5, R7 finding 8). None of this
   affects the 15 main theorems, which take the cited results as hypotheses. *Superseded in I-10: the
-  root no longer imports `Cited/DeBrangesFC.lean`.*
+  root no longer imports `Cited/DeBrangesFC.lean`; and in I-11: the stub is deleted, Theorem C is
+  proved, and the root imports `Cited/DeBrangesFC.lean` again.*
 
 ### I-10 — phase 2: de Branges' Theorems D and E proved; `Unconditional.lean` (2026-11-07)
 - **P3** (`theoremD_holds`, `theoremE_holds`, proved; `blueprint/P3_DeBrangesDE.md`, implementers' notes
@@ -587,7 +602,7 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   `sorry`, and it still declares the temporary stub `theoremD_holds` (`sorry`). That stub no longer clashes
   with P3's theorem, since no module imports both. P4 is to replace it by
   `import FourierFrames.Cited.DeBrangesDE` (R7 finding 8, R9 F4). Theorem C is being revised along the route
-  through Theorem D (R7 finding 7); Theorem F is deferred.
+  through Theorem D (R7 finding 7); Theorem F is deferred. *Done in I-11.*
 - **`Unconditional.lean`** supplies `paleyWiener_holds`, `theoremD_holds`, `theoremE_holds`,
   `johnNirenberg_holds` and `dsPerturbation_holds` (new, `:= dsPerturbation_of_paleyWiener
   paleyWiener_holds`). Unconditional: `isFourierFrame_iff_isSampling_unconditional`,
@@ -605,3 +620,46 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   list). Items 3 and 6 are covered by N-02, N-28 and N-37, and item 5 is this entry.
 - **Tooling.** `scripts/make_imports.py` has no row for `Unconditional.lean` and stops with
   `KeyError: 'Unconditional'`, so the generated part of `blueprint/IMPORTS.md` predates the P3 merge.
+  *Fixed right after this entry (commit 65da4ff); see I-11.*
+
+### I-11 — phase 2: de Branges' Theorem C proved; Part F split off (2026-11-07)
+- **P4-C** (`theoremC_holds`, proved; `blueprint/P4_DeBrangesFC.md`, implementer's notes
+  `impl_notes/cited-p4.md`, referee R10 on the blueprint and scaffold: no false Part C statement,
+  0 critical, 0 major, 5 minor). The proof goes through Theorem D (R7 finding 7). The kernel of `H` is
+  built from (H1)–(H3), with the explicit strict `E = √π (z+i) K(i,z)/√K(i,i)` and
+  `ι(k_w) = K_E(w,·)`. Then RKHS uniqueness, without completeness of `H(E)`: Fatou along a sequence
+  from the span of the kernels, and Riesz in `H`. This `E` can have real zeros (e.g. for
+  `{f ∈ PW : f(0) = 0}`). `f/E` is extended across them with Mathlib's meromorphic normal form
+  (`divExt`), so P3's kernel layer is used unchanged. The proof has 1046 lines in 4 files
+  (`Cited/DeBrangesFC.lean`, `DeBrangesFC/{Analytic,Space,Kernel}.lean`), against an estimate of
+  1.6–2.5k; standard axioms only. The stub `theoremD_holds` is deleted and P3 is imported
+  (R7 finding 8, R9 F4).
+- **Changed statements** (phase-2 scaffold statements, not covered by the freeze; no Part C statement
+  was false). `[CompleteSpace H]` is no longer a section variable of Part C: it was unused in most
+  lemmas and was being auto-included. It is an explicit instance argument only of `exists_kernel`,
+  `kernelSpan_topologicalClosure`, `exists_seq_kernelSpan`, `memHE_iota`, `heNormSq_iota` and
+  `mem_range_of_memHE`, the six declarations that use Riesz or the orthogonal complement. `TheoremC`
+  and the assembly are unchanged.
+- **Part F split off.** `theoremF_holds` and the Part F lemmas moved to `Cited/DeBrangesFC/PartF.lean`.
+  This file is built only by `FourierFramesScaffold`, and it is now the only file with `sorry`.
+  `Cited/DeBrangesFC.lean` (Theorem C) is in the default target and is imported by the root and by
+  `Unconditional.lean`.
+- **`division_lemma` (F.8) is false as stated** (R10 finding 1, with a Lean disproof). It is a helper
+  statement of the deferred Part F scaffold, not a statement of the paper or of de Branges, so it has
+  no N-entry. Its hypothesis `Θ = e^{i(az+θ)}B` holds for every real `a`. Counterexample: `E = e^{-iz/2}`,
+  `a = θ = 0`, `B = Θ = e^{iz}`, `Ξ ≡ 1/2`. Repair: add `0 ≤ a`, `‖B‖ ≤ 1` on `ℂ₊` and the
+  Blaschke-division clause of `inner_factorization` as hypotheses (P4 §2, F.8). The scaffold marks it
+  `-- FALSE` and keeps the `sorry`.
+- **`Unconditional.lean`** supplies `theoremC_holds` as well. New theorems:
+  `completeInterpolating_zero_set_unconditional`; `theorem1_necessity_of_theoremF`,
+  `theorem1_of_theoremF`, `corollary1_of_theoremF` (F); `landau_inequality_of_theoremF_pavlov` (F, A).
+  The `*_of_theoremC*` versions are kept. The only cited hypotheses left in the project are `TheoremF`
+  and `PavlovBMO`.
+- **Comparator.** `comparator/statements.lean` lists 39 theorems: the 15 main statements, the six
+  proved cited results (now with `theoremC_holds`) and 18 versions with them discharged. `lake comparator`
+  accepts them (2026-11-07, `comparator/last_run.log`). `lake build` (default target, now including
+  `Cited.DeBrangesFC`) has no warning.
+- **Notebook.** The second pass of the corrected paper refined N-39 ("contains" in the proof of
+  Corollary 1) and N-16, N-30 (density smoothing in the sine-type estimate). There is no new N-entry.
+- **Tooling.** The generated part of `blueprint/IMPORTS.md` is regenerated after the P4 merge. The
+  title of its P4 row, "de Branges C, F (scaffold)", is hard-coded in `scripts/make_imports.py`.

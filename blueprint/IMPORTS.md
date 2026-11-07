@@ -3,11 +3,11 @@
 Result of the assembly step (scaffold files wired together). Every temporary
 "Upstream interface" block of the eight scaffold writers was deleted and replaced by imports of the
 owning module. At assembly `lake build` passed with only `declaration uses 'sorry'` warnings; today
-(phase 1 complete, lint pass NOTEBOOK I-03) the only warnings are `declaration uses 'sorry'` in the
-phase-2 scaffolds `Cited/DeBrangesDE*` and `Cited/DeBrangesFC.lean`. The sections below the generated
+(after the P4 merge, NOTEBOOK I-11) `lake build` has no warning, and the only `sorry`s are in the
+phase-2 scaffold `Cited/DeBrangesFC/PartF.lean` (target `FourierFramesScaffold`). The sections below the generated
 module graph record the assembly (when every proof was `sorry`); the file-level DAG below omits the
-helper files added during implementation (they are listed in the generated table). Regenerating the
-module graph needs the fix of `scripts/make_imports.py` described at the start of the generated block.
+helper files added during implementation (they are listed in the generated table). The generated block
+was last regenerated after the P4 merge (2026-11-07).
 
 ## File-level import DAG
 
@@ -34,9 +34,11 @@ Defs
  Theorem2ii           <- Lemma3Uniform
  Cited.PaleyWiener    <- Defs, OCS.Bernstein.PhragmenLindelof                 (P1, phase 2)
  Cited.DSPerturbation <- PW.PlancherelPolya;  Cited.JohnNirenberg <- Defs     (P2)
- Cited.DeBrangesDE    <- HB.Comparable, HB.Phase                              (P3, not imported by the root)
- Cited.DeBrangesFC    <- Defs                                                 (P4)
- FourierFrames        <- every module file and Cited.{DSPerturbation,JohnNirenberg,PaleyWiener,DeBrangesFC}
+ Cited.DeBrangesDE    <- HB.Comparable, HB.Phase                              (P3)
+ Cited.DeBrangesFC    <- Cited.DeBrangesDE (via DeBrangesFC.{Analytic,Space,Kernel}) (P4, Theorem C)
+ Cited.DeBrangesFC.PartF <- Cited.DeBrangesFC              (P4, Theorem F scaffold; FourierFramesScaffold only)
+ Unconditional        <- the main modules and Cited.{PaleyWiener,DSPerturbation,JohnNirenberg,DeBrangesDE,DeBrangesFC}
+ FourierFrames        <- every module file, Cited.{DSPerturbation,JohnNirenberg,PaleyWiener,DeBrangesDE,DeBrangesFC}, Unconditional
 ```
 
 Ownership rules used: the module of the README table owns its interface names; helper lemmas shared
@@ -135,7 +137,7 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M09 | `Theorem2ii/UOne.lean` | 21 | 0 | `Defs` | `OrtegaCerdaSeip.Lemma3.Main` |
 | M09 | `Theorem2ii/Window.lean` | 3 | 0 | `Defs` | — |
 | M10 | `Frames.lean` | 4 | 0 | `PW/Basic` | — |
-| U | `Unconditional.lean` | 14 | 0 | `Frames`, `HB/Comparable`, `Theorem1/Main`, `Corollary1`, `Landau`, `LogExample`, `Corollary2`, `Theorem2i`, `Cited/PaleyWiener`, `Cited/DSPerturbation`, `Cited/JohnNirenberg`, `Cited/DeBrangesDE` | — |
+| U | `Unconditional.lean` | 19 | 0 | `Frames`, `HB/Comparable`, `Theorem1/Main`, `Corollary1`, `Landau`, `LogExample`, `Corollary2`, `Theorem2i`, `Cited/PaleyWiener`, `Cited/DSPerturbation`, `Cited/JohnNirenberg`, `Cited/DeBrangesDE`, `Cited/DeBrangesFC` | — |
 | P1 | `Cited/PaleyWiener.lean` | 1 | 0 | `Cited/PaleyWiener/Part1`, `Cited/PaleyWiener/Part2` | — |
 | P1 | `Cited/PaleyWiener/L2Fourier.lean` | 8 | 0 | `Defs` | — |
 | P1 | `Cited/PaleyWiener/Part1.lean` | 20 | 0 | `Defs` | — |
@@ -152,7 +154,11 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | P3 | `Cited/DeBrangesDE/Kernel.lean` | 31 | 0 | `Cited/DeBrangesDE/Cauchy`, `HB/Phase` | — |
 | P3 | `Cited/DeBrangesDE/Orthogonal.lean` | 76 | 0 | `Cited/DeBrangesDE/EAux/KernelSymm` | — |
 | P3 | `Cited/DeBrangesDE/Space.lean` | 30 | 0 | `Cited/DeBrangesDE/Kernel` | — |
-| P4 | `Cited/DeBrangesFC.lean` | 30 | 23 | `Defs` | — |
+| P4 | `Cited/DeBrangesFC.lean` | 13 | 0 | `Cited/DeBrangesFC/Kernel` | — |
+| P4 | `Cited/DeBrangesFC/Analytic.lean` | 19 | 0 | `Cited/DeBrangesDE` | — |
+| P4 | `Cited/DeBrangesFC/Kernel.lean` | 22 | 0 | `Cited/DeBrangesFC/Space` | — |
+| P4 | `Cited/DeBrangesFC/PartF.lean` | 11 | 9 | `Cited/DeBrangesFC` | — |
+| P4 | `Cited/DeBrangesFC/Space.lean` | 13 | 0 | `Cited/DeBrangesFC/Analytic` | — |
 
 ### Modules
 
@@ -169,13 +175,13 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M08 | Theorem 2 (i) | 16 | 251 | 0 | M07 |
 | M09 | Theorem 2 (ii) (+ uniform Lemma 3 estimate) | 7 | 127 | 0 | M00 |
 | M10 | Fourier frames | 1 | 4 | 0 | M01 |
-| U | Main results with proved cited results discharged | 1 | 14 | 0 | M05, M06, M08, M10, P1, P2, P3 |
+| U | Main results with proved cited results discharged | 1 | 19 | 0 | M05, M06, M08, M10, P1, P2, P4 |
 | P1 | Paley-Wiener theorem | 5 | 58 | 0 | M00 |
 | P2 | Duffin-Schaeffer, John-Nirenberg | 2 | 55 | 0 | M01 |
 | P3 | de Branges D, E | 9 | 219 | 0 | M02 |
-| P4 | de Branges C, F (scaffold) | 1 | 30 | 23 | M00 |
+| P4 | de Branges C, F (scaffold) | 5 | 78 | 9 | P3 |
 
-Total: 95 files, 1712 declarations, 23 `sorry`.
+Total: 99 files, 1765 declarations, 9 `sorry`.
 
 ### Module dependency graph (transitive reduction)
 
@@ -191,11 +197,11 @@ M07  <- M04
 M08  <- M07
 M09  <- M00
 M10  <- M01
-U    <- M05, M06, M08, M10, P1, P2, P3
+U    <- M05, M06, M08, M10, P1, P2, P4
 P1   <- M00
 P2   <- M01
 P3   <- M02
-P4   <- M00
+P4   <- P3
 ```
 
 Full (transitive) dependencies:
@@ -212,11 +218,11 @@ M07  <- M00, M01, M02, M03, M04
 M08  <- M00, M01, M02, M03, M04, M07
 M09  <- M00
 M10  <- M00, M01
-U    <- M00, M01, M02, M03, M04, M05, M06, M07, M08, M10, P1, P2, P3
+U    <- M00, M01, M02, M03, M04, M05, M06, M07, M08, M10, P1, P2, P3, P4
 P1   <- M00
 P2   <- M00, M01
 P3   <- M00, M01, M02
-P4   <- M00
+P4   <- M00, M01, M02, P3
 ```
 
 <!-- END GENERATED -->

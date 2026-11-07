@@ -38,8 +38,8 @@ sampling if `ψ'(x) = o(1/x)`.
 The fifteen main statements are in `comparator/statements.lean`, with the definitions in
 `FourierFrames/Defs.lean`. All are proved without `sorry`, with the cited results as explicit
 hypotheses (below), and depend only on `propext`, `Classical.choice` and `Quot.sound`. The same file
-lists the five cited results proved in phase 2 and the thirteen versions of the main statements in
-which they are discharged. [comparator](https://github.com/leanprover/comparator) accepts all 33
+lists the six cited results proved in phase 2 and the eighteen versions of the main statements in
+which they are discharged. [comparator](https://github.com/leanprover/comparator) accepts all 39
 theorems against the self-contained `FFChallenge.lean` (2026-11-07, `comparator/last_run.log`).
 
 | Paper | Lean (namespace `FF`) | Cited hypotheses |
@@ -69,18 +69,20 @@ there are no axioms. Phase 2 of the project proves them where feasible
 | Duffin–Schaeffer Lemma III | `dsPerturbation_holds` (`= dsPerturbation_of_paleyWiener paleyWiener_holds`) | proved |
 | de Branges' Theorem D (reproducing kernel) | `theoremD_holds` | proved |
 | de Branges' Theorem E (orthogonal sampling) | `theoremE_holds` | proved |
-| de Branges' Theorem C (axiomatic de Branges spaces) | `theoremC_holds` | stated (`sorry`); proof being revised along the route through Theorem D (referee R7) |
-| de Branges' Theorem F (isometric measures) | `theoremF_holds` | stated (`sorry`); deferred (assessed at 5–8k lines) |
+| de Branges' Theorem C (axiomatic de Branges spaces) | `theoremC_holds` | proved |
+| de Branges' Theorem F (isometric measures) | `theoremF_holds` | stated (`sorry`); deferred (assessed at 5–8k lines). One helper statement of its scaffold, `division_lemma`, is false as stated (referee R10, Lean disproof) and must be restated before any attempt |
 | Pavlov's Theorem A (BMO half) | `PavlovBMO` | hypothesis; assessed infeasible with current Mathlib |
 
 The proved ones depend only on `propext`, `Classical.choice` and `Quot.sound`; the proof of
-Theorem E is an elementary one, not de Branges' (`blueprint/P3_DeBrangesDE.md`). The two unproved
-statements are in `Cited/DeBrangesFC.lean`, which belongs to the separate Lake target
-`FourierFramesScaffold`, so `import FourierFrames` brings no `sorry` into scope.
+Theorem E is an elementary one, not de Branges' (`blueprint/P3_DeBrangesDE.md`). Theorem C is proved
+through Theorem D and the uniqueness of a reproducing-kernel space, without completeness of `H(E)`
+(`blueprint/P4_DeBrangesFC.md`). The unproved `theoremF_holds` and its scaffold are in
+`Cited/DeBrangesFC/PartF.lean`, which belongs to the separate Lake target `FourierFramesScaffold`, so
+`import FourierFrames` brings no `sorry` into scope.
 
 **Unconditional versions.** `FourierFrames/Unconditional.lean` supplies the proved cited results to
-the main theorems. The hypotheses that remain are exactly de Branges' Theorems C and F and
-Pavlov's Theorem A:
+the main theorems. The hypotheses that remain are exactly de Branges' Theorem F and Pavlov's
+Theorem A:
 
 | Paper | Lean (namespace `FF`) | Remaining hypotheses |
 |---|---|---|
@@ -91,14 +93,15 @@ Pavlov's Theorem A:
 | Corollary 2 | `corollary2_unconditional` | — |
 | Theorem 2 (i) | `theorem2_i_unconditional`, `theorem2_i_of_densityBound_unconditional` | — |
 | Theorem 2 (ii) | `theorem2_ii` | — (since phase 1) |
-| Remark p. 797 | `completeInterpolating_zero_set_of_theoremC` | C |
-| Theorem 1, necessity, and Theorem 1 | `theorem1_necessity_of_theoremCF`, `theorem1_of_theoremCF` | C, F |
-| Corollary 1 | `corollary1_of_theoremCF` | C, F |
-| Claim (§4): Landau's inequality | `landau_inequality_of_theoremCF_pavlov` | C, F, A |
+| Remark p. 797 | `completeInterpolating_zero_set_unconditional` | — |
+| Theorem 1, necessity, and Theorem 1 | `theorem1_necessity_of_theoremF`, `theorem1_of_theoremF` | F |
+| Corollary 1 | `corollary1_of_theoremF` | F |
+| Claim (§4): Landau's inequality | `landau_inequality_of_theoremF_pavlov` | F, A |
 
-The file also states `dsPerturbation_holds : DSPerturbation`. A proof of Theorem C would make the
-remark of p. 797 unconditional and leave Theorem 1 (necessity) and Corollary 1 conditional on F
-alone, and Landau's inequality on F and A.
+The file also states `dsPerturbation_holds : DSPerturbation`. It keeps the intermediate versions
+`completeInterpolating_zero_set_of_theoremC`, `theorem1_necessity_of_theoremCF`, `theorem1_of_theoremCF`,
+`corollary1_of_theoremCF` and `landau_inequality_of_theoremCF_pavlov`, which were stated before Theorem C
+was proved.
 
 **Corrections to the paper.** The formalization found that two proofs do not work as printed and
 replaced them: the appeal to Meĭman's theorem on p. 801 (false as quoted) and the proof of
@@ -117,13 +120,13 @@ corrected paper, with the changes marked in red, was produced locally (`fixed/`,
 | Path | Content |
 |---|---|
 | `FourierFrames/Defs.lean` | statement-level definitions and the cited results as `Prop`s (imports only Mathlib) |
-| `FourierFrames/**` | the formalization (namespace `FF`; about 31,000 lines in 95 files), one or more files per blueprint module |
+| `FourierFrames/**` | the formalization (namespace `FF`; about 32,200 lines in 99 files), one or more files per blueprint module |
 | `FourierFrames/Cited/` | phase 2: proofs of the cited results |
 | `FourierFrames/Unconditional.lean` | the main results with the proved cited results discharged |
-| `FourierFramesScaffold.lean` | separate Lake target for the unproved phase-2 scaffold `Cited/DeBrangesFC.lean` (Theorems C and F, `sorry`) |
+| `FourierFramesScaffold.lean` | separate Lake target for the unproved phase-2 scaffold `Cited/DeBrangesFC/PartF.lean` (Theorem F, `sorry`) |
 | `OrtegaCerdaSeip/` | vendored, do not edit: the part of the companion formalization [MR1682065](https://github.com/joaquimortega/MR1682065) that proves the multiplier lemma of [OS99] and a Bernstein-space toolkit (`OrtegaCerdaSeip/VENDORED.md`) |
 | `blueprint/` | the blueprint: `README.md` (plan, conventions, design decisions, module table), one detailed document per module (`M00`–`M10`, `P1`–`P5`), `IMPORTS.md` (module graph, interface reconciliation), `impl_notes/` (implementers' deviations) |
-| `reviews/` | the independent referee reports (`R1`–`R5` on the phase-1 blueprint, `R6`–`R9` on phase 2 and on the final code) |
+| `reviews/` | the independent referee reports (`R1`–`R5` on the phase-1 blueprint, `R6`–`R10` on phase 2 and on the final code) |
 | `comparator/` | the main statements, the comparator configuration and the log of the accepted run |
 | `NOTEBOOK.md` | errata (N-xx) and implementation notes (I-xx) |
 | `formalization.yaml` | metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) v0.4 format |
@@ -136,7 +139,7 @@ Lean `v4.35.0`, Mathlib `v4.35.0`:
 ```sh
 lake exe cache get
 lake build                       # FourierFrames (builds the needed part of OrtegaCerdaSeip)
-lake build FourierFramesScaffold # optional: the unproved scaffold of Theorems C and F (sorry)
+lake build FourierFramesScaffold # optional: the unproved scaffold of Theorem F (sorry)
 lake build FFChallenge FFSolution
 COMPARATOR_BWRAP=$PWD/scripts/bwrap-pkgs lake comparator --config comparator/config.json
 ```

@@ -22,7 +22,9 @@ The Part C declarations are split over helper files (statements moved verbatim, 
 * `FourierFrames/Cited/DeBrangesFC/Kernel.lean`: `DBAxioms`, `IsKernelFamily`, `kernelE`,
   `DBAxioms.eq_zero_of_upper` and C.1–C.8.
 * `FourierFrames/Cited/DeBrangesFC.lean`: `UHP`, `thetaFn`, `kernelSpan`, C.9–C.14,
-  `theoremC_holds` (assembly unchanged), Part F.
+  `theoremC_holds` (assembly unchanged), Part F. (After the merge, Part F moved to
+  `FourierFrames/Cited/DeBrangesFC/PartF.lean`, built only by `FourierFramesScaffold`; `DeBrangesFC.lean` is in the
+  default target.)
 
 ## Changed statements (unused hypotheses removed)
 * `[CompleteSpace H]` is no longer a section variable of Part C (it was unused, and was being
