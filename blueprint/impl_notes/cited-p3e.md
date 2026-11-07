@@ -62,3 +62,10 @@
   black boxes (`integrable_heInner`, `deBrangesKernel_mul`, `deBrangesKernel_diag_real`,
   `memHE_deBrangesKernel`, `heInner_kernel`, `MemHE.heNormSq_lt_top`,
   `exists_bound_deBrangesKernel`, `isH2Cont_of_memHE`, `IsH2Cont.lintegral_line_le`).
+
+## Merge check (not a merge; scratch copy only)
+* In a throw-away copy of this branch with `Kernel.lean`, `Cauchy.lean` and `CauchyAux/` taken
+  from `impl/cited-p3d` (commit a42ded1), `lake build FourierFrames.Cited.DeBrangesDE` succeeds and
+  `#print axioms` gives `[propext, Classical.choice, Quot.sound]` for both `theoremD_holds` and
+  `theoremE_holds`.  No declaration name of this branch clashes with `impl/cited-p3d` or with the
+  non-DeBrangesDE files of `impl/cited-p4`.
