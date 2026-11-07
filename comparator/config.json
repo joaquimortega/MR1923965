@@ -40,7 +40,14 @@
     "FF.theorem1_of_theoremF",
     "FF.completeInterpolating_zero_set_unconditional",
     "FF.corollary1_of_theoremF",
-    "FF.landau_inequality_of_theoremF_pavlov"
+    "FF.landau_inequality_of_theoremF_pavlov",
+    "FF.theoremF_holds",
+    "FF.theorem1_necessity_unconditional",
+    "FF.theorem1_unconditional",
+    "FF.corollary1_unconditional",
+    "FF.landau_inequality_of_pavlov",
+    "FF.pavlovBMO_holds",
+    "FF.landau_inequality_unconditional"
   ],
   "permitted_axioms": [
     "propext",

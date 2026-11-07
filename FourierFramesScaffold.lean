@@ -1,4 +1,3 @@
--- Phase-2 scaffolds that are not yet proved (they contain `sorry`).  Kept out of the default
--- target `FourierFrames`, so that `import FourierFrames` exposes only sorry-free declarations.
--- Build with `lake build FourierFramesScaffold`.
+-- Compatibility target for the former phase-2 scaffold.
+-- Theorem F is now proved and imported by the default library.
 import FourierFrames.Cited.DeBrangesFC.PartF

@@ -11,17 +11,19 @@ import FourierFrames.Cited.DSPerturbation
 import FourierFrames.Cited.JohnNirenberg
 import FourierFrames.Cited.DeBrangesDE
 import FourierFrames.Cited.DeBrangesFC
+import FourierFrames.Cited.DeBrangesF
+import FourierFrames.Cited.Pavlov
 
 /-!
 # The main results with the proved cited results discharged
 
 Phase 2 proves the Paley–Wiener theorem (`paleyWiener_holds`), de Branges' Theorems C, D and E
-(`theoremC_holds`, `theoremD_holds`, `theoremE_holds`), the John–Nirenberg inequality
+(`theoremC_holds`, `theoremD_holds`, `theoremE_holds`), Theorem F (`theoremF_holds`), the John–Nirenberg inequality
 (`johnNirenberg_holds`) and Duffin–Schaeffer's Lemma III (`dsPerturbation_holds`).  This file
 applies them to the main theorems.  The results that need only these hypotheses become
-unconditional (`*_unconditional`); those that also need de Branges' Theorem F or Pavlov's
-Theorem A keep exactly those hypotheses (`*_of_theoremF`, `*_of_theoremF_pavlov`).  The
-intermediate forms `*_of_theoremCF`, `*_of_theoremC`, `*_of_theoremCF_pavlov` are kept.
+unconditional (`*_unconditional`). Pavlov's BMO necessity theorem (`pavlovBMO_holds`)
+also makes Landau's inequality unconditional. The earlier versions with explicit hypotheses
+are retained for compatibility.
 -/
 
 open MeasureTheory Set Complex Filter Topology
@@ -152,5 +154,39 @@ theorem landau_inequality_of_theoremF_pavlov (hF : TheoremF) (hA : PavlovBMO)
     ∃ A B : ℝ, ∀ a b : ℝ, a < b →
       ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) :=
   landau_inequality_of_theoremCF_pavlov theoremC_holds hF hA hΛ hs
+
+/-- **Theorem 1, necessity**, with de Branges' Theorem F proved in the project. -/
+theorem theorem1_necessity_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) :=
+  theorem1_necessity_of_theoremF theoremF_holds hΛ hs
+
+/-- **Theorem 1**, with de Branges' Theorem F proved in the project. -/
+theorem theorem1_unconditional {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
+    IsSampling Λ ↔ ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) :=
+  theorem1_of_theoremF theoremF_holds hΛ
+
+/-- **Corollary 1**, with de Branges' Theorem F proved in the project. -/
+theorem corollary1_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsCompleteInterpolating (Set.range γ) ∧
+      ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) :=
+  corollary1_of_theoremF theoremF_holds hΛ hs
+
+/-- **Landau's inequality**, with de Branges' Theorem F proved in the project. -/
+theorem landau_inequality_of_pavlov (hA : PavlovBMO)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) :=
+  landau_inequality_of_theoremF_pavlov theoremF_holds hA hΛ hs
+
+/-- **Landau's inequality**, with all cited hypotheses proved in the project. -/
+theorem landau_inequality_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) :=
+  landau_inequality_of_pavlov pavlovBMO_holds hΛ hs
 
 end FF

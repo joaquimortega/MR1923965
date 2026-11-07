@@ -3,11 +3,11 @@
 Result of the assembly step (scaffold files wired together). Every temporary
 "Upstream interface" block of the eight scaffold writers was deleted and replaced by imports of the
 owning module. At assembly `lake build` passed with only `declaration uses 'sorry'` warnings; today
-(after the P4 merge, NOTEBOOK I-11) `lake build` has no warning, and the only `sorry`s are in the
-phase-2 scaffold `Cited/DeBrangesFC/PartF.lean` (target `FourierFramesScaffold`). The sections below the generated
+(after the proof of Theorem F, NOTEBOOK I-12) both the default and compatibility targets build
+without warnings or implementation `sorry`s. The sections below the generated
 module graph record the assembly (when every proof was `sorry`); the file-level DAG below omits the
 helper files added during implementation (they are listed in the generated table). The generated block
-was last regenerated after the P4 merge (2026-11-07).
+was last regenerated after the proof of Theorem F (2026-11-07).
 
 ## File-level import DAG
 
@@ -137,7 +137,7 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M09 | `Theorem2ii/UOne.lean` | 21 | 0 | `Defs` | `OrtegaCerdaSeip.Lemma3.Main` |
 | M09 | `Theorem2ii/Window.lean` | 3 | 0 | `Defs` | — |
 | M10 | `Frames.lean` | 4 | 0 | `PW/Basic` | — |
-| U | `Unconditional.lean` | 19 | 0 | `Frames`, `HB/Comparable`, `Theorem1/Main`, `Corollary1`, `Landau`, `LogExample`, `Corollary2`, `Theorem2i`, `Cited/PaleyWiener`, `Cited/DSPerturbation`, `Cited/JohnNirenberg`, `Cited/DeBrangesDE`, `Cited/DeBrangesFC` | — |
+| U | `Unconditional.lean` | 24 | 0 | `Frames`, `HB/Comparable`, `Theorem1/Main`, `Corollary1`, `Landau`, `LogExample`, `Corollary2`, `Theorem2i`, `Cited/PaleyWiener`, `Cited/DSPerturbation`, `Cited/JohnNirenberg`, `Cited/DeBrangesDE`, `Cited/DeBrangesFC`, `Cited/DeBrangesF`, `Cited/Pavlov` | — |
 | P1 | `Cited/PaleyWiener.lean` | 1 | 0 | `Cited/PaleyWiener/Part1`, `Cited/PaleyWiener/Part2` | — |
 | P1 | `Cited/PaleyWiener/L2Fourier.lean` | 8 | 0 | `Defs` | — |
 | P1 | `Cited/PaleyWiener/Part1.lean` | 20 | 0 | `Defs` | — |
@@ -154,11 +154,63 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | P3 | `Cited/DeBrangesDE/Kernel.lean` | 31 | 0 | `Cited/DeBrangesDE/Cauchy`, `HB/Phase` | — |
 | P3 | `Cited/DeBrangesDE/Orthogonal.lean` | 76 | 0 | `Cited/DeBrangesDE/EAux/KernelSymm` | — |
 | P3 | `Cited/DeBrangesDE/Space.lean` | 30 | 0 | `Cited/DeBrangesDE/Kernel` | — |
+| P4 | `Cited/DeBrangesF.lean` | 2 | 0 | `Cited/DeBrangesF/Contractive`, `Cited/DeBrangesF/Poisson` | — |
+| P4 | `Cited/DeBrangesF/Algebra.lean` | 14 | 0 | `Defs` | — |
+| P4 | `Cited/DeBrangesF/Analytic.lean` | 4 | 0 | `Cited/DeBrangesF/Basic`, `Cited/DeBrangesF/Algebra` | — |
+| P4 | `Cited/DeBrangesF/Basic.lean` | 2 | 0 | `Cited/DeBrangesFC` | — |
+| P4 | `Cited/DeBrangesF/Cauchy.lean` | 15 | 0 | `Cited/DeBrangesF/Basic` | — |
+| P4 | `Cited/DeBrangesF/Contractive.lean` | 6 | 0 | `Cited/DeBrangesF/Analytic`, `Cited/DeBrangesF/KernelIdentities`, `Cited/DeBrangesF/Schur` | — |
+| P4 | `Cited/DeBrangesF/Herglotz.lean` | 14 | 0 | `Cited/DeBrangesF/Basic` | — |
+| P4 | `Cited/DeBrangesF/Isometry.lean` | 12 | 0 | `Cited/DeBrangesF/Basic` | — |
+| P4 | `Cited/DeBrangesF/Kernel.lean` | 47 | 0 | `Cited/DeBrangesF/Basic` | — |
+| P4 | `Cited/DeBrangesF/KernelIdentities.lean` | 13 | 0 | `Cited/DeBrangesF/Transforms` | — |
+| P4 | `Cited/DeBrangesF/Moment.lean` | 2 | 0 | `Cited/DeBrangesF/Basic` | — |
+| P4 | `Cited/DeBrangesF/Normalization.lean` | 17 | 0 | `Cited/DeBrangesF/Moment`, `Cited/DeBrangesF/Isometry` | — |
+| P4 | `Cited/DeBrangesF/Poisson.lean` | 19 | 0 | `Cited/DeBrangesF/Herglotz`, `Cited/DeBrangesF/Cauchy`, `Cited/DeBrangesF/Transforms` | — |
+| P4 | `Cited/DeBrangesF/Schur.lean` | 8 | 0 | `Cited/DeBrangesF/Isometry`, `Cited/DeBrangesF/Cauchy` | — |
+| P4 | `Cited/DeBrangesF/Transforms.lean` | 17 | 0 | `Cited/DeBrangesF/Kernel`, `Cited/DeBrangesF/Normalization`, `Cited/DeBrangesF/Cauchy` | — |
 | P4 | `Cited/DeBrangesFC.lean` | 13 | 0 | `Cited/DeBrangesFC/Kernel` | — |
 | P4 | `Cited/DeBrangesFC/Analytic.lean` | 19 | 0 | `Cited/DeBrangesDE` | — |
 | P4 | `Cited/DeBrangesFC/Kernel.lean` | 22 | 0 | `Cited/DeBrangesFC/Space` | — |
-| P4 | `Cited/DeBrangesFC/PartF.lean` | 11 | 9 | `Cited/DeBrangesFC` | — |
+| P4 | `Cited/DeBrangesFC/PartF.lean` | 0 | 0 | `Cited/DeBrangesF` | — |
 | P4 | `Cited/DeBrangesFC/Space.lean` | 13 | 0 | `Cited/DeBrangesFC/Analytic` | — |
+| P5 | `Cited/Pavlov.lean` | 2 | 0 | `Cited/Pavlov/GeneratingDispersion`, `Cited/Pavlov/BoundaryPhase`, `Cited/Pavlov/CountingBMO` | — |
+| P5 | `Cited/Pavlov/BMO.lean` | 42 | 0 | `Cited/Pavlov/Fatou` | — |
+| P5 | `Cited/Pavlov/BMOIntervalGrowth.lean` | 5 | 0 | `Cited/JohnNirenberg` | — |
+| P5 | `Cited/Pavlov/BMOLogIntegrable.lean` | 7 | 0 | `Cited/Pavlov/Basic`, `Cited/Pavlov/BMOIntervalGrowth` | — |
+| P5 | `Cited/Pavlov/BMOSecondMoment.lean` | 6 | 0 | `Cited/JohnNirenberg` | — |
+| P5 | `Cited/Pavlov/Basic.lean` | 3 | 0 | `Defs` | — |
+| P5 | `Cited/Pavlov/BoundaryPhase.lean` | 15 | 0 | `Cited/Pavlov/BoundaryPhaseCount` | `TauCeti.Analysis.Complex.BranchLogRoot` |
+| P5 | `Cited/Pavlov/BoundaryPhaseCount.lean` | 10 | 0 | `Cited/Pavlov/Cardinal`, `Landau` | — |
+| P5 | `Cited/Pavlov/BoundaryWeight.lean` | 1 | 0 | `Cited/Pavlov/WeightTransfer`, `Cited/Pavlov/LogDistance` | — |
+| P5 | `Cited/Pavlov/Cardinal.lean` | 38 | 0 | `Corollary1`, `Cited/PaleyWiener`, `Cited/DeBrangesFC`, `Cited/DeBrangesDE` | — |
+| P5 | `Cited/Pavlov/CardinalLog.lean` | 22 | 0 | `Cited/Pavlov/BoundaryWeight`, `Cited/Pavlov/BMOLogIntegrable`, `Cited/Pavlov/LogPoissonKernel` | — |
+| P5 | `Cited/Pavlov/CellBounds.lean` | 5 | 0 | `Cited/Pavlov/Cardinal`, `Cited/Pavlov/Harnack` | — |
+| P5 | `Cited/Pavlov/ConjugatePoisson.lean` | 21 | 0 | `Cited/PaleyWiener/L2Fourier` | `TauCeti.Analysis.Fourier.L2Multiplier` |
+| P5 | `Cited/Pavlov/CountingBMO.lean` | 4 | 0 | `Landau`, `Cited/Pavlov/PoissonBMO` | — |
+| P5 | `Cited/Pavlov/Fatou.lean` | 1 | 0 | `Defs` | — |
+| P5 | `Cited/Pavlov/GeneratingDispersion.lean` | 2 | 0 | `Cited/Pavlov/CardinalLog`, `Cited/Pavlov/LogPoisson`, `Cited/Pavlov/OuterComparison`, `Cited/Pavlov/NoExponentialDefect` | — |
+| P5 | `Cited/Pavlov/HarmonicReflection.lean` | 10 | 0 | `Cited/DeBrangesDE/EntireHerglotz`, `Cited/DeBrangesFC` | `TauCeti.Analysis.PDE.PoissonIntegral.Ball`, `TauCeti.Analysis.InnerProductSpace.Laplacian.Comparison` |
+| P5 | `Cited/Pavlov/Harnack.lean` | 6 | 0 | — | `TauCeti.Analysis.PDE.Harnack.Basic`, `Mathlib.Analysis.InnerProductSpace.Harmonic.Constructions`, `Mathlib.Analysis.Complex.Convex`, `Mathlib.Analysis.Complex.CauchyIntegral` |
+| P5 | `Cited/Pavlov/LogClipping.lean` | 23 | 0 | `Cited/Pavlov/Basic` | — |
+| P5 | `Cited/Pavlov/LogDistance.lean` | 4 | 0 | `Cited/Pavlov/LogDistanceCore`, `Cited/Pavlov/LogSingularity`, `Cited/Pavlov/LogDistanceLarge`, `Cited/Pavlov/LogDistanceTransfer` | — |
+| P5 | `Cited/Pavlov/LogDistanceCore.lean` | 11 | 0 | `Cited/Pavlov/Cardinal`, `Cited/Pavlov/BMO` | — |
+| P5 | `Cited/Pavlov/LogDistanceLarge.lean` | 10 | 0 | `Cited/Pavlov/LogDistanceCore`, `Cited/Pavlov/BMO` | — |
+| P5 | `Cited/Pavlov/LogDistanceTransfer.lean` | 2 | 0 | `Cited/Pavlov/LogDistanceCore`, `Cited/Pavlov/CellBounds` | — |
+| P5 | `Cited/Pavlov/LogPoisson.lean` | 11 | 0 | `Cited/Pavlov/SchwarzBoundary`, `Cited/Pavlov/LogClipping`, `Cited/Pavlov/LogPoissonBoundary`, `Cited/Pavlov/HarmonicReflection`, `HB/DeBranges`, `Cited/DeBrangesFC` | `TauCeti.Analysis.InnerProductSpace.Laplacian.Comparison` |
+| P5 | `Cited/Pavlov/LogPoissonBoundary.lean` | 7 | 0 | `Cited/Pavlov/SchwarzBoundary`, `Cited/Pavlov/LogPoissonKernel` | — |
+| P5 | `Cited/Pavlov/LogPoissonKernel.lean` | 19 | 0 | `Cited/Pavlov/Schwarz` | — |
+| P5 | `Cited/Pavlov/LogSingularity.lean` | 6 | 0 | `Cited/Pavlov/BMO` | — |
+| P5 | `Cited/Pavlov/NoExponentialDefect.lean` | 3 | 0 | `Cited/Pavlov/Cardinal`, `HB/Comparable`, `HB/H2` | — |
+| P5 | `Cited/Pavlov/OuterComparison.lean` | 11 | 0 | `Cited/Pavlov/Schwarz`, `HB/H2` | — |
+| P5 | `Cited/Pavlov/PoissonBMO.lean` | 9 | 0 | `Cited/Pavlov/BMO`, `Cited/Pavlov/BMOLogIntegrable`, `Cited/Pavlov/PoissonBMOFar`, `Cited/Pavlov/Schwarz`, `Cited/Pavlov/PoissonBMONear` | — |
+| P5 | `Cited/Pavlov/PoissonBMOFar.lean` | 11 | 0 | `Cited/Pavlov/BMOIntervalGrowth`, `Cited/Pavlov/PoissonBMOKernel` | — |
+| P5 | `Cited/Pavlov/PoissonBMOKernel.lean` | 5 | 0 | `Cited/Pavlov/Basic` | — |
+| P5 | `Cited/Pavlov/PoissonBMONear.lean` | 11 | 0 | `Cited/Pavlov/BMOSecondMoment`, `Cited/Pavlov/ConjugatePoisson` | — |
+| P5 | `Cited/Pavlov/Schwarz.lean` | 24 | 0 | `Cited/Pavlov/Basic`, `Cited/DeBrangesF/Herglotz` | — |
+| P5 | `Cited/Pavlov/SchwarzBoundary.lean` | 11 | 0 | `Cited/Pavlov/Schwarz`, `Cited/DeBrangesDE/Cauchy` | — |
+| P5 | `Cited/Pavlov/WeightTransfer.lean` | 8 | 0 | `Cited/Pavlov/Weights`, `Cited/Pavlov/LogDistanceLarge` | — |
+| P5 | `Cited/Pavlov/Weights.lean` | 23 | 0 | `Cited/Pavlov/CellBounds`, `PW/PlancherelPolya` | — |
 
 ### Modules
 
@@ -175,13 +227,14 @@ outside comments. `vendored/Mathlib` lists the non-project imports.
 | M08 | Theorem 2 (i) | 16 | 251 | 0 | M07 |
 | M09 | Theorem 2 (ii) (+ uniform Lemma 3 estimate) | 7 | 127 | 0 | M00 |
 | M10 | Fourier frames | 1 | 4 | 0 | M01 |
-| U | Main results with proved cited results discharged | 1 | 19 | 0 | M05, M06, M08, M10, P1, P2, P4 |
+| U | Main results with proved cited results discharged | 1 | 24 | 0 | M06, M08, M10, P5 |
 | P1 | Paley-Wiener theorem | 5 | 58 | 0 | M00 |
 | P2 | Duffin-Schaeffer, John-Nirenberg | 2 | 55 | 0 | M01 |
 | P3 | de Branges D, E | 9 | 219 | 0 | M02 |
-| P4 | de Branges C (proved), F (deferred scaffold) | 5 | 78 | 9 | P3 |
+| P4 | de Branges C, F (proved) | 20 | 259 | 0 | P3 |
+| P5 | Pavlov BMO necessity (proved) | 37 | 409 | 0 | M05, P1, P2, P4 |
 
-Total: 99 files, 1765 declarations, 9 `sorry`.
+Total: 151 files, 2360 declarations, 0 `sorry`.
 
 ### Module dependency graph (transitive reduction)
 
@@ -197,11 +250,12 @@ M07  <- M04
 M08  <- M07
 M09  <- M00
 M10  <- M01
-U    <- M05, M06, M08, M10, P1, P2, P4
+U    <- M06, M08, M10, P5
 P1   <- M00
 P2   <- M01
 P3   <- M02
 P4   <- P3
+P5   <- M05, P1, P2, P4
 ```
 
 Full (transitive) dependencies:
@@ -218,11 +272,12 @@ M07  <- M00, M01, M02, M03, M04
 M08  <- M00, M01, M02, M03, M04, M07
 M09  <- M00
 M10  <- M00, M01
-U    <- M00, M01, M02, M03, M04, M05, M06, M07, M08, M10, P1, P2, P3, P4
+U    <- M00, M01, M02, M03, M04, M05, M06, M07, M08, M10, P1, P2, P3, P4, P5
 P1   <- M00
 P2   <- M00, M01
 P3   <- M00, M01, M02
 P4   <- M00, M01, M02, P3
+P5   <- M00, M01, M02, M03, M04, M05, P1, P2, P3, P4
 ```
 
 <!-- END GENERATED -->

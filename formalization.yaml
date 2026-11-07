@@ -23,13 +23,17 @@ project:
     Pavlov's Theorem A, the John–Nirenberg theorem, Lemma III of Duffin–Schaeffer). Each enters
     the formal statements as an explicit Prop hypothesis, never as an axiom. Phase 1 proves every
     argument of the paper itself from these hypotheses (all 15 main statements, accepted by
-    comparator). Phase 2 proves the cited results that are within reach: the Paley–Wiener
-    theorem, the John–Nirenberg inequality, Duffin–Schaeffer's lemma and de Branges' Theorems C,
-    D and E are proved, and FourierFrames/Unconditional.lean discharges them from the main
-    statements. De Branges' Theorem F is deferred and Pavlov's theorem is assessed infeasible with
-    current Mathlib (blueprint/PHASE2.md). What remains conditional is exactly Theorem 1
-    (necessity) and Corollary 1 (on Theorem F) and Landau's inequality (on Theorem F and Pavlov's
-    theorem).
+    comparator). Phase 2 proves all eight cited Props in the forms used: the Paley–Wiener
+    theorem, the John–Nirenberg inequality, Duffin–Schaeffer's lemma, de Branges' Theorems C,
+    D, E and F, and the BMO necessity consequence of Pavlov's theorem.
+    FourierFrames/Unconditional.lean discharges them from every strongest main version,
+    including Landau's inequality (blueprint/PHASE2.md). Theorem F follows the independently reviewed elementary normalized-kernel
+    route in blueprint/P4F_Elementary.md (reviews/R11_TheoremF.md), with p = 0 in the unchanged statement.
+    PavlovBMO follows a modular cardinal/A₂, logarithmic dispersion and conjugate-Poisson BMO
+    proof (blueprint/P5_Pavlov.md, reviews/R13–R15), using selected Tau Ceti analytic tools.
+    The project vendors 41 unchanged Tau Ceti modules pinned at v4.35.0. The comparator target contains 46 theorems: 15 original, eight cited,
+    and 23 discharged or historical versions; all 46 were accepted by the Lean kernel
+    through comparator on 2026-11-07. The full Pavlov iff criterion is outside scope.
 
     Two of the paper's proofs are replaced: the appeal to Meĭman's theorem (false as quoted) by a
     direct argument, and the proof of Theorem 2 (ii), which does not work as printed, by a new
@@ -39,6 +43,7 @@ project:
     The formalization was directed by the first author of the paper.
   authors:
     - "Claude (Fable 5.1 / Opus 5.5 / Sonnet 5.5, Anthropic), multi-agent run in Claude Code"
+    - "Codex (OpenAI), Theorem F and Pavlov BMO necessity completion with GPT-6.1 Sol subagents"
     - "Joaquim Ortega-Cerdà (direction)"
   responsible_maintainers:
     - "Joaquim Ortega-Cerdà"
@@ -86,14 +91,15 @@ sources:
       Assumed as the explicit Prop hypotheses FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF of
       the main statements that use them, in the weakest form the paper uses (Theorems D, E, F for E
       in the strict Hermite–Biehler class without real zeros; Theorem F with an extra term p·y,
-      p ≥ 0). Theorems C, D and E are proved in the project. D and E: FF.theoremD_holds,
+      p ≥ 0). Theorems C, D, E and F are proved in the project. D and E: FF.theoremD_holds,
       FF.theoremE_holds, FourierFrames/Cited/DeBrangesDE*, blueprint/P3_DeBrangesDE.md; D by a
       half-plane Cauchy–Goursat theorem for H² functions continuous up to the real line; E by an
       elementary Mittag-Leffler and entire-Pick-function argument, not de Branges' route through his
       Theorems 20–21. C: FF.theoremC_holds, FourierFrames/Cited/DeBrangesFC*,
       blueprint/P4_DeBrangesFC.md; through Theorem D and the uniqueness of a reproducing-kernel
-      space, without completeness of H(E), handling real zeros of E. Theorem F is deferred and
-      remains a hypothesis.
+      space, without completeness of H(E), handling real zeros of E. F: FF.theoremF_holds,
+      FourierFrames/Cited/DeBrangesF.lean and DeBrangesF/*; normalized reproducing kernels,
+      Cauchy–Schwarz and explicit measure algebra (blueprint/P4F_Elementary.md, review R11).
     author_endorsement: "n/a"
   - title: "Unconditional bases of exponentials and reproducing kernels"
     authors:
@@ -106,9 +112,12 @@ sources:
     relationship: "background"
     note: >-
       Only the BMO necessity half is used (FF.PavlovBMO: a separated complete interpolating
-      sequence Γ has n_Γ(t) − t ∈ BMO). Assumed as a hypothesis of FF.landau_inequality; proving it
-      would need the Hilbert transform, Muckenhoupt weights and BMO conjugation, which Mathlib lacks
-      (blueprint/P5_Pavlov.md).
+      sequence Γ has n_Γ(t) − t ∈ BMO). Proved as FF.pavlovBMO_holds in
+      FourierFrames/Cited/Pavlov.lean and its helper modules: finite weighted Cauchy tests yield
+      A₂ and boundary logarithmic BMO; exact Schwarz dispersion, uniform conjugate-Poisson
+      BMO estimates and Fatou give the counting discrepancy. The proof discharges the final
+      cited hypothesis in FF.landau_inequality_unconditional (blueprint/P5_Pavlov.md).
+      It does not formalize the full Pavlov iff criterion.
     author_endorsement: "n/a"
   - title: "On functions of bounded mean oscillation"
     authors:
@@ -137,7 +146,7 @@ sources:
     id: "J. Funct. Anal. 162 (1999), 400–415 (cited as [OS99]); MR1682065"
     type: "article"
     location: "Lemma 3 (the multiplier lemma), used on pp. 801 and 805"
-    relationship: "builds-on"
+    relationship: "adapts"
     note: >-
       Not assumed: the sorry-free part of the companion formalization
       https://github.com/joaquimortega/MR1682065 that proves Lemma 3 (OCS.lemma3, 10 files, commit
@@ -157,6 +166,19 @@ related_formalizations:
     relationship: "other"
     note: "Same workflow and conventions (blueprint, scaffold, referee round, implementation in worktrees, comparator)."
 
+  - name: "Tau Ceti"
+    id: "https://github.com/TauCetiProject/TauCeti"
+    url: "https://github.com/TauCetiProject/TauCeti"
+    relationship: "builds-on"
+    note: >-
+      Selected unchanged v4.35.0 modules, commit 1f9b4414105d86e487a4ac4c3d3397076a44d0d2:
+      41 modules and 8882 lines, Apache-2.0. Import closures cover the L² Fourier multiplier,
+      Calderón–Zygmund BMO endpoint, Harnack, disk Dirichlet problem, Laplacian comparison,
+      and analytic logarithm branch. The project proves the specialized kernel realization,
+      weighted tests and extension to general BMO data; the endpoint theorem alone is not a
+      general BMO extension. Provenance and full inventory: TauCeti/VENDORED.md. Original
+      autoImplicit and relaxedAutoImplicit options are scoped to the TauCeti Lake library.
+
 classification:
   arxiv: ["math.CA", "math.CV"]
   msc2020: ["42C15", "30D15", "46E22", "94A20"]
@@ -171,18 +193,14 @@ status:
         Fourier frames and sampling (p. 790), and the "evident fact" of p. 799.
       - Proved (phase 2, cited results): the Paley–Wiener theorem; the John–Nirenberg inequality;
         Duffin–Schaeffer's Lemma III (from the Paley–Wiener theorem, hence unconditional); de
-        Branges' Theorems C, D and E.
+        Branges' Theorems C, D, E and F; Pavlov's BMO necessity consequence.
       - Unconditional (phase 2, FourierFrames/Unconditional.lean): the equivalence of Fourier
-        frames and sampling, the "evident fact", Theorem 1 (sufficiency), the remark of p. 797, the
+        frames and sampling, the "evident fact", Theorem 1 (both directions), Corollary 1, the remark of p. 797, the
         example of p. 798 and the sharpness of Landau's inequality, Corollary 2, both versions of
-        Theorem 2 (i); Theorem 2 (ii) and the counting estimate of the example were already
-        unconditional.
-      - Conditional on the remaining cited hypotheses: Theorem 1 (necessity), Theorem 1 and
-        Corollary 1 (de Branges' Theorem F); Landau's inequality (Theorem F and Pavlov's Theorem A).
-      - Not formalized: Pavlov's theorem (assessed infeasible with current Mathlib), de Branges'
-        Theorem F (assessed, deferred; statements only, with `sorry`, in the separate Lake target
-        FourierFramesScaffold; one helper statement of that scaffold is false as stated, referee
-        R10; see blueprint/PHASE2.md), the Proposition of p. 798 and the remarks quoting [Se95].
+        Theorem 2 (i), and Landau's inequality; Theorem 2 (ii) and the counting estimate of the
+        example were already unconditional. Historical conditional aliases retain their parameters.
+      - Not formalized: the full Pavlov iff criterion, the Proposition of p. 798 and the
+        remarks quoting [Se95].
   sorry_count: 0
   sorry_in_definitions: 0
   axioms: ["propext", "Classical.choice", "Quot.sound"]
@@ -192,55 +210,107 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
     - declaration: "FF.heEqPW_of_comparable"
       file: "FourierFrames/HB/Comparable.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
     - declaration: "FF.theorem1_necessity"
       file: "FourierFrames/Theorem1/Necessity.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.theorem1_sufficiency"
       file: "FourierFrames/Theorem1/Sufficiency.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.theorem1"
       file: "FourierFrames/Theorem1/Main.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.completeInterpolating_zero_set"
       file: "FourierFrames/Corollary1.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremD"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremD"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.corollary1"
       file: "FourierFrames/Corollary1.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.landau_inequality"
       file: "FourierFrames/Landau.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremC", "FF.TheoremE", "FF.TheoremF", "FF.PavlovBMO", "FF.JohnNirenberg"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.PavlovBMO"
+          source: "Unconditional bases of exponentials and reproducing kernels"
+        - statement: "FF.JohnNirenberg"
+          source: "On functions of bounded mean oscillation"
     - declaration: "FF.logExample_isCompleteInterpolating"
       file: "FourierFrames/LogExample.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.logExample_count"
       file: "FourierFrames/LogExample.lean"
       sorry_count: 0
@@ -252,25 +322,47 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.corollary2"
       file: "FourierFrames/Corollary2.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.DSPerturbation"
+          source: "A class of nonharmonic Fourier series"
     - declaration: "FF.theorem2_i"
       file: "FourierFrames/Theorem2i.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.DSPerturbation"
+          source: "A class of nonharmonic Fourier series"
     - declaration: "FF.theorem2_i_of_densityBound"
       file: "FourierFrames/Theorem2i.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.PaleyWienerThm", "FF.TheoremE", "FF.DSPerturbation"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
+        - statement: "FF.TheoremE"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.DSPerturbation"
+          source: "A class of nonharmonic Fourier series"
     - declaration: "FF.theorem2_ii"
       file: "FourierFrames/Theorem2ii.lean"
       sorry_count: 0
@@ -287,7 +379,9 @@ status:
       file: "FourierFrames/Cited/DSPerturbation.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
-      literature_dependencies: ["FF.PaleyWienerThm"]
+      literature_dependencies:
+        - statement: "FF.PaleyWienerThm"
+          source: "Fourier transforms in the complex domain"
     - declaration: "FF.paleyWiener_holds"
       file: "FourierFrames/Cited/PaleyWiener.lean"
       sorry_count: 0
@@ -341,31 +435,51 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.theorem1_of_theoremCF"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.completeInterpolating_zero_set_of_theoremC"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremC"]
+      literature_dependencies:
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.corollary1_of_theoremCF"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.landau_inequality_of_theoremCF_pavlov"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremC", "FF.TheoremF", "FF.PavlovBMO"]
+      literature_dependencies:
+        - statement: "FF.TheoremC"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.PavlovBMO"
+          source: "Unconditional bases of exponentials and reproducing kernels"
     - declaration: "FF.logExample_isCompleteInterpolating_unconditional"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
@@ -401,13 +515,17 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.theorem1_of_theoremF"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.completeInterpolating_zero_set_unconditional"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
@@ -419,13 +537,63 @@ status:
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremF"]
+      literature_dependencies:
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
     - declaration: "FF.landau_inequality_of_theoremF_pavlov"
       file: "FourierFrames/Unconditional.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
       comparator_config: "comparator/config.json"
-      literature_dependencies: ["FF.TheoremF", "FF.PavlovBMO"]
+      literature_dependencies:
+        - statement: "FF.TheoremF"
+          source: "Hilbert spaces of entire functions"
+        - statement: "FF.PavlovBMO"
+          source: "Unconditional bases of exponentials and reproducing kernels"
+    - declaration: "FF.theoremF_holds"
+      file: "FourierFrames/Cited/DeBrangesF.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem1_necessity_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem1_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.corollary1_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.landau_inequality_of_pavlov"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies:
+        - statement: "FF.PavlovBMO"
+          source: "Unconditional bases of exponentials and reproducing kernels"
+    - declaration: "FF.pavlovBMO_holds"
+      file: "FourierFrames/Cited/Pavlov.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.landau_inequality_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
 
 automation:
   methods:
@@ -471,6 +639,29 @@ automation:
           7. Phase 2: blueprint/feasibility agents for each cited result, implementation of the
              feasible ones, and a second review round (Opus) on the phase-2 blueprints and on the
              blueprint as documentation of the final code.
+    - method: "agent"
+      models: ["gpt-6.1-sol"]
+      framework: "Codex"
+      tool_setup: >-
+        A coordinating Codex session completed Theorem F and Pavlov's BMO necessity consequence
+        using GPT-6.1 Sol implementation and independent review agents, as requested by the user.
+        Agents owned disjoint source modules, documented interfaces and proofs before risky
+        implementation, and ran Lean/Lake against the pinned Mathlib. Theorem F uses normalized
+        reproducing kernels, Cauchy–Schwarz and explicit measure algebra. Pavlov uses cardinal
+        synthesis, finite weighted Cauchy tests, A₂-to-log-BMO, weighted Schwarz integrals,
+        finite-order zero cancellation, harmonic reflection, an outer H² comparison, PW
+        uniqueness, L² multiplier kernel realization, localized conjugate-Poisson BMO estimates,
+        and a Fatou boundary limit. Selected Tau Ceti modules are copied unchanged with pinned
+        provenance and upstream elaboration options scoped to that library. Original cited
+        Props and strongest main statements are not weakened; conditional aliases remain.
+        Verification includes full builds, explicit axiom audits, statement checks and the
+        self-contained 46-theorem comparator target. Reviews R11–R15 record the proof reviews
+        and code audits; R14 and R15 independently check complementary Pavlov components.
+      prompting_notes: >-
+        The user requested completion of the formerly deferred Theorem F and PavlovBMO, required
+        GPT-6.1 Sol subagents, and authorized external library reuse. The formerly infeasible
+        Pavlov assessment was replaced by a specialized modular proof; its conclusion remains
+        only the BMO necessity consequence used by the paper, not the full characterization.
   spend_usd: "not tracked (subscription usage)"
   notes: >-
     Problems in the source caught by the process (NOTEBOOK.md):
@@ -491,9 +682,10 @@ automation:
     with the density bound the proof uses; a stronger sharpness statement for Landau's inequality.
     The definition of the Paley–Wiener Prop was corrected before any review (M01 writer).
     Implementation found no false helper statement in the reviewed phase-1 scaffold. In phase 2,
-    referee R10 found one false helper statement, division_lemma, in the deferred scaffold of de
-    Branges' Theorem F (Lean disproof: the factorization data it takes are not tied to the
-    factorization step); no proved result uses it, and it is marked false in the scaffold.
+    referee R10 found one false helper statement, division_lemma, in the former scaffold of de
+    Branges' Theorem F (Lean disproof: the factorization data were not tied to the factorization
+    step). It and the abandoned factorization scaffold were retired; the elementary proof does
+    not use them. PartF.lean and FourierFramesScaffold remain import-only compatibility modules.
 
 fidelity:
   divergences: >-
@@ -531,6 +723,11 @@ review:
     - "Independent Claude agents (R6–R8, Opus: phase-2 blueprints; the blueprint as documentation of the final code; soundness audit)"
     - "Independent Claude agent (R9: blueprint and scaffold of de Branges' Theorems D and E, with numerical checks; no false statement, 8 minor findings)"
     - "Independent Claude agent (R10: blueprint and scaffold of de Branges' Theorem C, with numerical checks; no false Part C statement, 5 minor findings; division_lemma of the deferred Theorem F scaffold false as stated, with a Lean disproof)"
+    - "Independent agent (R11: elementary Theorem F blueprint, finite-measure Cauchy helpers and probability normalization; approved for implementation)"
+    - "Independent GPT-6.1 Sol agent (R12: Theorem F code audit, no mathematical defects found)"
+    - "Independent GPT-6.1 Sol agent (R13: modular Pavlov blueprints and analytic interfaces, approved)"
+    - "Independent GPT-6.1 Sol agent (R14: end-to-end Pavlov assembly code audit, no mathematical defects found; excludes components authored by that reviewer)"
+    - "Independent GPT-6.1 Sol agent (R15: complementary logarithmic dispersion code audit, no mathematical defects found)"
   notes: >-
     Full referee reports are in reviews/. The phase-1 round found no false or vacuous statement
     and no broken proof; it confirmed the errata against the printed pages (and corrected three
@@ -548,7 +745,7 @@ alignment:
       lean: "FF.PaleyWienerThm, FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF, FF.PavlovBMO, FF.JohnNirenberg, FF.DSPerturbation"
       module: "FourierFrames/Defs.lean"
       status: "proved"
-      note: "Props used as hypotheses; PaleyWienerThm, JohnNirenberg, DSPerturbation, TheoremC, TheoremD and TheoremE are proved in FourierFrames/Cited/; TheoremF and PavlovBMO remain hypotheses"
+      note: "Original statements retain explicit Prop hypotheses; all eight cited Props are proved, including PavlovBMO, and strongest main versions discharge them all"
     - source: "p. 790: Fourier frame ⟺ sampling"
       lean: "FF.isFourierFrame_iff_isSampling"
       module: "FourierFrames/Frames.lean"
@@ -623,19 +820,19 @@ alignment:
       note: "through Theorem D (referee R7) and the uniqueness of a reproducing-kernel space, without completeness of H(E); real zeros of E handled by the IsH2Cont extension of f/E (blueprint/P4_DeBrangesFC.md, referee R10)"
     - source: "[dB68] Theorem 32 (F)"
       lean: "FF.theoremF_holds"
-      module: "FourierFrames/Cited/DeBrangesFC/PartF.lean"
-      status: "stated"
-      note: "deferred; scaffold with sorry in the separate Lake target FourierFramesScaffold (blueprint/P4_DeBrangesFC.md). Its helper division_lemma is false as stated (referee R10, Lean disproof) and needs 0 ≤ a, ‖B‖ ≤ 1 on the upper half-plane and the Blaschke-division clause of the factorization as hypotheses"
-    - source: "The main results with the proved cited results (Paley–Wiener, C, D, E, John–Nirenberg, Duffin–Schaeffer) discharged"
-      lean: "FF.isFourierFrame_iff_isSampling_unconditional, FF.heEqPW_of_comparable_unconditional, FF.theorem1_sufficiency_unconditional, FF.completeInterpolating_zero_set_unconditional, FF.logExample_isCompleteInterpolating_unconditional, FF.landau_sharp_unconditional, FF.corollary2_unconditional, FF.theorem2_i_unconditional, FF.theorem2_i_of_densityBound_unconditional, FF.theorem1_necessity_of_theoremF, FF.theorem1_of_theoremF, FF.corollary1_of_theoremF, FF.landau_inequality_of_theoremF_pavlov, FF.completeInterpolating_zero_set_of_theoremC, FF.theorem1_necessity_of_theoremCF, FF.theorem1_of_theoremCF, FF.corollary1_of_theoremCF, FF.landau_inequality_of_theoremCF_pavlov"
+      module: "FourierFrames/Cited/DeBrangesF.lean"
+      status: "proved"
+      note: "elementary normalized-kernel identities, Cauchy–Schwarz and explicit measure algebra; unchanged TheoremF with p = 0 (blueprint/P4F_Elementary.md, review R11); 2349 lines in 15 files including the root module"
+    - source: "The main results with the proved cited results (Paley–Wiener, C, D, E, F, Pavlov BMO necessity, John–Nirenberg, Duffin–Schaeffer) discharged"
+      lean: "FF.isFourierFrame_iff_isSampling_unconditional, FF.heEqPW_of_comparable_unconditional, FF.theorem1_sufficiency_unconditional, FF.completeInterpolating_zero_set_unconditional, FF.logExample_isCompleteInterpolating_unconditional, FF.landau_sharp_unconditional, FF.corollary2_unconditional, FF.theorem2_i_unconditional, FF.theorem2_i_of_densityBound_unconditional, FF.theorem1_necessity_of_theoremF, FF.theorem1_of_theoremF, FF.corollary1_of_theoremF, FF.landau_inequality_of_theoremF_pavlov, FF.completeInterpolating_zero_set_of_theoremC, FF.theorem1_necessity_of_theoremCF, FF.theorem1_of_theoremCF, FF.corollary1_of_theoremCF, FF.landau_inequality_of_theoremCF_pavlov, FF.theorem1_necessity_unconditional, FF.theorem1_unconditional, FF.corollary1_unconditional, FF.landau_inequality_of_pavlov, FF.landau_inequality_unconditional"
       module: "FourierFrames/Unconditional.lean"
       status: "proved"
-      note: "remaining hypotheses: none for the *_unconditional theorems; TheoremF (and PavlovBMO for Landau's inequality) for the *_of_theoremF* theorems; the *_of_theoremC* versions, stated before Theorem C was proved, keep TheoremC as well"
+      note: "No remaining cited hypothesis in the strongest versions; historical *_of_theoremC*, *_of_theoremCF*, *_of_theoremF* and landau_inequality_of_pavlov versions retain their original explicit hypotheses for compatibility"
     - source: "Theorem A (Pavlov), BMO half"
-      lean: "FF.PavlovBMO"
-      module: "FourierFrames/Defs.lean"
-      status: "not-formalized"
-      note: "assessed infeasible with current Mathlib (blueprint/P5_Pavlov.md); hypothesis of landau_inequality"
+      lean: "FF.pavlovBMO_holds"
+      module: "FourierFrames/Cited/Pavlov.lean"
+      status: "proved"
+      note: "Unchanged BMO necessity Prop; cardinal/A₂, exact logarithmic dispersion and uniform conjugate-Poisson BMO route (blueprint/P5_Pavlov.md, reviews R13–R15). Not the full Pavlov iff criterion"
     - source: "Proposition p. 798 ([Or98]); remarks quoting [Se95] (Lemma 3.11, Theorems 2.3, 2.7)"
       lean: ""
       module: ""

@@ -86,11 +86,11 @@ APPROVED = {
 
 
 def all_statements(base: pathlib.Path) -> dict:
-    """Statements of every file under `base/FourierFrames`, keyed by declaration name."""
+    """All candidates for moved declarations, including equal short names in other namespaces."""
     out = {}
     for p in sorted((base / "FourierFrames").rglob("*.lean")):
         for name, st in statements(p.read_text()).items():
-            out.setdefault(name, st)
+            out.setdefault(name, []).append(st)
     return out
 
 
@@ -101,20 +101,22 @@ for path, old in files_at_ref():
         print(f"REMOVED FILE {path}")
         bad += 1
         continue
-    olds, news = statements(old), statements(new_path.read_text())
-    if any(n not in news for n in olds):  # declarations may move between files
-        elsewhere = all_statements(target)
-        news = {**elsewhere, **news}
+    olds, local = statements(old), statements(new_path.read_text())
+    # Prefer the original file. For moved declarations inspect every candidate:
+    # e.g. FF.Pavlov.cell must not shadow the frozen FF.cell merely
+    # because its new file sorts first.
+    elsewhere = all_statements(target) if any(n not in local for n in olds) else {}
     for name, st in olds.items():
+        candidates = [local[name]] if name in local else elsewhere.get(name, [])
         if name in APPROVED:
-            if name not in news or news[name] != st:
+            if st not in candidates:
                 print(f"approved change {path}: {name} ({APPROVED[name]})")
             continue
-        if name not in news:
+        if not candidates:
             print(f"REMOVED {path}: {name}")
             bad += 1
-        elif news[name] != st:
-            print(f"CHANGED {path}: {name}\n  old: {st}\n  new: {news[name]}")
+        elif st not in candidates:
+            print(f"CHANGED {path}: {name}\n  old: {st}\n  new: {candidates[0]}")
             bad += 1
 print("OK: no statement changed" if bad == 0 else f"{bad} problem(s)")
 sys.exit(1 if bad else 0)

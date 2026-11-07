@@ -594,4 +594,46 @@ theorem landau_inequality_of_theoremF_pavlov (hF : TheoremF) (hA : PavlovBMO)
       ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) := by
   sorry
 
+/-- **Theorem F**, proved in the project. -/
+theorem theoremF_holds : TheoremF := by
+  sorry
+
+/-- **Theorem 1, necessity**, unconditionally. -/
+theorem theorem1_necessity_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Theorem 1**, unconditionally. -/
+theorem theorem1_unconditional {Λ : Set ℝ} (hΛ : IsSeparated Λ) :
+    IsSampling Λ ↔ ∃ E F : ℂ → ℂ, IsHB E ∧ IsHB F ∧ HEEqPW E ∧
+      ∀ z : ℂ, E z * F z + fstar E z * fstar F z = 0 ↔ ∃ x ∈ Λ, z = (x : ℂ) := by
+  sorry
+
+/-- **Corollary 1**, unconditionally. -/
+theorem corollary1_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ γ : ℤ → ℝ, StrictMono γ ∧ IsCompleteInterpolating (Set.range γ) ∧
+      ∀ k : ℤ, ∃ x ∈ Λ, γ k ≤ x ∧ x < γ (k + 1) := by
+  sorry
+
+/-- **Landau's inequality**, from Pavlov's Theorem A, unconditionally. -/
+theorem landau_inequality_of_pavlov (hA : PavlovBMO)
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) := by
+  sorry
+
+/-- **Pavlov's BMO necessity theorem**, proved in the project. -/
+theorem pavlovBMO_holds : PavlovBMO := by
+  sorry
+
+/-- **Landau's inequality**, unconditionally. -/
+theorem landau_inequality_unconditional
+    {Λ : Set ℝ} (hΛ : IsSeparated Λ) (hs : IsSampling Λ) :
+    ∃ A B : ℝ, ∀ a b : ℝ, a < b →
+      ENNReal.ofReal (b - a - A * Real.posLog (b - a) - B) ≤ ((Λ ∩ Ioc a b).encard : ℝ≥0∞) := by
+  sorry
+
 end FF

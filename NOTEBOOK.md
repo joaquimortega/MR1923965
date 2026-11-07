@@ -663,3 +663,134 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   Corollary 1) and N-16, N-30 (density smoothing in the sine-type estimate). There is no new N-entry.
 - **Tooling.** The generated part of `blueprint/IMPORTS.md` is regenerated after the P4 merge. The
   title of its P4 row, "de Branges C, F (scaffold)", is hard-coded in `scripts/make_imports.py`.
+
+### I-12 — de Branges' Theorem F proved by normalized kernels (2026-11-07)
+
+- **Theorem F is proved.** `FF.theoremF_holds : TheoremF` supplies the exact unchanged
+  statement in `Defs.lean`, with the allowed coefficient `p = 0`. The proof is in
+  `Cited/DeBrangesF.lean` and 14 supporting files, 2349 lines altogether. Its axiom
+  audit reports only `propext`, `Classical.choice`, and `Quot.sound`.
+- **Simpler proof route.** Normalize the measure by the squared kernel at `i`, obtaining
+  a probability measure. The upper and reflected reproducing kernels give the two
+  Cauchy-transform identities `F - φH = 1` and `J - c = φF`. Cauchy–Schwarz gives
+  `|φH| ≤ |φF|`. The numerator of `φ` is a nonzero entire function, so continuity and
+  the identity theorem extend `|H| ≤ |F|` through its zeros. An inverse disk
+  automorphism produces the holomorphic contractive parameter, and an explicit
+  change of measure gives the original Poisson integral. All complex integrals
+  used in the calculation have explicit integrability proofs.
+- **Retired scaffold.** The previous route required inner-function factorization,
+  Blaschke division, decay estimates, and derivative kernels. None is needed.
+  Its false `division_lemma` is removed, rather than assumed or repaired as a
+  dependency. `Cited/DeBrangesFC/PartF.lean` and the `FourierFramesScaffold` Lake
+  target are retained as import-only compatibility entry points. There are no
+  remaining `sorry` proofs in the implementation.
+- **Blueprint and independent review.** The detailed proof is in
+  `blueprint/P4F_Elementary.md`, with exact Lean statements and dependencies in
+  `blueprint/P4F_Statements.md`. `reviews/R11_TheoremF.md` independently checks the
+  mathematical proof and the normalization/Cauchy helper plans;
+  `reviews/R12_TheoremF_Code.md` checks the resulting implementation and unchanged
+  theorem statement. Implementation deviations are recorded under
+  `blueprint/impl_notes/theorem-f-*.md`.
+- **Discharging the hypothesis.** Added `theorem1_necessity_unconditional`,
+  `theorem1_unconditional`, `corollary1_unconditional`, and
+  `landau_inequality_of_pavlov`. The last retains only `PavlovBMO`; all older
+  forms are kept for compatibility. The frozen statements are unchanged.
+  `FFChallenge.lean` and `comparator/config.json` are regenerated with 44
+  declarations, including Theorem F and the four new versions.
+- **Source corrections.** This is a new proof of a theorem cited by the paper,
+  not a change to the paper's own statements. N-37 (strict Hermite–Biehler is
+  necessary in Theorem F) remains valid. No additional paper erratum was found,
+  so the corrected and red-marked TeX versions under `fixed/` need no new change.
+- **Validation.** `lake build FourierFrames FourierFramesScaffold` passes without warnings;
+  both statement checkers pass. All five new theorems have only the three standard
+  axioms. Comparator accepts all 44 declarations (2026-11-07,
+  `comparator/last_run.log`). The initial outer-sandbox run could not create
+  bubblewrap's network namespace; rerunning the unchanged comparator command
+  outside that outer sandbox succeeded with comparator's own sandbox intact.
+
+### I-13 — Pavlov's BMO necessity theorem proved (2026-11-07)
+
+- **Exact scope.** `FF.pavlovBMO_holds : PavlovBMO` proves the unchanged necessity
+  statement used in the paper: a separated complete interpolating sequence has
+  `countFn Γ - id ∈ BMO`. This is the BMO consequence of Theorem A, not its full
+  Helson–Szegő characterization. `landau_inequality_unconditional` now supplies
+  this result and Theorem F, so every formalized main result has a version with
+  all cited hypotheses discharged. Earlier conditional versions remain as API
+  compatibility statements.
+- **External infrastructure.** The earlier infeasibility assessment considered
+  the installed Mathlib alone. On the user's suggestion, Tau Ceti was checked.
+  Forty-one modules from its `v4.35.0` tag, immutable commit
+  `1f9b4414105d86e487a4ac4c3d3397076a44d0d2`, are vendored unchanged (8882 lines),
+  with Apache-2.0 headers, license and full provenance in `TauCeti/VENDORED.md`.
+  They supply Fourier multipliers, harmonic/Dirichlet/Harnack machinery, and
+  holomorphic logarithms. Their original implicit-variable language options
+  are scoped to the TauCeti library; the project's options remain unchanged.
+  Source comparison confirms all vendored Lean files match upstream byte for
+  byte. The version compiles against this project's existing Mathlib pin.
+- **Cardinal route to A₂.** Reuse the proved de Branges representation of a
+  complete interpolating sequence. The cardinal functions are normalized
+  removable quotients of the real generator `G`; their exact sample values
+  give uniform norm and finite synthesis bounds. Sampling supplies bounded
+  gaps. Harnack estimates on zero-free cell neighborhoods compare shifted
+  generator values with derivative weights. Finite Cauchy-matrix tests give
+  discrete A₂; a finite-cell cover transfers it to the continuous shifted
+  weight. This avoids canonical product construction and the continuous
+  weighted Hilbert-transform theorem.
+- **Elementary BMO simplification.** For an A₂ weight, normalize by its interval
+  arithmetic mean and use `|log s| ≤ s + s⁻¹`. This gives log-weight mean
+  oscillation at most `2(1+C)` without Jensen. Logarithmic distance to a
+  bounded-gap separated grid is BMO; the cell estimates then give BMO of
+  `log|G|` on the real line. The same chosen height is used for the shifted
+  weight and the logarithmic cell comparison; unrelated existential heights
+  are never identified.
+- **Regularized conjugate Poisson route.** Define the L² multiplier
+  `-i sign ξ exp(-2πy|ξ|)`. Its inverse Fourier transform is
+  `t/(π(t²+y²))`, and its L² convolution realization is proved for all L²
+  inputs. John–Nirenberg supplies local square oscillation, dyadic mean
+  growth controls the tails, and a near/far decomposition gives a BMO bound
+  uniform in `y > 0`. The tail constant in the draft was corrected from
+  `28/π` to `40/π` during independent review. No principal-value operator is
+  needed. Pairwise oscillation and Fatou pass the uniform bound to an a.e.
+  boundary limit without assuming convergence of interval means.
+- **Logarithmic dispersion.** The normalized cardinal `exp(iπz)q(z)` is bounded
+  and zero-free in the upper half-plane. Compact continuous logarithmic
+  cutoffs and a squared-modulus maximum principle give Poisson domination.
+  Exact Poisson extension of `log|t-a|` cancels each finite-order real zero;
+  odd harmonic reflection and the existing entire-Pick theorem classify the
+  defect as `a Im z`, `a ≥ 0`. The outer comparison lies in H² by the
+  exponential tangent inequality and Tonelli. If `a > 0`, multiplying the
+  real cardinal by a small-frequency sine gives a nonzero PW function
+  vanishing on the whole sequence, contradicting interpolation uniqueness.
+  Thus `a = 0`, without general Hardy factorization or a type-lowering premise.
+- **Counting phase.** A holomorphic logarithm has constant boundary argument
+  on each gap and drops by π across each simple real zero. Integer midpoint
+  recurrence identifies its boundary value with `-π countFn Γ + constant`.
+  The Schwarz identity therefore identifies the conjugate-Poisson limit with
+  `-π(countFn Γ - id) + constant`, yielding the exact target BMO statement.
+- **Implementation and review.** The proof occupies 6761 lines in 37 files,
+  including `Cited/Pavlov.lean`. The detailed module blueprints are `P5_*.md`,
+  with all 339 public interfaces and imports in `blueprint/P5_Statements.md`.
+  R13 records independent blueprint reviews; R14 and R15 independently audit
+  the code and the analytic dispersion route. There are no new axioms,
+  implementation `sorry`s, or linter suppressions.
+- **Paper artifacts.** This completes another theorem quoted by the paper; it
+  introduces no new correction to the paper's own statements. The existing
+  corrected and red-marked TeX/PDF versions in `fixed/` remain applicable.
+- **Validation.** The default and compatibility Lake targets build without
+  warnings. The frozen-statement and main-statement checks pass; the
+  self-contained challenge now contains 46 declarations. Comparator accepts
+  all 46 (2026-11-07, `comparator/last_run.log`). Theorem F, PavlovBMO and the
+  unconditional Theorem 1, Corollary 1 and Landau theorem have only the three
+  standard axioms.
+- **Statement-checker correction.** The checker previously indexed moved
+  declarations by short name and kept only the first candidate. The new
+  `FF.Pavlov.cell` therefore shadowed the unchanged, moved `FF.cell` from
+  Theorem 2(i), producing a false change report. It now checks every exact
+  candidate for a moved name, while still preferring the original file.
+  No new exception was added. A focused regression check verifies that this
+  collision passes and a genuinely changed statement is still rejected.
+- **Metadata schema.** `formalization.yaml` validates against the published
+  v0.4 JSON schema. The earlier string-only literature dependency lists were
+  converted to the schema's statement/source objects, and the source
+  relationship for the adapted multiplier lemma uses the allowed `adapts`
+  value. These are metadata corrections, not mathematical statement changes.

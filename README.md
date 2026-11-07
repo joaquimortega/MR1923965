@@ -38,9 +38,10 @@ sampling if `ψ'(x) = o(1/x)`.
 The fifteen main statements are in `comparator/statements.lean`, with the definitions in
 `FourierFrames/Defs.lean`. All are proved without `sorry`, with the cited results as explicit
 hypotheses (below), and depend only on `propext`, `Classical.choice` and `Quot.sound`. The same file
-lists the six cited results proved in phase 2 and the eighteen versions of the main statements in
-which they are discharged. [comparator](https://github.com/leanprover/comparator) accepts all 39
-theorems against the self-contained `FFChallenge.lean` (2026-11-07, `comparator/last_run.log`).
+lists the eight cited results proved in phase 2 and the twenty-three versions of the main statements in
+which they are discharged, including historical conditional versions. The current
+[comparator](https://github.com/leanprover/comparator) accepts all 46 theorems against the
+self-contained `FFChallenge.lean` (2026-11-07, `comparator/last_run.log`).
 
 | Paper | Lean (namespace `FF`) | Cited hypotheses |
 |---|---|---|
@@ -59,7 +60,7 @@ theorems against the self-contained `FFChallenge.lean` (2026-11-07, `comparator/
 theorem (PW), de Branges' Theorems C, D, E, F, Pavlov's Theorem A, the John–Nirenberg theorem (JN)
 and Lemma III of Duffin–Schaeffer (DS). Each is a `Prop` in `Defs.lean`, stated in the weakest form
 the paper uses, and appears as an explicit hypothesis of exactly the main theorems that use it;
-there are no axioms. Phase 2 of the project proves them where feasible
+there are no axioms. Phase 2 of the project proves all eight cited results in the forms used
 (`FourierFrames/Cited/`, plan and assessments in `blueprint/PHASE2.md`):
 
 | Cited result | Lean | Status |
@@ -70,19 +71,32 @@ there are no axioms. Phase 2 of the project proves them where feasible
 | de Branges' Theorem D (reproducing kernel) | `theoremD_holds` | proved |
 | de Branges' Theorem E (orthogonal sampling) | `theoremE_holds` | proved |
 | de Branges' Theorem C (axiomatic de Branges spaces) | `theoremC_holds` | proved |
-| de Branges' Theorem F (isometric measures) | `theoremF_holds` | stated (`sorry`); deferred (assessed at 5–8k lines). One helper statement of its scaffold, `division_lemma`, is false as stated (referee R10, Lean disproof) and must be restated before any attempt |
-| Pavlov's Theorem A (BMO half) | `PavlovBMO` | hypothesis; assessed infeasible with current Mathlib |
+| de Branges' Theorem F (isometric measures) | `theoremF_holds` | proved by normalized kernels and Cauchy–Schwarz (`blueprint/P4F_Elementary.md`, review R11) |
+| Pavlov's Theorem A (BMO necessity) | `pavlovBMO_holds` | proved; finite weighted tests, logarithmic dispersion and uniform conjugate-Poisson BMO |
 
 The proved ones depend only on `propext`, `Classical.choice` and `Quot.sound`; the proof of
 Theorem E is an elementary one, not de Branges' (`blueprint/P3_DeBrangesDE.md`). Theorem C is proved
 through Theorem D and the uniqueness of a reproducing-kernel space, without completeness of `H(E)`
-(`blueprint/P4_DeBrangesFC.md`). The unproved `theoremF_holds` and its scaffold are in
-`Cited/DeBrangesFC/PartF.lean`, which belongs to the separate Lake target `FourierFramesScaffold`, so
-`import FourierFrames` brings no `sorry` into scope.
+(`blueprint/P4_DeBrangesFC.md`). Theorem F uses two normalized reproducing-kernel identities,
+Cauchy–Schwarz and explicit measure algebra, with `p = 0` in the unchanged statement
+(`blueprint/P4F_Elementary.md`, independently reviewed in `reviews/R11_TheoremF.md`). Its proof
+occupies 2349 lines in 15 files: `Cited/DeBrangesF.lean` and `Cited/DeBrangesF/*`. The former
+`Cited/DeBrangesFC/PartF.lean` and `FourierFramesScaffold` are import-only compatibility modules;
+the abandoned factorization helpers have been retired.
+
+Pavlov's BMO necessity consequence is proved in `Cited/Pavlov.lean` and 36 helper files
+(6761 lines). Cardinal functions and Harnack estimates lead to finite weighted Cauchy tests,
+A₂ and boundary logarithmic BMO. A regularized Schwarz integral, cancellation of boundary
+zeros, harmonic reflection and a PW uniqueness argument give exact logarithmic dispersion.
+Uniform conjugate-Poisson BMO bounds and a boundary staircase limit then give
+`countFn Γ x-x ∈ BMO` by Fatou. This proves precisely `PavlovBMO`, not the full Pavlov iff
+criterion. See `blueprint/P5_Pavlov.md` and reviews R13–R15. The project vendors 41 unchanged
+Tau Ceti v4.35.0 modules (8882 lines), pinned and documented in `TauCeti/VENDORED.md`.
+The proof uses selected multiplier, harmonic and analytic-logarithm tools; the project
+supplies the specialized kernel, weighted, and BMO bridges.
 
 **Unconditional versions.** `FourierFrames/Unconditional.lean` supplies the proved cited results to
-the main theorems. The hypotheses that remain are exactly de Branges' Theorem F and Pavlov's
-Theorem A:
+the main theorems. Their strongest versions have no remaining cited hypotheses:
 
 | Paper | Lean (namespace `FF`) | Remaining hypotheses |
 |---|---|---|
@@ -94,14 +108,16 @@ Theorem A:
 | Theorem 2 (i) | `theorem2_i_unconditional`, `theorem2_i_of_densityBound_unconditional` | — |
 | Theorem 2 (ii) | `theorem2_ii` | — (since phase 1) |
 | Remark p. 797 | `completeInterpolating_zero_set_unconditional` | — |
-| Theorem 1, necessity, and Theorem 1 | `theorem1_necessity_of_theoremF`, `theorem1_of_theoremF` | F |
-| Corollary 1 | `corollary1_of_theoremF` | F |
-| Claim (§4): Landau's inequality | `landau_inequality_of_theoremF_pavlov` | F, A |
+| Theorem 1, necessity, and Theorem 1 | `theorem1_necessity_unconditional`, `theorem1_unconditional` | — |
+| Corollary 1 | `corollary1_unconditional` | — |
+| Claim (§4): Landau's inequality | `landau_inequality_unconditional` | — |
 
 The file also states `dsPerturbation_holds : DSPerturbation`. It keeps the intermediate versions
 `completeInterpolating_zero_set_of_theoremC`, `theorem1_necessity_of_theoremCF`, `theorem1_of_theoremCF`,
 `corollary1_of_theoremCF` and `landau_inequality_of_theoremCF_pavlov`, which were stated before Theorem C
-was proved.
+was proved. It also retains the historical `*_of_theoremF` and
+`landau_inequality_of_theoremF_pavlov` versions for compatibility. The earlier
+`landau_inequality_of_pavlov` wrapper also retains its explicit hypothesis.
 
 **Corrections to the paper.** The formalization found that two proofs do not work as printed and
 replaced them: the appeal to Meĭman's theorem on p. 801 (false as quoted) and the proof of
@@ -120,13 +136,14 @@ corrected paper, with the changes marked in red, was produced locally (`fixed/`,
 | Path | Content |
 |---|---|
 | `FourierFrames/Defs.lean` | statement-level definitions and the cited results as `Prop`s (imports only Mathlib) |
-| `FourierFrames/**` | the formalization (namespace `FF`; about 32,200 lines in 99 files), one or more files per blueprint module |
+| `FourierFrames/**` | the formalization (namespace `FF`; 41,257 lines in 151 files), one or more files per blueprint module |
 | `FourierFrames/Cited/` | phase 2: proofs of the cited results |
 | `FourierFrames/Unconditional.lean` | the main results with the proved cited results discharged |
-| `FourierFramesScaffold.lean` | separate Lake target for the unproved phase-2 scaffold `Cited/DeBrangesFC/PartF.lean` (Theorem F, `sorry`) |
+| `FourierFramesScaffold.lean` | compatibility import of the proved Theorem F via `Cited/DeBrangesFC/PartF.lean` |
 | `OrtegaCerdaSeip/` | vendored, do not edit: the part of the companion formalization [MR1682065](https://github.com/joaquimortega/MR1682065) that proves the multiplier lemma of [OS99] and a Bernstein-space toolkit (`OrtegaCerdaSeip/VENDORED.md`) |
+| `TauCeti/` | unchanged, pinned analytic tools used by Pavlov; provenance, license and import closure in `TauCeti/VENDORED.md` |
 | `blueprint/` | the blueprint: `README.md` (plan, conventions, design decisions, module table), one detailed document per module (`M00`–`M10`, `P1`–`P5`), `IMPORTS.md` (module graph, interface reconciliation), `impl_notes/` (implementers' deviations) |
-| `reviews/` | the independent referee reports (`R1`–`R5` on the phase-1 blueprint, `R6`–`R10` on phase 2 and on the final code) |
+| `reviews/` | the independent referee reports (`R1`–`R5` on the phase-1 blueprint, `R6`–`R15` on phase 2 and on the final code) |
 | `comparator/` | the main statements, the comparator configuration and the log of the accepted run |
 | `NOTEBOOK.md` | errata (N-xx) and implementation notes (I-xx) |
 | `formalization.yaml` | metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) v0.4 format |
@@ -139,10 +156,11 @@ Lean `v4.35.0`, Mathlib `v4.35.0`:
 ```sh
 lake exe cache get
 lake build                       # FourierFrames (builds the needed part of OrtegaCerdaSeip)
-lake build FourierFramesScaffold # optional: the unproved scaffold of Theorem F (sorry)
+lake build FourierFramesScaffold # optional: compatibility import of the proved Theorem F
 lake build FFChallenge FFSolution
 COMPARATOR_BWRAP=$PWD/scripts/bwrap-pkgs lake comparator --config comparator/config.json
 ```
 
-Formalized with Claude (Anthropic) in Claude Code, directed by J. Ortega-Cerdà. License:
-Apache-2.0 (`LICENSE`).
+Initial formalization with Claude (Anthropic) in Claude Code; Theorem F and Pavlov's
+BMO necessity consequence completed with Codex (OpenAI), using GPT-6.1 Sol subagents for implementation and independent review.
+Directed by J. Ortega-Cerdà. License: Apache-2.0 (`LICENSE`).

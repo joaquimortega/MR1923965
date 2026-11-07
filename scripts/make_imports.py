@@ -31,7 +31,8 @@ MODULES = [  # (module, title, file prefixes relative to FourierFrames/)
     ("P1", "Paley-Wiener theorem", ["Cited/PaleyWiener"]),
     ("P2", "Duffin-Schaeffer, John-Nirenberg", ["Cited/DSPerturbation", "Cited/JohnNirenberg"]),
     ("P3", "de Branges D, E", ["Cited/DeBrangesDE"]),
-    ("P4", "de Branges C (proved), F (deferred scaffold)", ["Cited/DeBrangesFC"]),
+    ("P4", "de Branges C, F (proved)", ["Cited/DeBrangesFC", "Cited/DeBrangesF"]),
+    ("P5", "Pavlov BMO necessity (proved)", ["Cited/Pavlov"]),
 ]
 
 

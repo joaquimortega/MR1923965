@@ -26,4 +26,6 @@ import FourierFrames.Cited.JohnNirenberg
 import FourierFrames.Cited.PaleyWiener
 import FourierFrames.Cited.DeBrangesDE
 import FourierFrames.Cited.DeBrangesFC
+import FourierFrames.Cited.DeBrangesF
+import FourierFrames.Cited.Pavlov
 import FourierFrames.Unconditional

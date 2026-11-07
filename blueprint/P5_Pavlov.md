@@ -1,127 +1,146 @@
-# P5 — Pavlov's theorem, BMO half (`PavlovBMO`)
+# P5 — Pavlov's theorem, BMO necessity (`PavlovBMO`)
 
-Lean file: none (no scaffold written, see verdict). Statement: `FF.PavlovBMO` in `FourierFrames/Defs.lean`.
-Paper: Theorem A (p. 791), used in the Claim on p. 799. Sources: [Pa79], [HNP81, p. 286].
-Depends on: (would need) P3/P4 only for route B. Used by: `FourierFrames/Landau.lean` (hypothesis `hA`).
+**Completed, 2026-11-07.** `FF.pavlovBMO_holds : FF.PavlovBMO` is proved in
+`FourierFrames/Cited/Pavlov.lean`, with helpers in `FourierFrames/Cited/Pavlov/`.
+The statement in `Defs.lean` is unchanged:
 
-## 0. Feasibility verdict
+> A separated complete interpolating sequence Γ for PW has
+> `x ↦ countFn Γ x - x` in `FF.MemBMO`.
 
-**Not feasible as a phase-2 module. Recommendation: keep `PavlovBMO` as the cited hypothesis `hA`.**
+This is the BMO necessity consequence of Theorem A used by the paper, not the
+full Pavlov iff criterion or its Helson–Szegő decomposition. It discharges the
+last cited hypothesis of `landau_inequality_unconditional`. The original
+conditional statements and historical wrappers remain available.
 
-Reasons (checked):
-* `grep -ril "muckenhoupt|hilbert transform|BoundedMeanOscillation"` over `.lake/packages/mathlib/Mathlib`
-  returns nothing. No Hilbert transform on ℝ, no `A_p` weights, no conjugate function, no BMO, no
-  Calderón–Zygmund theory, no Hardy-space factorization, no Poisson-integral/harmonic-conjugate theory on
-  the half-plane. (Only the `L²` Fourier isometry exists, which would allow defining the Hilbert transform
-  as the multiplier `-i sgn ξ` on `L²`.)
-* Both routes below need, besides this, the Cartwright/Hardy-class factorization of the generating function and an
-  `H¹`–BMO (Fefferman–Stein) or CZ-type argument. Estimate: 6000–10000 Lean lines, several of them genuinely
-  research-grade to formalize; far larger than P1–P4 individually. `JohnNirenberg` (P2) is a small fraction of it.
-* The *only* downstream use is to feed `JohnNirenberg` and obtain Landau's inequality (p. 799), so the cost/benefit is poor.
-* The Lean statement as frozen is true and faithful (CIS here is for `PW` on `[-π,π]`, `h` is a bounded-variation
-  step function minus `t`, hence `LocallyIntegrable`; `countFn` is finite on bounded sets for separated Γ). No change requested.
+The implementation contains 6761 lines in 37 project files, including the root
+module. [`P5_Statements.md`](P5_Statements.md) indexes 339 public interfaces
+across those modules. Its dependencies include the already proved Paley–Wiener and de Branges
+C/D/E results, the project's John–Nirenberg theorem, Mathlib, and a pinned subset
+of Tau Ceti. It does not depend on `Unconditional.lean` or assume `PavlovBMO`
+in a helper.
 
-## 1. Classical route (A): Γ CIS ⇒ `|G(x+i)|² ∈ A₂` ⇒ `h ∈ BMO`
+## 1. Cardinal functions, a grid, and local comparisons
 
-Let Γ be separated and CIS for PW. Steps, with every analytic fact used:
+Retain the exact sampling norm identity in the de Branges representation of a
+complete interpolating sequence. Rotating its Hermite–Biehler function produces
+a real entire generator G with exactly the simple real zeros Γ. Its normalized
+cardinals use the removable quotient `dslope G γ / deriv G γ`, belong to PW,
+and satisfy uniform norm and finite synthesis bounds. Separation and sampling
+provide a strictly increasing integer enumeration with lower and upper gap
+bounds, and a partition into midpoint cells.
 
-1. *Riesz basis of kernels.* CIS ⇔ `{k_γ/‖k_γ‖}_{γ∈Γ}` (`k_γ(z)=sin π(z-γ)/(π(z-γ))`) is a Riesz basis of PW
-   (open mapping + closed graph for the sampling map `f ↦ (f(γ))` onto `ℓ²`; this part is already
-   essentially in the project under P1/Theorem 1 machinery). Equivalently, `f ↦ (f(γ))_γ` is an isomorphism
-   `PW → ℓ²(Γ)`.
-2. *Generating function.* Γ separated, CIS ⇒ there is an entire `G` of exponential type π, `G(Γ)=0` simple zeros only,
-   with `G/(z-γ) ∈ PW` after a normalization `1/G'(γ)`, and every `f∈PW` is
-   `f(z)=G(z) Σ_γ f(γ)/(G'(γ)(z-γ))` (Lagrange interpolation). Needs: construction of `G` as a Lindelöf-type product,
-   Cartwright class, Hadamard factorization (Mathlib: partial).
-3. *Weighted Hilbert transform.* Put `w(x)=|G(x+i)|^{-2}`-type weight (the correct weight is `|G(x+i)|²`; the
-   discrete operator `(c_γ) ↦ Σ c_γ/(x-γ)` is bounded `ℓ²(|G'(γ)|^{-2}…) → L²(|G|^{2}… dx)` by step 1). Pass from the
-   discrete operator to the continuous Hilbert transform on `L²(|G(x+i)|²)` using separation and
-   `|G(x+i)|` being (comparable to) a constant on each interval `(γ,γ')` up to the factor `|x-γ|`
-   (HNP81 §, Lemma on local comparability, `|G(x+i)|² ≍ dist(x,Γ)²·|G'|²` fails near nodes, so one works at height `i`).
-   Result: `H` bounded on `L²(w)`.
-4. *`A₂`.* `H` bounded on `L²(w)` ⇒ `w ∈ A₂`: test `f=χ_I` (and `χ_J` for adjacent interval `J`, `|I|=|J|`) to get
-   `(⨍_I w)(⨍_I w^{-1}) ≤ C` (easy half of Hunt–Muckenhoupt–Wheeden: for `x∈J`, `|Hχ_I(x)| ≥ c` and
-   a sandwiching argument; ~1 page).
-5. *`A₂ ⇒ log w ∈ BMO`.* With `u=w/⨍_I w`: Jensen gives `⨍_I log u ≤ 0` and `⨍_I log u ≥ -log ⨍ u^{-1} ≥ -log C`; and
-   `⨍|log u| ≤ ⨍(u-1) + ⨍(u^{-1}-1)+…`, using `|log s| ≤ (s-1)+(1/s-1)`: osc ≤ `2C`-ish. Elementary.
-6. *From log-modulus to the counting function.* `log|G(x+i)|` is the real part of a function analytic in a half-plane; its
-   harmonic conjugate on the line is `arg G(x+i)`. One needs (i) the Poisson representation of `log|G|` in
-   `ℑz>0` (Cartwright class: `G(z)e^{iπz}∈ H^∞`-ish after division by the exponential factor; `log|G(x+iy)|=πy+P_y[log|G(·+i)|]`-type
-   formula, needs Nevanlinna/Smirnov factorization), (ii) the argument principle linking `arg G(x+i)` and
-   `π n_Γ(x)`: `|π n_Γ(x) - arg_x G(x+i)| ≤ C` (each zero changes arg by `π ± O(1)`, uses separation; *wrong as
-   justified, see §7, R7-18*), and (iii)
-   **the Hilbert transform maps BMO into BMO** modulo constants (Fefferman–Stein; or since `log w∈BMO` is
-   `L^p_loc` by John–Nirenberg, apply CZ to the localized + tail decomposition). Then
-   `π h(x) = ±H[log|G(·+i)|](x) + bounded + linear term cancelled by the type π`, so `h∈BMO`.
+A rectangle Harnack estimate applies to zero-free cardinals on their cells.
+It uses a fixed domain and a target-dependent complex affine map, so the
+constant is uniform even when the actual interval length varies. This yields
+uniform comparisons between the generating function at a small positive height
+and its derivatives at the nodes, as well as the corresponding real-axis
+comparison with the factor `|x-γ|`.
 
-Weak point of (A): items 2, 3 and 6 each take a full paper; 6(iii) requires either John–Nirenberg + CZ kernels or
-the `H¹`–BMO duality. None exist in Mathlib.
+Files: `Cardinal`, `Harnack`, `CellBounds`. Details:
+[`P5_Cardinal.md`](P5_Cardinal.md), [`P5_Harnack.md`](P5_Harnack.md).
 
-## 2. De Branges route (B)
+## 2. Finite weighted tests and boundary BMO
 
-Γ CIS ⇒ (project: `completeInterpolating_zero_set`, `FourierFrames/Corollary1.lean:270`, which takes `hPW hC hD`)
-Γ = `{φ_E ∈ α+πℤ}` for `E` with `H(E)=PW` isometrically(no: with equivalent norms ⇒ `|E|^{-2}` and `1` are
-comparable *as norms on `PW`*, not as weights). Then `n_Γ(t)=φ_E(t)/π+O(1)` and one needs `φ_E(t)-πt∈BMO`. Here `φ_E'(x)=πK(x,x)/|E(x)|²`
-and `H(E)=PW` again gives that `|E|^{-2}` satisfies a Muckenhoupt-type condition *for the Paley–Wiener projection*, which must still be
-converted into `A₂` via steps 3–4 and into BMO of `φ_E - πt = arg`-conjugate via 6. So (B) does not avoid the harmonic-analysis core;
-it only replaces step 2 by Theorems C/D (already hypotheses) at the price of depending on P3/P4 (still sorry'd). Not cheaper. Route (A) is the standard
-one and what HNP81 do. (*R7-17:* cheaper on the periphery, identical on the core; see §7.)
+Finite cardinal synthesis and shifted Plancherel–Pólya estimates bound a
+weighted Cauchy matrix. Testing separated consecutive blocks in both directions
+and applying finite Cauchy–Schwarz yields a discrete A₂ inequality for the
+positive weights `|G'(γ)|²`. Cell comparisons transfer it to the positive
+continuous weight `|G(x+iε)|²`, including intervals smaller than one cell.
 
-## 3. Alternative: a direct proof of the BMO estimate
+Elementary logarithm inequalities imply BMO of the shifted logarithmic modulus.
+The difference between the real and shifted logarithms is the cell log-distance
+function plus a uniformly bounded error. The log-distance has a direct uniform
+BMO estimate on short and long intervals. Thus `u(x)=log|G(x)|` belongs to BMO;
+its values at the countable zero set do not affect this conclusion.
 
-No direct elementary argument is known. Landau-type counting `|n_Γ(b)-n_Γ(a)-(b-a)|=O(log)` (Beurling/Duffin–Schaeffer) is weaker
-than BMO and does not suffice for John–Nirenberg exponential integrability needed on p. 799. The p. 799 Claim needs only
-`h∈BMO` in the form "mean oscillation bounded", exactly the Lean `MemBMO`.
+Files: `Weights`, `WeightTransfer`, `BoundaryWeight`, `BMO`, `LogDistance*`.
+Details: [`P5_A2.md`](P5_A2.md), [`P5_BMO.md`](P5_BMO.md),
+[`P5_LogDistance.md`](P5_LogDistance.md).
 
-## 4. Size and risks if someone nevertheless attempts it
+## 3. Weighted Schwarz integrals and exact dispersion
 
-* Hilbert transform + A₂ necessity (steps 3–4): ~1500 lines. Real risk: local-to-global transfer in step 3.
-* Cartwright class / generating function / argument-principle estimate (2, 6(i)(ii)): ~2500–4000 lines.
-* Conjugation on BMO (6(iii)): ~2000–3000 lines (CZ decomposition on ℝ; shares machinery with P2 John–Nirenberg).
-* Total 6k–10k lines; none of the infrastructure exists; I would not schedule it.
+Dyadic interval growth of BMO means proves integrability of `u(t)/(1+t²)`.
+The regularized Schwarz integral is holomorphic in the upper half-plane, with
+real part the Poisson integral and imaginary part the normalized conjugate
+Poisson integral. Its two kernel terms are kept together, avoiding subtraction
+of divergent integrals.
 
-## 5. Issues in the source
+For the bounded zero-free upper-half-plane function
+`A(z)=exp(iπz)*cardinal G γ₀ z`, compact maximum-principle comparison proves
+`log|A|≤P[log|A|]`. It compares squared holomorphic moduli and continuous
+clipped boundary data, so real zeros cause no invalid finite-logarithm
+continuity assumption. Finite-order analytic factorization and the exact
+Poisson formula for `log|t-a|` cancel each boundary singularity, making the
+nonnegative harmonic defect continuous and zero on the real axis.
 
-* Theorem A (tex l. 200–207) is stated as iff with the Helson–Szegő decomposition `P₁[h]=ũ+v+C`, `‖v‖_∞<1/4`; only the
-  forward implication's weaker consequence `h∈BMO` is used (tex l. 650: "we will only need the fact that h∈BMO"). The Lean
-  `PavlovBMO` records exactly that. Confident.
-* Lean-edge check: `MemBMO` quantifies over all `a<b`; `countFn Γ t - t` is locally bounded and measurable, so `LocallyIntegrable` holds
-  trivially for separated Γ. Confident.
+Odd harmonic reflection, solved locally by the disk Dirichlet problem, and the
+existing entire Pick-function classification identify the defect as `a Im z`,
+`a≥0`. The associated outer comparison is in H² by Jensen and Tonelli. If
+`a>0`, multiplying a cardinal by a small sine produces a nonzero PW function
+vanishing on Γ, contradicting complete-interpolation uniqueness. Hence a=0.
+This gives the exact upper-half-plane logarithmic dispersion identity for G;
+no general Cartwright factorization theorem is assumed.
 
-## 6. Requested changes to M00
+Files: `BMOIntervalGrowth`, `BMOLogIntegrable`, `Schwarz`, `SchwarzBoundary`,
+`LogPoissonKernel`, `LogClipping`, `LogPoisson`, `LogPoissonBoundary`,
+`HarmonicReflection`, `OuterComparison`, `CardinalLog`, `NoExponentialDefect`,
+`GeneratingDispersion`. Details: [`P5_Dispersion.md`](P5_Dispersion.md) and its
+specialized `P5_*` implementation notes.
 
-None. Keep `hA : PavlovBMO` as an explicit hypothesis in the final theorems (or the paper-level theorems stay conditional on it).
+## 4. Uniform conjugate-Poisson BMO and the boundary staircase
 
-## 7. Referee corrections (R7)
+The conjugate-Poisson kernel is realized by an L² Fourier multiplier with norm
+at most one. A localized decomposition, John–Nirenberg L² oscillation, and a
+dyadic far-field estimate give BMO bounds independent of the positive height.
+The project proves the kernel realization and extends the localized estimate
+to arbitrary BMO data. Its direct near/far argument does not invoke the
+Calderón–Zygmund endpoint theorem that is also present in the vendored subset.
 
-From `reviews/R7_Cited.md`, Part 3 (2026-11-07). R7 confirms the statement (`PavlovBMO` is the forward half
-of Theorem A weakened to `h ∈ BMO`, all the Claim uses), the Mathlib inventory, and the verdict: not
-feasible, keep `hA`.
+An upper logarithm of G has boundary imaginary part
+`-π countFn Γ x + constant` away from Γ. Exact dispersion consequently
+identifies the conjugate-Poisson boundary limit as
+`-π(countFn Γ x-x)+constant`. Pairwise mean oscillation and Fatou pass the
+uniform BMO estimate to that limit without assuming convergence of interval
+means. Separation independently supplies local integrability of the counting
+discrepancy.
 
-1. **Route B is undersold, but the core remains (R7-17).** Replace "Not cheaper" in §2 by: *cheaper on the
-   periphery (counting function, `φ' ≍ |E|^{-2}`, both available), identical on the core (`A₂`, Poisson
-   representation, BMO conjugation).*
-   - With `completeInterpolating_zero_set`, `Γ` is exactly a level set `{φ_E ∈ α + πℤ}` of a continuous
-     increasing phase, so `|n_Γ(t) − (φ_E(t) − φ_E(0))/π| ≤ 1`. This removes step 2 (the generating
-     function) of route A and step 6(ii).
-   - `φ'_E ≍ |E|^{-2}` follows from `K_E(x,x) ≍ K_PW(x,x) = 1` and `φ'|E|² = πK_E(x,x)`; the project has it
-     as `HEEqPW.phaseDeriv_mul_sq_ge`/`_le` (`HB/DeBranges.lean`).
-   - What remains: `|E|² ∈ A₂(ℝ)` from the norm equivalence (necessity half of Hunt–Muckenhoupt–Wheeden, in
-     Lyubarskii–Seip form); `log|E| ∈ BMO`; the representation `φ_E(x) − πx = −H̃[log|E|](x) + c` (Cartwright
-     class, boundary theory in `ℂ₊`); conjugation on BMO.
-   - The coupling of the third item cannot be bypassed: information on `φ'` alone, even `φ' ∈ A₂`, does not
-     give BMO. Example: `v(t) = 1 + ½ sin log(1 + |t|)` is bounded above and below (so in `A₂`), but
-     `∫_0^t (v − 1)` is `t` times an oscillating factor and is not in BMO. What forces BMO is that
-     `log φ' = −2 log|E| + O(1)` and `φ − πx` are harmonic conjugates; asking for "`|E|²` comparable to a
-     weight with bounded conjugate behaviour" is the hard direction of Helson–Szegő.
-   - Route B also makes `PavlovBMO` conditional on `hC`, `hD`. Net cost at least 4–5k lines; 6–10k for
-     route A is the right order. Replacing `hA` by a weaker `Prop` (the two-sided bound
-     `osc_I h ≤ A log|I| + B`) would assume Landau-type estimates and empty the Claim; not recommended.
-2. **Route A, step 6(ii) is wrong as justified (R7-18).** Exactly,
-   `d/dx arg G(x + i) = −Σ_γ 1/((x − γ)² + 1) = −π P_1[dn_Γ](x)`, so `arg G(x + i) = −π P_1[n_Γ](x) + c` and
-   `π n_Γ + arg G(x + i) = π(h − P_1[h]) + c`. The per-zero `O(1)` errors have a tail `~ Σ 1/(x − γ)`, a
-   conditionally convergent Hilbert-type sum, not `O(1)`. The bound holds a posteriori once `h ∈ BMO`, so
-   using it inside the proof is circular; this is why Theorem A is phrased with `P_1[h]`. Route A needs an
-   extra lemma: for separated `Γ`, `P_1[h] ∈ BMO ⇒ h ∈ BMO`. Route B avoids the step (item 1). The weight
-   sentence of step 3 ("`|G(x+i)|^{-2}`-type weight (the correct weight is `|G(x+i)|²` …)") is garbled and
-   should be rewritten if route A is ever used.
+Files: `ConjugatePoisson`, `BMOSecondMoment`, `PoissonBMOKernel`,
+`PoissonBMONear`, `PoissonBMOFar`, `PoissonBMO`, `BoundaryPhase`,
+`BoundaryPhaseCount`, `Fatou`, `CountingBMO`, and the root `Pavlov.lean`.
+Details: [`P5_HilbertL2.md`](P5_HilbertL2.md),
+[`P5_PoissonBMO.md`](P5_PoissonBMO.md), [`P5_BoundaryPhase.md`](P5_BoundaryPhase.md),
+[`P5_CountingBMO.md`](P5_CountingBMO.md).
+
+## 5. Dependencies and verification
+
+The selected Tau Ceti release is `v4.35.0`, commit
+`1f9b4414105d86e487a4ac4c3d3397076a44d0d2`. Its 41 modules, 8882 lines,
+are copied unchanged, with the Apache-2.0 license and full import-closure
+inventory in [`TauCeti/VENDORED.md`](../TauCeti/VENDORED.md). The library uses
+upstream's `autoImplicit` and `relaxedAutoImplicit` options, scoped to Tau Ceti;
+project options are unchanged.
+
+The modular blueprints were independently reviewed in
+[`R13_Pavlov_Blueprint.md`](../reviews/R13_Pavlov_Blueprint.md). The end-to-end
+assembly and logarithmic dispersion received separate code audits in
+[`R14_Pavlov_Code.md`](../reviews/R14_Pavlov_Code.md) and
+[`R15_Pavlov_Dispersion.md`](../reviews/R15_Pavlov_Dispersion.md). All reported
+approval without mathematical defects. The full project and compatibility builds passed without warnings; the
+46-theorem comparator was accepted on 2026-11-07 (`comparator/last_run.log`). Axiom audits of
+`pavlovBMO_holds` and `landau_inequality_unconditional` report only `propext`,
+`Classical.choice`, and `Quot.sound`.
+
+## 6. Historical assessment and retained cautions
+
+The initial phase-2 assessment deferred P5 because Mathlib lacked the necessary
+weighted and BMO infrastructure. That assessment described the missing work;
+it is superseded by this implementation, which develops the needed specialized
+bridges and reuses the pinned Tau Ceti analytic tools.
+
+Two cautions from referee R7 remain relevant. Equivalent norms on PW do not
+imply pointwise comparability of weights. Also, summing per-zero argument errors
+at a fixed positive height does not prove a bounded counting-function error;
+its Hilbert-type tail can make that reasoning circular. The implemented route
+uses finite weighted tests and exact boundary dispersion instead. The proof
+establishes the unchanged BMO necessity statement, without replacing it by the
+weaker Landau counting estimate or claiming the full Pavlov characterization.

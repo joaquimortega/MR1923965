@@ -18,11 +18,17 @@ rev = "v4.35.0"
 [[lean_lib]]
 name = "OrtegaCerdaSeip"
 
+# Selected, unchanged Tau Ceti v4.35.0 modules for the Pavlov proof.
+# See TauCeti/VENDORED.md for the immutable upstream pin and license.
+[[lean_lib]]
+name = "TauCeti"
+leanOptions = { autoImplicit = true, relaxedAutoImplicit = true }
+
 [[lean_lib]]
 name = "FourierFrames"
 
 # Self-contained statements file and its solution, checked by `comparator` (see comparator/).
-# Phase-2 scaffolds still containing `sorry` (not in the default target).
+# Compatibility target for the former phase-2 scaffold (now proved).
 [[lean_lib]]
 name = "FourierFramesScaffold"
 

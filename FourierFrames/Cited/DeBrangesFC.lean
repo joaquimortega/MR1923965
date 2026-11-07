@@ -4,7 +4,8 @@ import FourierFrames.Cited.DeBrangesFC.Kernel
 # P4 — de Branges' Theorems C and F
 
 See `blueprint/P4_DeBrangesFC.md`.  **Part C is proved**: `theoremC_holds` depends only on
-`propext`, `Classical.choice`, `Quot.sound`.  Part F is deferred: its scaffold (statements only, `sorry`) is in `Cited/DeBrangesFC/PartF.lean`, built only by `FourierFramesScaffold`.
+`propext`, `Classical.choice`, `Quot.sound`. Part F is proved separately in
+`Cited/DeBrangesF.lean` by the elementary kernel argument of `blueprint/P4F_Elementary.md`.
 
 **Part C** (Theorem 23) goes through P3 (`Cited/DeBrangesDE`); the proofs are split over
 `DeBrangesFC/Analytic.lean` (§1.1–1.2), `DeBrangesFC/Space.lean` (§1.3) and
@@ -21,7 +22,7 @@ See `blueprint/P4_DeBrangesFC.md`.  **Part C is proved**: `theoremC_holds` depen
   contraction `H → H(E)`, the reproducing formula upgrades it to an isometry, and Riesz in `H`
   (not a projection in `H(E)`) shows that it is onto.
 
-**Part F** (Theorem 32) is deferred: statements only (with referee R7's correction of F.4).
+**Part F** (Theorem 32) is proved in `Cited/DeBrangesF.lean`; it uses Part C's analytic toolkit.
 -/
 
 open MeasureTheory Set Complex Filter Topology

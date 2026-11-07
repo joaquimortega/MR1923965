@@ -11,14 +11,14 @@ v4.35 ships it as `lake comparator`. It checks that every theorem in `config.jso
 
 | File | Role |
 |---|---|
-| `../FFChallenge.lean` | **The self-contained file with the main results.** It imports only `Mathlib`, contains every definition used in the statements (a verbatim copy of `FourierFrames/Defs.lean`, including the cited results as `Prop`s) and states the 39 theorems with `sorry`. |
-| `statements.lean` | The 39 statements (main theorems, proved cited results, discharged versions), copied verbatim from the project. |
+| `../FFChallenge.lean` | **The self-contained file with the main results.** It imports only `Mathlib`, contains every definition used in the statements (a verbatim copy of `FourierFrames/Defs.lean`, including the cited results as `Prop`s) and states the 46 theorems with `sorry`. |
+| `statements.lean` | The 46 statements (main theorems, proved cited results, discharged versions), copied verbatim from the project. |
 | `../scripts/make_challenge.py` | Regenerates `FFChallenge.lean`, `FFSolution.lean` and `config.json` from `Defs.lean` and `statements.lean`. |
 | `../FFSolution.lean` | `import FourierFrames`. The project proves the theorems with the same names (namespace `FF`). |
-| `config.json` | The comparator configuration (39 theorems). |
+| `config.json` | The comparator configuration (46 theorems). |
 | `last_run.log` | The log of the last accepted run. |
 
-## The 39 theorems
+## The 46 theorems
 
 **The fifteen main statements**, with the cited results they use as explicit `Prop` hypotheses
 (phase 1):
@@ -40,7 +40,7 @@ v4.35 ships it as `lake comparator`. It checks that every theorem in `config.jso
 The cited results (Paley–Wiener, de Branges' Theorems C, D, E, F, Pavlov's Theorem A, John–Nirenberg,
 Duffin–Schaeffer's Lemma III) appear as explicit hypotheses of the theorems that use them.
 
-**Six cited results, proved** (phase 2; `blueprint/PHASE2.md`):
+**Eight cited results, proved** (phase 2; `blueprint/PHASE2.md`):
 
 | Name | Cited result |
 |---|---|
@@ -49,30 +49,41 @@ Duffin–Schaeffer's Lemma III) appear as explicit hypotheses of the theorems th
 | `FF.theoremC_holds` | de Branges' Theorem C, axiomatic characterization of the spaces `H(E)` (`Cited/DeBrangesFC.lean`) |
 | `FF.theoremD_holds` | de Branges' Theorem D, the reproducing kernel of `H(E)` (`Cited/DeBrangesDE.lean`) |
 | `FF.theoremE_holds` | de Branges' Theorem E, orthogonal sampling on the level sets of the phase (`Cited/DeBrangesDE.lean`) |
+| `FF.theoremF_holds` | de Branges' Theorem F, isometric measures (`Cited/DeBrangesF.lean`; elementary normalized-kernel route, review R11) |
 | `FF.dsPerturbation_holds` | Lemma III of Duffin–Schaeffer (`Unconditional.lean`, from `dsPerturbation_of_paleyWiener`) |
+| `FF.pavlovBMO_holds` | Pavlov's BMO necessity consequence, not the full iff criterion (`Cited/Pavlov.lean`; reviews R13–R15) |
 
-**Eighteen main statements with the proved cited results discharged** (`FourierFrames/Unconditional.lean`).
-The remaining hypotheses are de Branges' Theorem F and Pavlov's Theorem A, which are not proved.
+**Twenty-three main statements with the proved cited results discharged** (`FourierFrames/Unconditional.lean`).
+All eight cited results are proved in the forms used. Historical conditional versions are retained.
 
-*Unconditional* (nine):
+*Unconditional* (thirteen):
 
 | Name | Paper |
 |---|---|
 | `FF.isFourierFrame_iff_isSampling_unconditional` | p. 790: Fourier frame ⟺ sampling |
 | `FF.heEqPW_of_comparable_unconditional` | p. 799: `|E(z)| ≃ e^{π Im z}` ⇒ `H(E) = PW` |
 | `FF.theorem1_sufficiency_unconditional` | Theorem 1, sufficiency |
+| `FF.theorem1_necessity_unconditional`, `FF.theorem1_unconditional` | Theorem 1, necessity; Theorem 1 |
+| `FF.corollary1_unconditional` | Corollary 1 |
 | `FF.completeInterpolating_zero_set_unconditional` | remark p. 797 |
 | `FF.logExample_isCompleteInterpolating_unconditional`, `FF.landau_sharp_unconditional` | the example of p. 798 and the sharpness of Landau's inequality |
 | `FF.corollary2_unconditional` | Corollary 2 |
 | `FF.theorem2_i_unconditional`, `FF.theorem2_i_of_densityBound_unconditional` | Theorem 2 (i), both versions |
+| `FF.landau_inequality_unconditional` | the Claim of §4 (Landau's inequality) |
 
-*Conditional on the unproved cited results only* (four):
+*Historical version, stated before Pavlov's BMO necessity was proved* (one):
 
 | Name | Paper | Remaining hypotheses |
 |---|---|---|
-| `FF.theorem1_necessity_of_theoremF`, `FF.theorem1_of_theoremF` | Theorem 1, necessity; Theorem 1 | `TheoremF` |
-| `FF.corollary1_of_theoremF` | Corollary 1 | `TheoremF` |
-| `FF.landau_inequality_of_theoremF_pavlov` | the Claim of §4 (Landau's inequality) | `TheoremF`, `PavlovBMO` |
+| `FF.landau_inequality_of_pavlov` | the Claim of §4 (Landau's inequality) | `PavlovBMO` |
+
+*Historical versions, stated before Theorem F was proved* (four):
+
+| Name | Retained hypotheses |
+|---|---|
+| `FF.theorem1_necessity_of_theoremF`, `FF.theorem1_of_theoremF` | `TheoremF` |
+| `FF.corollary1_of_theoremF` | `TheoremF` |
+| `FF.landau_inequality_of_theoremF_pavlov` | `TheoremF`, `PavlovBMO` |
 
 *Intermediate versions, stated before Theorem C was proved* (five; each is the corresponding version above
 with `TheoremC` still a hypothesis):
@@ -104,6 +115,7 @@ Lean default kernel accepts the solution
 Your solution is okay!
 ```
 
-Obtained on 2026-11-07 with Lean v4.35.0 and Mathlib v4.35.0 for all 39 theorems
-(`last_run.log`). The challenge build reports one `declaration uses 'sorry'` warning per theorem
-(39), as expected; the solution build has none.
+The current target comprises 46 theorems (15 original statements, eight proved cited results,
+and 23 discharged versions including historical versions). See `last_run.log` for the latest
+accepted verification on 2026-11-07. The challenge build reports one `declaration uses 'sorry'` warning per theorem
+(46), as expected; the implementation and solution contain no `sorry`.
