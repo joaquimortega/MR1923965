@@ -23,3 +23,30 @@
 * `norm_heInner_sq_le`: via `ENNReal.lintegral_mul_le_Lp_mul_Lq` (p = q = 2), as in the blueprint.
 * `memHE_of_cauchy`: the uniform bound `B` on `‖f n‖²` is only needed eventually
   (`n ≥ N(1)`), since the Fatou helper takes an eventual bound.
+
+## Interface with Kernel.lean (Theorem D implementer)
+* `conj_deBrangesKernel` changes signature in the other branch (`hE` dropped, `E` explicit).  To
+  be independent of either version, Theorem E uses a self-contained copy
+  `deBrangesKernel_conj_symm (E) (w z)` in `Cited/DeBrangesDE/EAux/KernelSymm.lean` (proved for
+  every `E`, with `deriv_fstar` on the diagonal).  `fstar_deBrangesKernel` is not used.
+* Other Kernel black boxes used: `deBrangesKernel_mul`, `deBrangesKernel_diag_real`,
+  `memHE_deBrangesKernel`, `heInner_kernel`, `exists_bound_deBrangesKernel`,
+  `isH2Cont_of_memHE`, `MemHE.heNormSq_lt_top`, `integrable_heInner`, `kernelNum`; from Cauchy:
+  `IsH2Cont.lintegral_line_le`.
+
+## Orthogonal
+* Import changed to `EAux/KernelSymm` (which imports `Space`).
+* **Changed statements** (unused hypothesis `D : DBData E φ` removed, flagged by the linter):
+  `fstar_dFun (E φ α)` (true for every `E`: `C^* = C`, and each Mittag-Leffler term satisfies
+  `conj r_γ(z̄) = r_γ(z)`; `Complex.conj_tsum` needs no summability) and `defectKer_diag (w)`
+  (`Complex.ofReal_tsum` needs no summability).
+* Added helpers: `conj_exp_I_mul`, `conj_exp_neg_I_mul`, `exp_neg_mul_exp`,
+  `exp_I_mul_sub_pi_div_two`, `cFun_ofReal`, `sFun_ofReal` (on `ℝ`, `C = Re U`, `S = Im U`),
+  `sFun_level`, `im_U_level`, `cFun_level_real`, `conj_cFun_level`, `norm_cFun_level_sq`,
+  `hasDerivAt_sFun`, `deriv_sFun_ofReal`, `conj_mul_wt_mul`, `finite_level_abs_lt`,
+  `differentiable_dslope_sFun`, `differentiable_rTerm`, `sFun_conj`, `dslope_sFun_conj`,
+  `conj_rTerm_conj`, `rTerm_level_ne`, `rTerm_level_self`, `cFun_level_ne_zero`.
+* `heNormSq_partialSum` is proved from `heInner_partialSum` + `partialSum_level` (simpler than the
+  double sum of the blueprint).
+* `im_hFun_nonneg`: only `Re Q(w,w) ≥ 0` is needed (imaginary part of the identity
+  `Q·π·2i Im w = |S|²·2i Im h`), not the reality of `Q(w,w)`.

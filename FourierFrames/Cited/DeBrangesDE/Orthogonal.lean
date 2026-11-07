@@ -760,13 +760,33 @@ theorem exists_hFun (D : DBData E φ) (α : ℝ) :
 theorem defect_term_eq (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) (w z : ℂ) :
     deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * (wt E γ : ℂ) =
       (cLev E γ : ℂ) * conj (dslope (sFun E α) (γ : ℂ) w) * dslope (sFun E α) (γ : ℂ) z := by
-  sorry
+  rw [← deBrangesKernel_conj_symm E (γ : ℂ) w, kernel_level_eq_dslope D hγ w,
+    kernel_level_eq_dslope D hγ z, map_mul, map_neg, map_div₀, conj_cFun_level D hγ,
+    Complex.conj_ofReal, cFun_level_real D hγ]
+  have hc : (cFun E α γ).re ≠ 0 := by
+    intro h
+    exact cFun_level_ne_zero D hγ (by rw [cFun_level_real D hγ, h, Complex.ofReal_zero])
+  have h1 := (D.strict.phaseDeriv_pos (D.noZero γ)).ne'
+  have hc' : ((cFun E α γ).re : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hc
+  have h1' : (phaseDeriv E γ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr h1
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  unfold wt cLev
+  rw [← (cFun_level D hγ).2]
+  push_cast
+  field_simp
 
 /-- Summability of the defect series (AM–GM and `summable_cLev_dslope_sq`). -/
 theorem summable_defect (D : DBData E φ) (w z : ℂ) :
     Summable (fun γ : phaseLevel φ α ↦
       deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * ((wt E γ : ℝ) : ℂ)) := by
-  sorry
+  have hw := (summable_cLev_dslope_sq (α := α) D w).1
+  have hz := (summable_cLev_dslope_sq (α := α) D z).1
+  refine Summable.of_norm_bounded ((hw.add hz).div_const 2) fun γ ↦ ?_
+  have hc := cLev_pos D γ
+  rw [defect_term_eq D γ.2, norm_mul, norm_mul, Complex.norm_conj, Complex.norm_real,
+    Real.norm_eq_abs, abs_of_pos hc]
+  nlinarith [mul_nonneg hc.le (sq_nonneg (‖dslope (sFun E α) (γ : ℂ) w‖ -
+    ‖dslope (sFun E α) (γ : ℂ) z‖))]
 
 /-- Termwise identity: for `γ ∈ Γ`,
 `(z - w̄) K(w,γ) K(γ,z) wt(γ) = S(z) conj (r_γ(w)) - conj S(w) r_γ(z)`
@@ -775,29 +795,86 @@ theorem summable_defect (D : DBData E φ) (w z : ℂ) :
 theorem term_identity (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) (w z : ℂ) :
     (z - conj w) * (deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * (wt E γ : ℂ)) =
       sFun E α z * conj (rTerm E α γ w) - conj (sFun E α w) * rTerm E α γ z := by
-  sorry
+  rw [defect_term_eq D hγ]
+  have hS : ∀ u : ℂ, sFun E α u = (u - γ) * dslope (sFun E α) (γ : ℂ) u := fun u ↦ by
+    have := sub_smul_dslope (sFun E α) (γ : ℂ) u
+    rw [smul_eq_mul, sFun_level D hγ, sub_zero] at this
+    exact this.symm
+  rw [hS z, hS w]
+  unfold rTerm
+  simp only [map_mul, map_div₀, map_add, map_one, map_pow, map_sub, Complex.conj_ofReal]
+  have h2 : (1 + (γ : ℂ) ^ 2) ≠ 0 := by norm_cast; positivity
+  field_simp
+  ring
 
 /-- **Mittag-Leffler identity**: `Q(w,z) π (z - w̄) = S(z) conj S(w) (h(z) - conj h(w))`. -/
 theorem defectKer_mul (D : DBData E φ) {h : ℂ → ℂ}
     (hh : ∀ z, dFun E φ α z = h z * sFun E α z) (w z : ℂ) :
     defectKer E φ α w z * (Real.pi * (z - conj w)) =
       sFun E α z * conj (sFun E α w) * (h z - conj (h w)) := by
-  sorry
+  have hsum : (z - conj w) * ∑' γ : phaseLevel φ α,
+      deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * ((wt E γ : ℝ) : ℂ) =
+      sFun E α z * conj (rFun E φ α w) - conj (sFun E α w) * rFun E φ α z := by
+    rw [← tsum_mul_left, tsum_congr (fun γ : phaseLevel φ α ↦ term_identity D γ.2 w z),
+      Summable.tsum_sub ((Complex.summable_conj.mpr (summable_rTerm D α w)).mul_left _)
+        ((summable_rTerm D α z).mul_left _), tsum_mul_left, tsum_mul_left, ← Complex.conj_tsum]
+    rfl
+  have hD : ∀ u, dFun E φ α u = cFun E α u + Real.pi * rFun E φ α u := fun u ↦ rfl
+  have hK := kernel_mul_CS E α w z
+  unfold defectKer
+  calc (deBrangesKernel E w z - ∑' γ : phaseLevel φ α,
+        deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * ((wt E γ : ℝ) : ℂ)) *
+        (Real.pi * (z - conj w))
+      = deBrangesKernel E w z * (Real.pi * (z - conj w)) - Real.pi * ((z - conj w) *
+          ∑' γ : phaseLevel φ α,
+            deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) z * ((wt E γ : ℝ) : ℂ)) := by
+        ring
+    _ = (cFun E α z * conj (sFun E α w) - sFun E α z * conj (cFun E α w)) -
+          Real.pi * (sFun E α z * conj (rFun E φ α w) - conj (sFun E α w) * rFun E φ α z) := by
+        rw [hK, hsum]
+    _ = conj (sFun E α w) * dFun E φ α z - sFun E α z * conj (dFun E φ α w) := by
+        rw [hD, hD, map_add, map_mul, Complex.conj_ofReal]
+        ring
+    _ = sFun E α z * conj (sFun E α w) * (h z - conj (h w)) := by
+        rw [hh z, hh w, map_mul]
+        ring
 
-/-- `Q(w, w) = K(w,w) - Σ_γ wt(γ) |K(w,γ)|²`. -/
-theorem defectKer_diag (D : DBData E φ) (w : ℂ) :
+/-- `Q(w, w) = K(w,w) - Σ_γ wt(γ) |K(w,γ)|²` (no hypothesis on `E`: the `tsum` of the real
+numbers `wt |K(w,γ)|²` is cast termwise by `Complex.ofReal_tsum`). -/
+theorem defectKer_diag (w : ℂ) :
     (defectKer E φ α w w).re =
       (deBrangesKernel E w w).re - ∑' γ : phaseLevel φ α,
         wt E γ * ‖deBrangesKernel E w γ‖ ^ 2 := by
-  sorry
+  unfold defectKer
+  have hterm : ∀ γ : phaseLevel φ α,
+      deBrangesKernel E w γ * deBrangesKernel E (γ : ℂ) w * ((wt E γ : ℝ) : ℂ) =
+        ((wt E γ * ‖deBrangesKernel E w γ‖ ^ 2 : ℝ) : ℂ) := by
+    intro γ
+    rw [← deBrangesKernel_conj_symm E w (γ : ℂ), Complex.mul_conj, Complex.normSq_eq_norm_sq]
+    push_cast
+    ring
+  rw [tsum_congr hterm, ← Complex.ofReal_tsum, Complex.sub_re, Complex.ofReal_re]
 
 /-- `Q(w, w) ≥ 0` (Bessel for `f = K_w`). -/
 theorem defectKer_diag_nonneg (D : DBData E φ) (w : ℂ) : 0 ≤ (defectKer E φ α w w).re := by
-  sorry
+  rw [defectKer_diag w]
+  have hb := (bessel (α := α) D (memHE_deBrangesKernel D.strict.1 D.noZero w)).2
+  rw [heNormSq_kernel D.strict.1 D.noZero] at hb
+  linarith
 
 /-- `Im h(w) ≥ 0` on `ℂ₊`: `Q(w,w) = |S(w)|² Im h(w) / (π Im w)`. -/
 theorem im_hFun_nonneg (D : DBData E φ) {h : ℂ → ℂ}
     (hh : ∀ z, dFun E φ α z = h z * sFun E α z) {w : ℂ} (hw : 0 < w.im) : 0 ≤ (h w).im := by
-  sorry
+  have h1 := defectKer_mul D hh w w
+  rw [Complex.sub_conj w, Complex.sub_conj (h w), Complex.mul_conj] at h1
+  have h2 := congrArg Complex.im h1
+  simp only [Complex.mul_im, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im] at h2
+  have hQ := defectKer_diag_nonneg (α := α) D w
+  have hS : 0 < Complex.normSq (sFun E α w) :=
+    Complex.normSq_pos.mpr (sFun_ne_zero D hw.ne')
+  have hπ := Real.pi_pos
+  have h3 : 0 ≤ (defectKer E φ α w w).re * (Real.pi * (2 * w.im)) := by positivity
+  nlinarith
 
 end FF
