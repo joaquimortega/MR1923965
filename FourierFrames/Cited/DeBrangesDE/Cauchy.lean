@@ -754,11 +754,88 @@ theorem IsH2Cont.poisson {F : ℂ → ℂ} (hF : IsH2Cont F) {w : ℂ} (hw : 0 <
   have h2 : (2 * Real.pi * I : ℂ) ≠ 0 := by simp [Real.pi_ne_zero]
   exact (mul_left_cancel₀ h2 hsub).symm
 
+/-- The Poisson kernel has mass one: `∫⁻ ofReal (y/(π((s-a)² + y²))) ds = 1`. -/
+theorem lintegral_poissonKernel (a : ℝ) {y : ℝ} (hy : 0 < y) :
+    ∫⁻ s : ℝ, ENNReal.ofReal (y / (Real.pi * ((s - a) ^ 2 + y ^ 2))) = 1 := by
+  have h : (fun s : ℝ ↦ y / (Real.pi * ((s - a) ^ 2 + y ^ 2))) =
+      fun s ↦ y / Real.pi * ((s - a) ^ 2 + y ^ 2)⁻¹ := by
+    funext s
+    field_simp
+  rw [← ofReal_integral_eq_lintegral_ofReal, h, integral_const_mul, integral_inv_sq_add_sq a hy]
+  · field_simp
+    simp
+  · rw [h]
+    exact (integrable_inv_sq_add_sq a hy.ne').const_mul _
+  · exact Eventually.of_forall fun s ↦ by positivity
+
+/-- Cauchy–Schwarz for a probability density `a`: `(∫⁻ a b)² ≤ ∫⁻ a b²`. -/
+theorem sq_lintegral_mul_le {a b : ℝ → ℝ≥0∞} (ha : Measurable a) (hb : Measurable b)
+    (h1 : ∫⁻ t, a t = 1) : (∫⁻ t, a t * b t) ^ 2 ≤ ∫⁻ t, a t * b t ^ 2 := by
+  have hH := ENNReal.lintegral_mul_le_Lp_mul_Lq volume Real.HolderConjugate.two_two
+    (f := fun t ↦ a t ^ (1 / 2 : ℝ)) (g := fun t ↦ a t ^ (1 / 2 : ℝ) * b t)
+    (ha.pow_const _).aemeasurable ((ha.pow_const _).mul hb).aemeasurable
+  have e1 : ∀ t, a t ^ (1 / 2 : ℝ) * (a t ^ (1 / 2 : ℝ) * b t) = a t * b t := by
+    intro t
+    rw [← mul_assoc, ← ENNReal.rpow_add_of_nonneg _ _ (by norm_num) (by norm_num)]
+    norm_num
+  have e2 : ∀ t, (a t ^ (1 / 2 : ℝ)) ^ (2 : ℝ) = a t := by
+    intro t
+    rw [← ENNReal.rpow_mul]
+    norm_num
+  have e3 : ∀ t, (a t ^ (1 / 2 : ℝ) * b t) ^ (2 : ℝ) = a t * b t ^ 2 := by
+    intro t
+    rw [ENNReal.mul_rpow_of_nonneg _ _ (by norm_num), e2, ENNReal.rpow_two]
+  simp only [Pi.mul_apply, e1, e2, e3, h1, ENNReal.one_rpow, one_mul] at hH
+  calc (∫⁻ t, a t * b t) ^ 2 ≤ ((∫⁻ t, a t * b t ^ 2) ^ (1 / 2 : ℝ)) ^ 2 := by gcongr
+    _ = ∫⁻ t, a t * b t ^ 2 := by
+        rw [← ENNReal.rpow_natCast, ← ENNReal.rpow_mul]
+        norm_num
+
 /-- **Line integrals are bounded by the boundary norm**:
 `∫ |F(x+iy)|² dx ≤ ∫ |F(t)|² dt` for `y > 0` (Cauchy–Schwarz for the probability density
 `P_y(x - ·)` and Tonelli). -/
 theorem IsH2Cont.lintegral_line_le {F : ℂ → ℂ} (hF : IsH2Cont F) {y : ℝ} (hy : 0 < y) :
     ∫⁻ x : ℝ, ‖F ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤ ∫⁻ t : ℝ, ‖F (t : ℂ)‖ₑ ^ 2 := by
-  sorry
+  set P : ℝ → ℝ → ℝ := fun x t ↦ y / (Real.pi * ((t - x) ^ 2 + y ^ 2)) with hP
+  have hPm : Measurable fun p : ℝ × ℝ ↦ ENNReal.ofReal (P p.1 p.2) :=
+    ENNReal.measurable_ofReal.comp (by fun_prop)
+  have hFm : Measurable fun t : ℝ ↦ ‖F (t : ℂ)‖ₑ :=
+    (hF.continuousOn.comp_continuous Complex.continuous_ofReal (fun t ↦ by simp)).measurable.enorm
+  have hint : ∀ x, ∫⁻ t, ENNReal.ofReal (P x t) = 1 := fun x ↦ lintegral_poissonKernel x hy
+  have hint' : ∀ t, ∫⁻ x, ENNReal.ofReal (P x t) = 1 := by
+    intro t
+    have : ∀ x, P x t = y / (Real.pi * ((x - t) ^ 2 + y ^ 2)) := fun x ↦ by
+      simp only [hP]
+      ring
+    simp_rw [this]
+    exact lintegral_poissonKernel t hy
+  have hpt : ∀ x : ℝ, ‖F ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 ≤
+      ∫⁻ t, ENNReal.ofReal (P x t) * ‖F (t : ℂ)‖ₑ ^ 2 := by
+    intro x
+    have hw : 0 < ((x : ℂ) + (y : ℂ) * I).im := by simpa using hy
+    have hpo := hF.poisson hw
+    have hre : ((x : ℂ) + (y : ℂ) * I).re = x := by simp
+    have him : ((x : ℂ) + (y : ℂ) * I).im = y := by simp
+    rw [hre, him] at hpo
+    have h1 : ‖F ((x : ℂ) + (y : ℂ) * I)‖ₑ ≤ ∫⁻ t, ENNReal.ofReal (P x t) * ‖F (t : ℂ)‖ₑ := by
+      rw [hpo]
+      refine (enorm_integral_le_lintegral_enorm _).trans (le_of_eq (lintegral_congr fun t ↦ ?_))
+      rw [enorm_mul, ← ofReal_norm, Complex.norm_real, Real.norm_of_nonneg (by positivity)]
+    have h2 := sq_lintegral_mul_le (hPm.comp (measurable_const.prodMk measurable_id)) hFm (hint x)
+    exact (pow_le_pow_left₀ zero_le h1 2).trans h2
+  have hm2 : Measurable fun p : ℝ × ℝ ↦ ENNReal.ofReal (P p.1 p.2) * ‖F (p.2 : ℂ)‖ₑ ^ 2 :=
+    hPm.mul ((hFm.comp measurable_snd).pow_const 2)
+  calc ∫⁻ x : ℝ, ‖F ((x : ℂ) + (y : ℂ) * I)‖ₑ ^ 2
+      ≤ ∫⁻ x : ℝ, ∫⁻ t : ℝ, ENNReal.ofReal (P x t) * ‖F (t : ℂ)‖ₑ ^ 2 := lintegral_mono hpt
+    _ = ∫⁻ t : ℝ, ∫⁻ x : ℝ, ENNReal.ofReal (P x t) * ‖F (t : ℂ)‖ₑ ^ 2 :=
+        lintegral_lintegral_swap (by exact hm2.aemeasurable)
+    _ = ∫⁻ t : ℝ, ‖F (t : ℂ)‖ₑ ^ 2 := by
+        refine lintegral_congr fun t ↦ ?_
+        have hm1 : Measurable fun x : ℝ ↦ ENNReal.ofReal (P x t) :=
+          ENNReal.measurable_ofReal.comp (by fun_prop)
+        calc ∫⁻ x : ℝ, ENNReal.ofReal (P x t) * ‖F (t : ℂ)‖ₑ ^ 2
+            = (∫⁻ x : ℝ, ENNReal.ofReal (P x t)) * ‖F (t : ℂ)‖ₑ ^ 2 :=
+              lintegral_mul_const _ hm1
+          _ = ‖F (t : ℂ)‖ₑ ^ 2 := by rw [hint' t, one_mul]
 
 end FF
