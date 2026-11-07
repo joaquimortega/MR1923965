@@ -1,4 +1,4 @@
-import FourierFrames.Cited.DeBrangesFC.Space
+import FourierFrames.Cited.DeBrangesFC.Kernel
 
 /-!
 # P4 — de Branges' Theorems C and F
@@ -45,116 +45,13 @@ section PartC
 
 variable {H : Type} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
 
-/-- The data and axioms (H1)–(H3) of Theorem C, bundled (exactly the hypotheses of `TheoremC`). -/
-structure DBAxioms (ι : H →ₗ[ℂ] (ℂ → ℂ)) : Prop where
-  inj : Function.Injective ι
-  entire : ∀ h : H, Differentiable ℂ (ι h)
-  h1 : ∀ h : H, ∀ ζ : ℂ, ζ.im ≠ 0 → ι h ζ = 0 →
-      ∃ g : H, ‖g‖ = ‖h‖ ∧ ∀ z : ℂ, z ≠ ζ → ι g z = ι h z * (z - conj ζ) / (z - ζ)
-  h2 : ∀ ζ : ℂ, ζ.im ≠ 0 → Continuous fun h : H ↦ ι h ζ
-  h3 : ∀ h : H, ∃ g : H, ‖g‖ = ‖h‖ ∧ ι g = fstar (ι h)
-  nontrivial : ∃ h : H, h ≠ 0
-
-/-- `k ζ` is the reproducing kernel vector at the nonreal point `ζ`:
-`(ι h)(ζ) = ⟪k ζ, h⟫`; the kernel function is `K(w, z) = ι (k w) z`. -/
-def IsKernelFamily (ι : H →ₗ[ℂ] (ℂ → ℂ)) (k : ℂ → H) : Prop :=
-  ∀ ζ : ℂ, ζ.im ≠ 0 → ∀ h : H, ι h ζ = ⟪k ζ, h⟫_ℂ
-
-/-- The Hermite–Biehler function built from the kernel (de Branges' recipe, ζ₀ = i):
-`E(z) = √π (z + i) K(i, z) / √K(i, i)`. -/
-def kernelE (ι : H →ₗ[ℂ] (ℂ → ℂ)) (k : ℂ → H) (z : ℂ) : ℂ :=
-  (Real.sqrt Real.pi : ℂ) * (z + I) * ι (k I) z / (Real.sqrt (ι (k I) I).re : ℂ)
-
 /-- The span of the kernel vectors at points of the upper half-plane. -/
 def kernelSpan (k : ℂ → H) : Submodule ℂ H :=
   Submodule.span ℂ (k '' UHP)
 
 variable {ι : H →ₗ[ℂ] (ℂ → ℂ)}
 
-/-- An element whose function vanishes on `ℂ₊` is `0`. -/
-theorem DBAxioms.eq_zero_of_upper (hax : DBAxioms ι) {h : H}
-    (h0 : ∀ z : ℂ, 0 < z.im → ι h z = 0) : h = 0 := by
-  sorry
-
-/-! ### C.1–C.4 The reproducing kernel of `H` -/
-
-/-- C.1 Existence of kernels (Riesz representation, `InnerProductSpace.toDual`). -/
-theorem exists_kernel (hax : DBAxioms ι) : ∃ k : ℂ → H, IsKernelFamily ι k := by
-  sorry
-
-/-- `K(ζ, ζ) = ‖k ζ‖²`. -/
-theorem kernel_diag {k : ℂ → H} (hk : IsKernelFamily ι k) {ζ : ℂ} (hζ : ζ.im ≠ 0) :
-    ι (k ζ) ζ = ((‖k ζ‖ ^ 2 : ℝ) : ℂ) := by
-  sorry
-
-/-- C.2 `K(ζ,ζ) = ‖k ζ‖² > 0` for nonreal `ζ` (iterate (H1): the zero order at `ζ` would drop). -/
-theorem kernel_norm_pos (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) {ζ : ℂ}
-    (hζ : ζ.im ≠ 0) : 0 < ‖k ζ‖ := by
-  sorry
-
-/-- C.3 Hermitian symmetry `K(w,z) = conj K(z,w)` for nonreal `w, z`. -/
-theorem kernel_symm {k : ℂ → H} (hk : IsKernelFamily ι k) {w z : ℂ} (hw : w.im ≠ 0)
-    (hz : z.im ≠ 0) : ι (k w) z = conj (ι (k z) w) := by
-  sorry
-
-/-- C.4 (H3) as a conjugate-linear isometric involution `S`, `ι (S h) = (ι h)^*`. -/
-theorem exists_conjMap (hax : DBAxioms ι) :
-    ∃ S : H → H, (∀ h : H, ι (S h) = fstar (ι h)) ∧ (∀ x y : H, ⟪S x, S y⟫_ℂ = ⟪y, x⟫_ℂ) ∧
-      ∀ h : H, S (S h) = h := by
-  sorry
-
-/-- C.4 `K(w,·)^* = K(w̄,·)`. -/
-theorem kernel_fstar (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) {w : ℂ}
-    (hw : w.im ≠ 0) : fstar (ι (k w)) = ι (k (conj w)) := by
-  sorry
-
-/-! ### C.5–C.8 The identity from (H1) and the function `E` -/
-
-/-- C.5 (H1) as a unitary map `T : {f(ζ) = 0} → {f(ζ̄) = 0}`, `T f = f (z - ζ̄)/(z - ζ)`. -/
-theorem exists_mulMap (hax : DBAxioms ι) {ζ : ℂ} (hζ : ζ.im ≠ 0) :
-    ∃ T : H → H,
-      (∀ f : H, ι f ζ = 0 → ∀ z : ℂ, z ≠ ζ → ι (T f) z = ι f z * (z - conj ζ) / (z - ζ)) ∧
-      (∀ f f' : H, ι f ζ = 0 → ι f' ζ = 0 → ⟪T f, T f'⟫_ℂ = ⟪f, f'⟫_ℂ) ∧
-      ∀ g : H, ι g (conj ζ) = 0 → ∃ f : H, ι f ζ = 0 ∧ T f = g := by
-  sorry
-
-/-- C.5 The identity (★): `T` maps the kernel of `{f(ζ)=0}` at `w` to a multiple of the kernel
-of `{f(ζ̄)=0}` at `w` (multiplied form, valid for all `z`). -/
-theorem kernel_identity (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) {ζ w z : ℂ}
-    (hζ : ζ.im ≠ 0) (hw : w.im ≠ 0) :
-    (z - conj ζ) * (conj w - ζ) *
-        (ι (k w) z - ι (k ζ) z * ι (k w) ζ / ι (k ζ) ζ) =
-      (z - ζ) * (conj w - conj ζ) *
-        (ι (k w) z - ι (k (conj ζ)) z * ι (k w) (conj ζ) / ι (k (conj ζ)) (conj ζ)) := by
-  sorry
-
-/-- C.6 `kernelE` is entire. -/
-theorem differentiable_kernelE (hax : DBAxioms ι) (k : ℂ → H) :
-    Differentiable ℂ (kernelE ι k) := by
-  sorry
-
-/-- C.6 `E^*(z) = √π (z - i) K(-i, z) / √K(i, i)`. -/
-theorem fstar_kernelE (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) :
-    fstar (kernelE ι k) =
-      fun z ↦ (Real.sqrt Real.pi : ℂ) * (z - I) * ι (k (-I)) z / (Real.sqrt (ι (k I) I).re : ℂ) := by
-  sorry
-
-/-- C.7 Formula (1), multiplied form, all `z`: `K(w,z) π (z - w̄) = (i/2) kernelNum E w z`. -/
-theorem kernel_mul_eq (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) {w : ℂ}
-    (hw : w.im ≠ 0) (z : ℂ) :
-    ι (k w) z * (Real.pi * (z - conj w)) = I / 2 * kernelNum (kernelE ι k) w z := by
-  sorry
-
-/-- C.7 The kernel of `H` is the de Branges kernel of `E = kernelE ι k` (as functions). -/
-theorem kernel_eq_deBrangesKernel (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k)
-    {w : ℂ} (hw : w.im ≠ 0) : ι (k w) = deBrangesKernel (kernelE ι k) w := by
-  sorry
-
-/-- C.8 `E` is in the strict Hermite–Biehler class: `|E^*(w)| < |E(w)|` on `ℂ₊`, from
-`K(w,w) = (|E(w)|² - |E(w̄)|²)/(4π Im w) > 0`. -/
-theorem isStrictHB_kernelE (hax : DBAxioms ι) {k : ℂ → H} (hk : IsKernelFamily ι k) :
-    IsStrictHB (kernelE ι k) := by
-  sorry
+/-! `DBAxioms`, `IsKernelFamily`, `kernelE` and C.1–C.8 are in `DeBrangesFC/Kernel.lean`. -/
 
 /-! ### C.9–C.14 `H = H(E)` isometrically (RKHS uniqueness) -/
 
