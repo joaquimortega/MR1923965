@@ -1,15 +1,31 @@
 # P3 — de Branges' Theorems D (book Thm 19) and E (book Thm 22)
 
+**Status: proved** (merged 2026-11-07: branch `impl/cited-p3d` for Theorem D, `impl/cited-p3e` for
+Theorem E, developed in parallel). No `sorry`; `#print axioms` of `FF.theoremD_holds` and
+`FF.theoremE_holds` gives `[propext, Classical.choice, Quot.sound]`; both are among the 33 theorems
+accepted by comparator, and `FourierFrames/Unconditional.lean` uses them. 3726 lines in 9 files:
+Theorem D 1647 (`Cauchy` 837, `Kernel` 675, helper `CauchyAux/Basic` 135; estimate below 2–2.5k),
+Theorem E 2039 (`Space` 455, `EntireHerglotz` 279, `Orthogonal` 880, `Complete` 383, helper
+`EAux/KernelSymm` 42), top file 40 (estimate 4.3–6.2k in all). Implementers' notes:
+`impl_notes/cited-p3d.md`, `impl_notes/cited-p3e.md`. Referee report on this blueprint and the scaffold:
+`reviews/R9_DeBrangesDE.md` (0 critical, 0 major, 8 minor). The implementers applied F1–F3, F7 and F8
+(see the *Implemented:* notes); F4 was done at assembly except for the stub in `DeBrangesFC.lean` (§8);
+F5 and F6 are applied in "Issues in the source". No statement was false. The statement blocks below
+match the code, with `sorry` in place of the proofs (checked mechanically for all 159 declarations).
+Seven of them lost an unused hypothesis during the implementation; each has an *Implemented:* note.
+The code adds helper lemmas not listed here.
+
 **Lean files.**
 * `FourierFrames/Cited/DeBrangesDE.lean`: assembly, ends with `theoremD_holds : TheoremD` and
-  `theoremE_holds : TheoremE`; both assembly proofs are *complete* (no `sorry` in them), modulo the
-  `sorry`s of the subfiles.
+  `theoremE_holds : TheoremE`.
 * Subfiles (`FourierFrames/Cited/DeBrangesDE/`): `Cauchy.lean` (§1), `Kernel.lean` (§2–3),
-  `Space.lean` (§4), `Orthogonal.lean` (§5), `EntireHerglotz.lean` (§6), `Complete.lean` (§7).
-  Import chain: `HB.Comparable → Cauchy → Kernel (+ HB.Phase) → Space → Orthogonal →
-  Complete (+ EntireHerglotz, which imports only Defs and uses no project lemma) → DeBrangesDE`.
-* Status: `lake build FourierFrames.Cited.DeBrangesDE` succeeds; the only warnings are
-  `declaration uses 'sorry'` (144 sorried lemmas); **no definition is sorried**.
+  `Space.lean` (§4), `Orthogonal.lean` (§5), `EntireHerglotz.lean` (§6), `Complete.lean` (§7);
+  helpers `CauchyAux/Basic.lean` (Tonelli on strips, good abscissae, the rectangle identity, the AM–GM
+  form of the domination hypothesis; imports only `HB.MeanValue`) and `EAux/KernelSymm.lean`
+  (`deBrangesKernel_conj_symm`, see §2).
+  Import chain: `HB.Comparable, CauchyAux/Basic → Cauchy → Kernel (+ HB.Phase) → Space → EAux/KernelSymm →
+  Orthogonal → Complete (+ EntireHerglotz, which imports only Defs and uses no project lemma) →
+  DeBrangesDE`.
 
 **Paper.** p. 793–794 (tex l. 323–372): Theorem D (formula (1) and the reproducing property),
 formula (2) `‖K_E(x,·)‖² = K_E(x,x) = φ'(x)|E(x)|²/π`, Theorem E.
@@ -226,7 +242,7 @@ theorem IsH2Cont.const_mul {F : ℂ → ℂ} (hF : IsH2Cont F) (c : ℂ) :
 `ContinuousAt.const_mul`. ∎
 
 ```lean
-theorem IsH2Cont.exists_side_seq {F : ℂ → ℂ} (hF : IsH2Cont F) {Y : ℝ} (hY : 0 < Y) :
+theorem IsH2Cont.exists_side_seq {F : ℂ → ℂ} (hF : IsH2Cont F) {Y : ℝ} :
     ∃ R : ℕ → ℝ, Tendsto R atTop atTop ∧ ∀ n, ∫⁻ y in Ioc (0 : ℝ) Y,
         (‖F ((R n : ℂ) + (y : ℂ) * I)‖ₑ ^ 2 + ‖F (((-R n : ℝ) : ℂ) + (y : ℂ) * I)‖ₑ ^ 2) ≤ 1 := by
   sorry
@@ -248,6 +264,13 @@ theorem IsH2Cont.exists_side_seq {F : ℂ → ℂ} (hF : IsH2Cont F) {Y : ℝ} (
    `Tendsto R atTop atTop` by `tendsto_atTop_mono` and `tendsto_natCast_atTop_atTop`.  The
    integrand of the statement is the sum, and `lintegral_add_left` (measurability of the line
    restricted to `y > 0` from `continuous_line`) turns it into `H(R n) + H(-R n)`. ∎
+
+*Implemented:* without the hypothesis `hY : 0 < Y` of the scaffold, which is unused (for `Y ≤ 0` the
+strip is empty, and Tonelli gives `C·ofReal Y` for every `Y`); call as `hF.exists_side_seq (Y := Y)`.
+Measurability as in R9 F3: `H` is measurable by `Measurable.lintegral_prod_right'` applied to the
+measurable extension `F'` (`measurable_lintegral_strip`), and in step 3 the integrand is replaced by
+`‖F'‖ₑ²` on `(0, Y]` (`setLIntegral_congr_fun`) instead of using `continuous_line`. Steps 1–2 are the
+helpers `lintegral_lintegral_strip_le` and `exists_ge_add_neg_le_one` (`CauchyAux/Basic.lean`).
 
 ### 1.3 The half-plane Cauchy–Goursat theorem
 
@@ -286,12 +309,22 @@ After `simp` (`(↑(-R)).re = -R`, `.im = 0`, `(↑R + ↑Y * I).re = R`, `.im =
 Passing to the limit, `∫ G - ∫ G(·+iY) = 0` (`tendsto_nhds_unique` against the constant sequence
 `0`). ∎
 
+*Implemented* (R9 F1): the vertical sides stay in `ℝ≥0∞`. `‖I•Vₙ⁺ - I•Vₙ⁻‖ₑ` is bounded by
+`∫⁻_{(0,Y]} (‖G(R+iy)‖ₑ + ‖G(-R+iy)‖ₑ)` (`enorm_integral_le_lintegral_enorm`, as the helper
+`enorm_intervalIntegral_le`, and `le_lintegral_add`), and `tendsto_zero_iff_enorm_tendsto_zero`
+concludes: no `toReal` and no continuity of the sides is needed. The rectangle step is the helper
+`rect_identity` (`CauchyAux/Basic.lean`).
+
 **Section variables** for the next four lemmas: `{F G : ℂ → ℂ} {w₀ : ℂ} {A : ℝ}`; the domination
 hypothesis is
 `hdom : ∀ z, 0 ≤ z.im → 1 ≤ ‖z - w₀‖ → ‖G z‖ ≤ ‖F z‖ / ‖z - w₀‖ + A / ‖z - w₀‖ ^ 2`.
 Write `a = Re w₀`, `b = Im w₀`, `d(z) = ‖z - w₀‖`.  Two elementary inequalities are used
 repeatedly: (AM–GM) `u/d ≤ (ε u² + ε⁻¹ d⁻²)/2` for `ε > 0`, and `d⁻² ≤ 2((x-a)²+1)⁻¹` when
 `d ≥ 1` (`inv_norm_sq_le_of_le` with `r = 1`, `Re z - Re w₀ = x - a`).
+
+*Implemented:* the three domination estimates below use one pointwise lemma, `le_of_dom`
+(`CauchyAux/Basic.lean`): `‖G z‖ ≤ (ε/2)‖F z‖² + (1/(2ε) + |A|) d(z)⁻²` when `d(z) ≥ 1`, with `ε = 1`
+(integrability on lines), `ε → 0` (top side) and `ε = ρ⁻¹` (vertical sides, `enorm_le_of_dom_side`).
 
 ```lean
 theorem IsH2Cont.integrable_line_of_dominated (hF : IsH2Cont F)
@@ -316,7 +349,6 @@ integrable: indicator of a compact interval (`integrableOn_const`, `integrable_i
 
 ```lean
 theorem IsH2Cont.tendsto_integral_line_of_dominated (hF : IsH2Cont F)
-    (hc : ContinuousOn G {z : ℂ | 0 ≤ z.im})
     (hdom : ∀ z : ℂ, 0 ≤ z.im → 1 ≤ ‖z - w₀‖ → ‖G z‖ ≤ ‖F z‖ / ‖z - w₀‖ + A / ‖z - w₀‖ ^ 2) :
     Tendsto (fun Y : ℝ ↦ ∫ x : ℝ, G ((x : ℂ) + (Y : ℂ) * I)) atTop (𝓝 0) := by
   sorry
@@ -332,6 +364,11 @@ so (`norm_integral_le_of_norm_le` with the integrable right side, `integral_inv_
 `ENNReal.toReal_le_of_le_ofReal`).  Given `η > 0`, take `ε = η/(C+1)` and then
 `Y ≥ max (b+1) (b + 2π(1/(2ε) + |A|)/η)`: the bound is `< η`.  Conclude with
 `Metric.tendsto_atTop`. ∎
+
+*Implemented:* without the hypothesis `hc` (continuity of `G`) of the scaffold, which is unused:
+`norm_integral_le_of_norm_le` bounds `‖∫ G‖` by the integral of an integrable bound and needs no
+integrability of `G`. The real bound `∫ ‖F(x+iY)‖² dx ≤ C` and the estimate for fixed `ε` are the
+helpers `IsH2Cont.integral_sq_le` and `IsH2Cont.norm_integral_line_le`.
 
 ```lean
 theorem IsH2Cont.exists_sides_of_dominated (hF : IsH2Cont F)
@@ -351,6 +388,9 @@ Integrating over `(0, Y]` and adding the two sides:
 (using `∫⁻_{(0,Y]} (‖F(R+iy)‖ₑ² + ‖F(-R+iy)‖ₑ²) ≤ 1` from `exists_side_seq`).
 Since `ρₙ → ∞`, the right side tends to `0` (`ENNReal.tendsto_ofReal`, then squeeze
 `tendsto_of_tendsto_of_tendsto_of_le_of_le'` with `tendsto_const_nhds` at `0`). ∎
+
+*Implemented:* with `le_of_dom` at `ε = ρₙ⁻¹`; the bound is
+`ofReal(ρₙ⁻¹/2 + 2(ρₙ⁻¹/2 + |A|ρₙ⁻²)Y)`, `ρₙ = R n - ‖w₀‖`.
 
 ```lean
 theorem IsH2Cont.integral_eq_zero_of_dominated (hF : IsH2Cont F)
@@ -523,6 +563,10 @@ theorem IsH2Cont.lintegral_line_le {F : ℂ → ℂ} (hF : IsH2Cont F) {y : ℝ}
    = ∫⁻ t, ‖F t‖ₑ²` (`lintegral_lintegral_swap`; measurability: `P` continuous, `t ↦ F t`
    continuous). ∎
 
+*Implemented* by the main route: the kernel masses are `lintegral_poissonKernel`, and step 2 is the
+helper `sq_lintegral_mul_le` (Cauchy–Schwarz against a probability density in `ℝ≥0∞`, by
+`ENNReal.lintegral_mul_le_Lp_mul_Lq` with `p = q = 2`).
+
 ---------------------------------------------------------------------------------------------------
 
 ## 2. `Kernel.lean` — algebra of the kernel
@@ -562,6 +606,9 @@ theorem deBrangesKernel_of_ne (E : ℂ → ℂ) {w z : ℂ} (hz : z ≠ conj w) 
 
 *Proof.* `unfold deBrangesKernel kernelNum; rw [if_neg hz]`. ∎
 
+*Implemented* (R9 F8): `rw [ite_eq_right hz]`, since `if_neg` and `if_pos` are deprecated in this
+Mathlib (`ite_eq_left` replaces `if_pos` elsewhere in the file).
+
 ```lean
 theorem deBrangesKernel_eq_dslope {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w : ℂ) :
     deBrangesKernel E w = fun z ↦ (I / (2 * Real.pi)) * dslope (kernelNum E w) (conj w) z := by
@@ -595,7 +642,7 @@ theorem deBrangesKernel_mul (E : ℂ → ℂ) (w z : ℂ) :
 `deBrangesKernel_of_ne` and `field_simp` (`π(z - w̄) ≠ 0`). ∎
 
 ```lean
-theorem conj_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w z : ℂ) :
+theorem conj_deBrangesKernel (E : ℂ → ℂ) (w z : ℂ) :
     conj (deBrangesKernel E w z) = deBrangesKernel E z w := by
   sorry
 ```
@@ -611,8 +658,14 @@ theorem conj_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w z 
   `K(w̄,w) = (i/2π)(E'(w)conj E(w̄) - conj E'(w̄)·E(w))`; the conjugate of the first is the second
   (`ring` after `map_*`). ∎
 
+*Implemented* (R9 F7): without the hypothesis `hE : Differentiable ℂ E` of the scaffold, which is unused
+(the diagonal case needs only `deriv_fstar`, which is unconditional); `E` is explicit. Theorem E
+(§4–§7) was developed in parallel against the scaffold signature and uses instead an identical copy,
+`deBrangesKernel_conj_symm (E) (w z)` (`Cited/DeBrangesDE/EAux/KernelSymm.lean`), wherever this
+document cites `conj_deBrangesKernel` in §5–§7.
+
 ```lean
-theorem fstar_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w : ℂ) :
+theorem fstar_deBrangesKernel (E : ℂ → ℂ) (w : ℂ) :
     fstar (deBrangesKernel E w) = deBrangesKernel E (conj w) := by
   sorry
 ```
@@ -621,6 +674,9 @@ theorem fstar_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ E) (w :
 `K(z̄, w) = K(w̄, z)`, an instance of the identity `K(b̄, ā) = K(a, b)`: off the diagonal
 (`w ≠ z`), `N_{z̄}(w) = E(w)E^*(z) - E^*(w)E(z) = -N_{w̄}(z)` (use `conj E(z̄) = E^*(z)`,
 `conj E^*(z̄) = E(z)`) and `w - z = -(z - w)`; on the diagonal `z = w` both sides are `K(w̄, w)`. ∎
+
+*Implemented:* without `hE`, as `conj_deBrangesKernel`; the code rewrites with `conj_deBrangesKernel E`
+directly.
 
 ```lean
 theorem deBrangesKernel_diag (E : ℂ → ℂ) {w : ℂ} (hw : w.im ≠ 0) :
@@ -671,6 +727,9 @@ theorem exists_bound_deBrangesKernel {E : ℂ → ℂ} (hE : Differentiable ℂ 
 preserves the ball).  If `z ≠ w̄`: `‖dslope‖ = ‖N_w z - N_w w̄‖/‖z - w̄‖ ≤ L`
 (`Convex.norm_image_sub_le_of_norm_deriv_le` on the convex `B ∋ z, w̄`).  If `z = w̄`:
 `‖dslope‖ = ‖N_w'(w̄)‖ ≤ L` (`dslope_same`).  Take `M = L/(2π)`. ∎
+
+*Implemented:* only `E` and `E'` are bounded on `B` (by `M₀`, `M₁`): `B` is closed under `conj` and
+`(E^*)'(u) = conj E'(ū)` (`deriv_fstar`), so `L = 2M₁M₀` and `M = ‖i/(2π)‖·2M₁M₀`.
 
 ```lean
 theorem integrand_eq {E : ℂ → ℂ} (w : ℂ) (f : ℂ → ℂ) {t : ℝ} (hEt : E t ≠ 0)
@@ -844,6 +903,12 @@ integrability as above, `∫ (f/E)(t)/(t-w) = 0` (`integral_div_lower`, `Im w < 
 `conj E(w̄) = E^*(w)`).  Total `(-i/2π)·(-E^*(w))·(-2πi f(w)/E^*(w)) = f(w)`, using
 `E^*(w) = conj E(w̄) ≠ 0` (`w̄ ∈ ℂ₊`). ∎
 
+*Implemented:* `heInner_kernel_upper_of_isH2Cont` and `heInner_kernel_lower` share the new lemma
+`heInner_kernel_eq_of_ae`: for nonreal `w` and `IsH2Cont` functions `A`, `B` equal a.e. on `ℝ` to `f/E`,
+`f^*/E` (with `E ≠ 0` a.e. on `ℝ`),
+`⟨f, K_w⟩ = (-i/2π)[E(w)∫A(t)/(t - w) dt - E^*(w)·conj ∫B(t)/(t - w̄) dt]`; it is reusable by P4.
+The integrability of `conj` is the helper `integrable_conj` (through `Complex.conjCLE`).
+
 ```lean
 theorem heInner_kernel_real {E f : ℂ → ℂ} (hE : IsHB E) (h0 : ∀ x : ℝ, E x ≠ 0)
     (hf : MemHE E f) (x : ℝ) : heInner E f (deBrangesKernel E x) = f x := by
@@ -942,7 +1007,7 @@ theorem heNormSq_fstar (f : ℂ → ℂ) : heNormSq E (fstar f) = heNormSq E f :
 ### 4.2 The sesquilinear form
 
 ```lean
-include hE h0 in
+include hE in
 theorem heInner_self {f : ℂ → ℂ} (hf : MemHE E f) :
     heInner E f f = (((heNormSq E f).toReal : ℝ) : ℂ) := by
   sorry
@@ -952,6 +1017,10 @@ theorem heInner_self {f : ℂ → ℂ} (hf : MemHE E f) :
 `Complex.normSq_eq_norm_sq`; both `0` if `E t = 0`).  `integral_ofReal`, then
 `integral_eq_lintegral_of_nonneg_ae` (nonneg; `AEStronglyMeasurable` since `f/E` is measurable as
 a quotient of continuous functions) and `enorm_sq_eq_ofReal`. ∎
+
+*Implemented:* without `h0` (`include hE in`; call as `heInner_self hE hf`). It is unused: if
+`‖f‖_E = ∞`, the Bochner integral of the non-integrable nonnegative integrand is `0 = ∞.toReal`, and the
+measurability of `f/E` on `ℝ` needs only the continuity of `E` (helper `measurable_div_real`).
 
 ```lean
 theorem heInner_conj_symm (f g : ℂ → ℂ) : conj (heInner E f g) = heInner E g f := by
@@ -1127,6 +1196,11 @@ theorem memHE_of_cauchy (f : ℕ → ℂ → ℂ) (hf : ∀ n, MemHE E (f n))
    `MemHE.lintegral_line_le` bounds the lines of `f n^*/E` by `‖f n‖²`.  `g/E`, `g^*/E` are
    differentiable on `ℂ₊`.  So `MemHE E g` with constant `B.toNNReal`. ∎
 
+*Implemented:* step 1 is the pair of helpers `uniformCauchySeqOn_of_cauchy` and `exists_limit_of_cauchy`;
+the three Fatou steps use one helper, `lintegral_enorm_sq_le_of_tendsto` (Fatou for `‖·‖ₑ²` along
+pointwise limits), which takes an *eventual* bound, so in step 3 the bound `B` is only needed for
+`n ≥ N(1)`. `heInner_sub_right` is added to the file (R9 §8).
+
 ---------------------------------------------------------------------------------------------------
 
 ## 5. `Orthogonal.lean` — the system `{K_γ}`, Bessel, and `h = D/S`
@@ -1169,6 +1243,11 @@ Remarks on the definitions.  `rTerm` uses `dslope (sFun E α) γ` (entire) inste
 so that every term is entire with no case distinction; `defectKer` and `rFun` are `tsum`s in `ℂ`
 over the subtype `Γ = phaseLevel φ α` — every manipulation needs a summability proof
 (`summable_rTerm`, `summable_defect`).  `partialSum` is the finite sum `Σ_{γ∈F} a(γ) wt(γ) K_γ`.
+
+*Implemented:* the file imports `EAux/KernelSymm.lean` and uses `deBrangesKernel_conj_symm` where the
+text below cites `conj_deBrangesKernel` (§2). Mathlib names in this version: `Summable.tsum_sub`,
+`Summable.tsum_add`, `Summable.tsum_mul_left`, `Summable.tsum_le_tsum` (no root `tsum_sub` etc.);
+`Complex.conj_tsum` and `Complex.ofReal_tsum` need no summability, `Complex.re_tsum` does.
 
 ### 5.1 Algebra of `C`, `S` and the kernel
 
@@ -1382,6 +1461,10 @@ theorem heNormSq_partialSum (D : DBData E φ) (a : ℝ → ℂ) (F : Finset (pha
 (`Finset.sum_eq_single`).  Diagonal: `|a_γ|²wt_γ²K(γ,γ) = wt_γ|a_γ|²` (`kernel_diag_mul_wt`,
 `Complex.mul_conj`).  Take real parts (`Complex.ofReal_sum`). ∎
 
+*Implemented* more simply, without the double sum: the code proves `partialSum_level` and
+`heInner_partialSum` first, and then `⟨s, s⟩ = Σ_F conj(a_γ)wt_γ s(γ)` (`heInner_partialSum` with
+`f = s`) with `s(γ) = a_γ` (`partialSum_level`) gives `Σ_F wt_γ|a_γ|²`.
+
 ```lean
 theorem heInner_partialSum (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f) (a : ℝ → ℂ)
     (F : Finset (phaseLevel φ α)) :
@@ -1501,7 +1584,7 @@ theorem differentiable_dFun (D : DBData E φ) (α : ℝ) : Differentiable ℂ (d
 *Proof.* `differentiable_cFun D.strict.1.1` and `(differentiable_rFun D α).const_mul _`. ∎
 
 ```lean
-theorem fstar_dFun (D : DBData E φ) (α : ℝ) : fstar (dFun E φ α) = dFun E φ α := by
+theorem fstar_dFun (E : ℂ → ℂ) (φ : ℝ → ℝ) (α : ℝ) : fstar (dFun E φ α) = dFun E φ α := by
   sorry
 ```
 
@@ -1510,6 +1593,10 @@ theorem fstar_dFun (D : DBData E φ) (α : ℝ) : fstar (dFun E φ α) = dFun E 
 `conj (rTerm γ z̄) = rTerm γ z`: `c_γ`, `γ` real, and `conj (d_γ z̄) = d_γ z` — for `z ≠ γ`,
 `conj((S z̄ - S γ)/(z̄ - γ)) = (S z - S γ)/(z - γ)` (`S^* = S`, `S γ` real); for `z = γ`,
 `conj S'(γ) = (S^*)'(γ) = S'(γ)` (`deriv_fstar_ofReal`, `fstar_sFun`). ∎
+
+*Implemented:* without the hypothesis `D : DBData E φ` of the scaffold, which is unused (flagged by the
+linter): the identity holds for every `E`, since `C^* = C`, each term satisfies `conj r_γ(z̄) = r_γ(z)`,
+and `Complex.conj_tsum` needs no summability.
 
 ```lean
 theorem dFun_level (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) :
@@ -1597,7 +1684,7 @@ First part: `C(z)conj S(w) - S(z)conj C(w)` (`kernel_mul_CS`).  Second: by `term
 and with `D = hS`: `= S(z)conj S(w)(h(z) - conj h(w))` (`ring`). ∎
 
 ```lean
-theorem defectKer_diag (D : DBData E φ) (w : ℂ) :
+theorem defectKer_diag (w : ℂ) :
     (defectKer E φ α w w).re =
       (deBrangesKernel E w w).re - ∑' γ : phaseLevel φ α,
         wt E γ * ‖deBrangesKernel E w γ‖ ^ 2 := by
@@ -1607,6 +1694,10 @@ theorem defectKer_diag (D : DBData E φ) (w : ℂ) :
 *Proof.* `K(γ,w) = conj K(w,γ)`, so each term is `wt·K(w,γ)conj K(w,γ) = ↑(wt‖K(w,γ)‖²)`
 (`Complex.mul_conj`); `Complex.ofReal_tsum`, `Complex.re_tsum` / `Complex.ofReal_re`
 (summability by `summable_defect`). ∎
+
+*Implemented:* without `D` (unused): `Complex.ofReal_tsum` casts the `tsum` of the real terms
+`wt|K(w,γ)|²` without any summability, so `Complex.re_tsum` is not needed; `K(γ,w) = conj K(w,γ)` by
+`deBrangesKernel_conj_symm`.
 
 ```lean
 theorem defectKer_diag_nonneg (D : DBData E φ) (w : ℂ) : 0 ≤ (defectKer E φ α w w).re := by
@@ -1626,6 +1717,10 @@ theorem im_hFun_nonneg (D : DBData E φ) {h : ℂ → ℂ}
 `Q(w,w)·2πi Im w = ‖S w‖²·2i Im h(w)`.  `Q(w,w)` is real (`deBrangesKernel_diag` and
 `defectKer_diag`'s computation), so `Im h(w) = π Im w·Q(w,w)/‖S w‖² ≥ 0`
 (`defectKer_diag_nonneg`, `sFun_ne_zero`). ∎
+
+*Implemented* (R9 F2): imaginary parts of `defectKer_mul D hh w w` give
+`2π Im w·Re Q(w,w) = 2‖S w‖²·Im h(w)`, so only `Re Q(w,w) ≥ 0` (`defectKer_diag_nonneg`) is used, not
+the reality of `Q(w,w)`; `nlinarith` concludes.
 
 ---------------------------------------------------------------------------------------------------
 
@@ -1814,6 +1909,9 @@ theorem memHE_defectKer (D : DBData E φ) (w : ℂ) :
 (HasSum part with `f = K_w`, `K_w(γ) = K(w,γ)`).  So `‖Q_w‖² = K(w,w).re - Σ' wt|K(w,γ)|² =
 Q(w,w).re` (`defectKer_diag`). ∎
 
+*Implemented:* the decomposition `Q_w = K_w - g_w` is the helper `exists_defect_decomp`, shared with
+`heInner_defectKer_of_level_zero`; the summability of the cross terms is `summable_mul_wt_mul` (AM–GM).
+
 ```lean
 theorem heInner_defectKer_of_level_zero (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f)
     (hz : ∀ γ ∈ phaseLevel φ α, f γ = 0) (w : ℂ) :
@@ -1926,6 +2024,13 @@ theorem theoremE_holds : TheoremE := by
 
 (`TheoremD`'s integral is definitionally `heInner E f (deBrangesKernel E w)`; `hE.1 : IsHB E`.)
 
+*Implemented* as planned: `theoremD_holds` is `memHE_deBrangesKernel` and `heInner_kernel`;
+`theoremE_holds` builds `DBData` and applies `theoremE_norm` and `theoremE_interp`. At assembly (R9 F4)
+`FourierFrames.lean` imports `Cited.DeBrangesDE`. The temporary stub `theoremD_holds` (`sorry`) in
+`Cited/DeBrangesFC.lean` is still there; that file is now outside the default target (Lake target
+`FourierFramesScaffold`), so the two declarations never meet, and P4 is to replace the stub by
+`import FourierFrames.Cited.DeBrangesDE`.
+
 ---------------------------------------------------------------------------------------------------
 
 ## 9. Coordination with P4 (Theorem C)
@@ -1946,14 +2051,22 @@ P4's C.9/C.11 need exactly the `H²` Cauchy machinery of §1 and the kernel alge
   quotient `f/E` is `0` at a real zero of `E`, not its limit), e.g. via `dslope`-type removable
   singularity arguments, and show `IsH2Cont` for them.
 * `theoremD_holds` itself (P4-F): import `FourierFrames.Cited.DeBrangesDE` and delete P4's
-  placeholder in its "Upstream interface" section; there is no import cycle (P3 imports only
-  `Defs` and `HB/*`).
+  placeholder in its "Upstream interface" section (still pending, see §8); there is no import cycle
+  (P3 imports only `Defs`, `HB/*` and, through `HB.Comparable`, `PW/*`; R9 §5).
+* *Implemented:* the decomposition `heInner_kernel_eq_of_ae` (§3) is the reusable core of C.11: it
+  assumes only `E ≠ 0` a.e. on `ℝ` and `IsH2Cont` functions `A`, `B` equal a.e. to `f/E`, `f^*/E`. The
+  two lemmas P4 still needs for `E` with real zeros are listed in R9 F5 (an order version of
+  `not_isH2Upper_div_of_zero`, and `IsH2Cont` extensions of `f/E`, `f^*/E` across the real zeros).
+  `conj_deBrangesKernel` and `fstar_deBrangesKernel` no longer take `hE`.
 * Name clashes: none with `DeBrangesFC.lean` (`UHP`, `thetaFn`, `DBAxioms`, `herglotzG`, … are not
   defined here).
 
 ---------------------------------------------------------------------------------------------------
 
 ## Issues in the source
+
+Recorded in `NOTEBOOK.md`: items 1, 2, 4 as N-43, N-44, N-45; item 3 is covered by N-02, N-28, N-37;
+items 5 and 6 concern the proofs and the formal statement, and are in I-10 and N-02.
 
 1. **Typo, p. 793 (tex l. 307–309).**  "`\|f\|_E^2= \int_{-\infty}^\infty \frac{|f(t)|^2}{|E(t)|^2}\, dx`":
    the integration variable is `t`, so `dx` should be `dt`.  Harmless.  Confidence: certain.
@@ -1972,19 +2085,21 @@ P4's C.9/C.11 need exactly the `H²` Cauchy machinery of §1 and the kernel alge
    it for real `ζ`": formula (1) is `0/0` at `z = ζ̄` for every `ζ` (real or not); the value there
    is the limit (`deBrangesKernel` uses the derivative form, proved equal to the `dslope` in
    `deBrangesKernel_eq_dslope`).  Harmless.  Confidence: certain.
-5. **Simplification of the proof of Theorem E** (de Branges' Thm 22).  de Branges deduces
-   completeness from Theorems 20–21 and the theory of functions of bounded type (Krein).  The
-   argument formalized here is elementary: the reproducing kernel `Q` of the orthogonal complement
+5. **Simplification of the proof of Theorem E** (de Branges' Thm 22).  de Branges' proof uses
+   his Theorems 20–21 and functions of bounded type (not reproduced here; the book is not in
+   `literature/`, so this description is unchecked, R9 F6).  The argument formalized here is
+   elementary: the reproducing kernel `Q` of the orthogonal complement
    of `{K_γ}` satisfies `Q(w,z)π(z - w̄) = S(z)conj S(w)(h(z) - conj h(w))` with `h = D/S` entire,
    real, `Im h ≥ 0` on `ℂ₊` (Mittag-Leffler series built from Bessel's inequality); hence
    `h = pz + q` and `Q = (p/π)S ⊗ conj S`, which is `0` iff `S_α ∉ H(E)`.  As a by-product one also
    gets the second alternative of de Branges' theorem (if `S_α ∈ H(E)`, the orthogonal complement
    is `ℂ·S_α`).  Checked by hand on `E = e^{-iπz}` (`α = 0, π/2`) and `E = z + i`.  Confidence:
    high.
-6. **`TheoremD` is stated more narrowly than needed.**  The proof uses neither strictness nor, for
-   nonreal `w`, the absence of real zeros (see `memHE_deBrangesKernel_of_isHB`,
-   `heInner_kernel_upper_of_isH2Cont`); the paper's statement for all `E ∈ \overline{HB}` is true.
-   No change requested (the frozen `Prop` is what the paper uses).
+6. **`TheoremD` is stated more narrowly than needed.**  The paper's statement for all
+   `E ∈ \overline{HB}` is true. The Lean proof uses no strictness, but it covers real zeros of `E` only
+   partly: `memHE_deBrangesKernel_of_isHB` gives `K_w ∈ H(E)` for nonreal `w`, and
+   `heInner_kernel_upper_of_isH2Cont` gives the reproducing formula given `IsH2Cont` extensions of
+   `f/E`, `f^*/E` (R9 F5). No change requested (the frozen `Prop` is what the paper uses).
 
 ## Requested changes to M00
 

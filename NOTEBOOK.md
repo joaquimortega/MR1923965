@@ -24,7 +24,9 @@ loses the prime in "φ_f'" in Corollary 2).
 2026-11-06), *code-checked* (checked against the final Lean code), *numerical*, *open* (not yet
 settled). Referee R8 (2026-11-07) re-checked N-06, N-12, N-16–N-19,
 N-21–N-25 and N-30–N-36 against the final Lean code; the corrections it asked for are applied below,
-and N-39–N-42 record findings of the implementation that it found missing.
+and N-39–N-42 record findings of the implementation that it found missing. N-43–N-45 come from the
+blueprint of de Branges' Theorems D and E (`blueprint/P3_DeBrangesDE.md`, "Issues in the source"),
+confirmed by referee R9 (`reviews/R9_DeBrangesDE.md`) and checked here against the page images.
 
 Sections: N-entries are about the paper; I-entries (end of file) are the implementation log.
 
@@ -49,7 +51,9 @@ appears as a hypothesis of exactly the main theorems that use it. None is an axi
   of Theorem 1 is unchanged.
 - Theorems D, E, F are stated for `E` in the strict class without real zeros.
   For Theorem E this restriction is necessary: if `E^* = cE`, then `H(E) = {0}` and the
-  interpolation part of the conclusion fails.
+  interpolation part of the conclusion fails. For Theorem D it is not: de Branges' theorem holds on all
+  of `\overline{HB}` (for `E^* = cE` the kernel is `0`). The restriction costs nothing, since the paper
+  applies D only to `E` with `H(E) = PW`, which is strict without real zeros (N-28).
 - Theorem A enters only through its BMO necessity part (`PavlovBMO`).
 
 ### N-03 (D) — `U_ψ` and the principal value (p. 800) — *tex-checked*
@@ -382,6 +386,31 @@ inspection of the proof, but not stated in [OS99]. Formalized as `lemma3_estimat
 (`Lemma3Uniform.lean`), by re-running the proof of the vendored `OCS.multF_estimate_two` with the
 constant `K` of `OCS.exists_abs_sum_multErr_sub_log_infDist_le` fixed from `(a, b)`.
 
+## Found in phase 2 (blueprint of de Branges' Theorems D and E, referee R9)
+
+### N-43 (T) — p. 793: `dx` for `dt` in the norm of `H(E)` — *print-checked; tex-checked; R9*
+The norm is printed `‖f‖²_E = ∫_{-∞}^{∞} |f(t)|²/|E(t)|² dx` (tex l. 307–309). The integration variable is
+`t`, so `dx` should be `dt`. Harmless.
+
+### N-44 (G) — p. 794, Theorem E: `Γ` indexed by `k ∈ ℤ` — *print-checked; R9*
+"let `Γ = {γ_k}` be the sequence of real numbers such that `φ(γ_k) = α + kπ`, `k ∈ ℤ`" presupposes that
+the phase function `φ` maps `ℝ` onto `ℝ`. For a strict `E` without real zeros, `φ` is strictly
+increasing, but its range is an open interval that may be bounded. For `E(z) = z + i` (`H(E)` = the
+constants), `φ(x) = -arg(x + i) ∈ (-π, 0)`: then `Γ = {0}` for `α = -π/2`, and `Γ = ∅` for `α = 0`
+(where `E - E^* = 2i ∈ H(E)`, so the theorem does not apply). In general `Γ` can be finite, one-sided or
+empty. The formal `TheoremE` sums over the set `Γ = phaseLevel φ α = {x : φ(x) ∈ α + πℤ}`, which is the
+paper's statement when `φ` is onto; `theoremE_holds` proves it in general. In the paper's application
+(`H(E) = PW`) `φ` is onto, so nothing is affected. N-33 is the same presupposition at the point of use
+(p. 796), where the formalization proves that `φ` is onto (`HEEqPW.phase_tendsto`).
+
+### N-45 (G) — p. 793, formula (1) at `z = ζ̄` — *print-checked; R9*
+"The kernel has the following representation, which also defines it for real `ζ`": formula (1),
+`K_E(ζ, z) = (i/2)(E(z)conj E(ζ) - E^*(z)conj E^*(ζ))/(π(z - ζ̄))`, is `0/0` at `z = ζ̄` for every `ζ`,
+real or not, since `E^*(ζ̄) = conj E(ζ)`. The value there is the limit, which (2) uses for real `ζ = x`
+(`K_E(x, x) = φ'(x)|E(x)|²/π`). `deBrangesKernel` (`Defs.lean`) takes the derivative form at `z = ζ̄`,
+and `deBrangesKernel_eq_dslope` (`Cited/DeBrangesDE/Kernel.lean`) shows that this is the entire
+extension of (1). Harmless.
+
 ---
 
 ## Implementation log
@@ -524,4 +553,55 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   `theoremF_holds` and temporary stub `theoremD_holds` are `sorry`-backed (R8 F-4); `#print axioms` shows
   `sorryAx` for them. The stub has the same name as P3's `theoremD_holds` (`Cited/DeBrangesDE.lean`, not
   imported by the root), and must be deleted when P3 is merged (R8 F-5, R7 finding 8). None of this
-  affects the 15 main theorems, which take the cited results as hypotheses.
+  affects the 15 main theorems, which take the cited results as hypotheses. *Superseded in I-10: the
+  root no longer imports `Cited/DeBrangesFC.lean`.*
+
+### I-10 — phase 2: de Branges' Theorems D and E proved; `Unconditional.lean` (2026-11-07)
+- **P3** (`theoremD_holds`, `theoremE_holds`, proved; `blueprint/P3_DeBrangesDE.md`, implementers' notes
+  `impl_notes/cited-p3d.md` and `cited-p3e.md`, referee R9 on the blueprint and scaffold: no false statement,
+  0 critical, 0 major, 8 minor). Implemented in two parallel worktrees: Theorem D (`Cauchy`, `Kernel`, helper
+  `CauchyAux/Basic`) and Theorem E (`Space`, `EntireHerglotz`, `Orthogonal`, `Complete`, helper
+  `EAux/KernelSymm`); 3726 lines in 9 files against an estimate of 4.3–6.2k. Both depend only on `propext`,
+  `Classical.choice` and `Quot.sound` and use no cited `Prop`. Theorem D goes through a half-plane
+  Cauchy–Goursat theorem for `H²` functions continuous up to `ℝ`, without boundary values. Theorem E is
+  not proved by de Branges' route through his Theorems 20–21 (P3 "Issues in the source" 5). The proof is
+  elementary: the reproducing kernel `Q` of the orthogonal complement of `{K_γ}` satisfies
+  `Q(w,z)π(z - w̄) = S(z)conj S(w)(h(z) - conj h(w))` with `h` entire, real on `ℝ` and `Im h ≥ 0` on `ℂ₊`.
+  So `h = pz + q`, and `p = 0` unless `S_α ∈ H(E)`.
+- **Changed statements** (unused hypotheses removed; phase-2 scaffold statements, not covered by the
+  freeze; no statement was false): `conj_deBrangesKernel`, `fstar_deBrangesKernel` (`hE`, R9 F7; `E` now
+  explicit); `IsH2Cont.exists_side_seq` (`hY`); `IsH2Cont.tendsto_integral_line_of_dominated` (`hc`);
+  `heInner_self` (`h0`); `fstar_dFun`, `defectKer_diag` (`D : DBData E φ`).
+- **Routes different from the blueprint** (the "*Implemented:*" notes of P3): the vertical sides of the
+  contour shift are bounded in `ℝ≥0∞` (R9 F1); `im_hFun_nonneg` needs only `Re Q(w,w) ≥ 0` (R9 F2); one
+  AM–GM lemma `le_of_dom` serves all domination estimates; the upper and lower reproducing formulas share
+  `heInner_kernel_eq_of_ae`, which P4 can reuse; `heNormSq_partialSum` comes from `heInner_partialSum`,
+  without the double sum. The deprecated `if_pos`/`if_neg` are replaced by `ite_eq_left`/`ite_eq_right`
+  (R9 F8).
+- **Duplication.** Theorem E was written against the scaffold signature of `conj_deBrangesKernel`, which the
+  Theorem D branch changed, so it uses an identical copy, `deBrangesKernel_conj_symm`
+  (`Cited/DeBrangesDE/EAux/KernelSymm.lean`).
+- **Root imports.** `FourierFrames.lean` imports only sorry-free modules, now including
+  `Cited/DeBrangesDE.lean` and `Unconditional.lean`. The P4 scaffold `Cited/DeBrangesFC.lean` moved to the
+  separate Lake target `FourierFramesScaffold` (`lake build FourierFramesScaffold`). It is the only file with
+  `sorry`, and it still declares the temporary stub `theoremD_holds` (`sorry`). That stub no longer clashes
+  with P3's theorem, since no module imports both. P4 is to replace it by
+  `import FourierFrames.Cited.DeBrangesDE` (R7 finding 8, R9 F4). Theorem C is being revised along the route
+  through Theorem D (R7 finding 7); Theorem F is deferred.
+- **`Unconditional.lean`** supplies `paleyWiener_holds`, `theoremD_holds`, `theoremE_holds`,
+  `johnNirenberg_holds` and `dsPerturbation_holds` (new, `:= dsPerturbation_of_paleyWiener
+  paleyWiener_holds`). Unconditional: `isFourierFrame_iff_isSampling_unconditional`,
+  `heEqPW_of_comparable_unconditional`, `theorem1_sufficiency_unconditional`,
+  `logExample_isCompleteInterpolating_unconditional`, `landau_sharp_unconditional`,
+  `corollary2_unconditional`, `theorem2_i_unconditional`, `theorem2_i_of_densityBound_unconditional`.
+  Conditional on the unproved cited results only: `completeInterpolating_zero_set_of_theoremC` (C);
+  `theorem1_necessity_of_theoremCF`, `theorem1_of_theoremCF`, `corollary1_of_theoremCF` (C, F);
+  `landau_inequality_of_theoremCF_pavlov` (C, F, Pavlov's A).
+- **Comparator.** `comparator/statements.lean` lists 33 theorems: the 15 main statements, the five
+  proved cited results (`paleyWiener_holds`, `johnNirenberg_holds`, `theoremD_holds`, `theoremE_holds`,
+  `dsPerturbation_holds`) and the 13 versions above. `lake comparator` accepts them (2026-11-07,
+  `comparator/last_run.log`); `lake build` has no warning.
+- **Notebook.** N-43–N-45 record the issues in the source found by the P3 blueprint (items 1, 2, 4 of its
+  list). Items 3 and 6 are covered by N-02, N-28 and N-37, and item 5 is this entry.
+- **Tooling.** `scripts/make_imports.py` has no row for `Unconditional.lean` and stops with
+  `KeyError: 'Unconditional'`, so the generated part of `blueprint/IMPORTS.md` predates the P3 merge.

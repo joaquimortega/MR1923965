@@ -24,9 +24,12 @@ project:
     the formal statements as an explicit Prop hypothesis, never as an axiom. Phase 1 proves every
     argument of the paper itself from these hypotheses (all 15 main statements, accepted by
     comparator). Phase 2 proves the cited results that are within reach: the Paley–Wiener
-    theorem, the John–Nirenberg inequality and Duffin–Schaeffer's lemma are proved; de Branges'
-    Theorems D and E are in progress; Theorems C and F and Pavlov's theorem are assessed in
-    blueprint/PHASE2.md.
+    theorem, the John–Nirenberg inequality, Duffin–Schaeffer's lemma and de Branges' Theorems D
+    and E are proved, and FourierFrames/Unconditional.lean discharges them from the main
+    statements. De Branges' Theorem C is in progress, Theorem F is deferred and Pavlov's theorem
+    is assessed infeasible with current Mathlib (blueprint/PHASE2.md). What remains conditional is
+    exactly the remark of p. 797 (on Theorem C), Theorem 1 (necessity) and Corollary 1 (on
+    Theorems C and F) and Landau's inequality (on Theorems C, F and Pavlov's theorem).
 
     Two of the paper's proofs are replaced: the appeal to Meĭman's theorem (false as quoted) by a
     direct argument, and the proof of Theorem 2 (ii), which does not work as printed, by a new
@@ -52,9 +55,10 @@ sources:
     relationship: "formalizes"
     note: >-
       Statements of the published version (the journal PDF). Errata, gaps and simplifications
-      found in the source are recorded in NOTEBOOK.md (42 entries; N-01–N-38 confirmed by
+      found in the source are recorded in NOTEBOOK.md (45 entries; N-01–N-38 confirmed by
       independent referee agents against the printed pages, N-39–N-42 found during the
-      implementation). The Proposition of p. 798 (quoted from [Or98]) and the
+      implementation, N-43–N-45 found in the blueprint of de Branges' Theorems D and E and
+      confirmed by referee R9). The Proposition of p. 798 (quoted from [Or98]) and the
       remarks quoting [Se95] are not formalized.
     author_endorsement: "participated"
   - title: "Fourier transforms in the complex domain"
@@ -82,8 +86,12 @@ sources:
       Assumed as the explicit Prop hypotheses FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF of
       the main statements that use them, in the weakest form the paper uses (Theorems D, E, F for E
       in the strict Hermite–Biehler class without real zeros; Theorem F with an extra term p·y,
-      p ≥ 0). Proofs of D and E are in progress (blueprint/P3_DeBrangesDE.md, forthcoming); C and F are assessed
-      in blueprint/P4_DeBrangesFC.md.
+      p ≥ 0). Theorems D and E are proved in the project (FF.theoremD_holds, FF.theoremE_holds,
+      FourierFrames/Cited/DeBrangesDE*, blueprint/P3_DeBrangesDE.md): D by a half-plane
+      Cauchy–Goursat theorem for H² functions continuous up to the real line; E by an elementary
+      Mittag-Leffler and entire-Pick-function argument, not de Branges' route through his Theorems
+      20–21. Theorem C is in progress along the route through Theorem D, and Theorem F is deferred
+      (blueprint/P4_DeBrangesFC.md); both remain hypotheses.
     author_endorsement: "n/a"
   - title: "Unconditional bases of exponentials and reproducing kernels"
     authors:
@@ -160,10 +168,19 @@ status:
         NOTEBOOK N-22) and Theorem 2 (ii) (by a new proof, NOTEBOOK N-21), the equivalence of
         Fourier frames and sampling (p. 790), and the "evident fact" of p. 799.
       - Proved (phase 2, cited results): the Paley–Wiener theorem; the John–Nirenberg inequality;
-        Duffin–Schaeffer's Lemma III (from the Paley–Wiener theorem, hence unconditional).
-      - In progress (phase 2): de Branges' Theorems D and E.
+        Duffin–Schaeffer's Lemma III (from the Paley–Wiener theorem, hence unconditional); de
+        Branges' Theorems D and E.
+      - Unconditional (phase 2, FourierFrames/Unconditional.lean): the equivalence of Fourier
+        frames and sampling, the "evident fact", Theorem 1 (sufficiency), the example of p. 798
+        and the sharpness of Landau's inequality, Corollary 2, both versions of Theorem 2 (i);
+        Theorem 2 (ii) and the counting estimate of the example were already unconditional.
+      - Conditional on the remaining cited hypotheses: the remark of p. 797 (Theorem C); Theorem 1
+        (necessity), Theorem 1 and Corollary 1 (Theorems C and F); Landau's inequality (Theorems C,
+        F and Pavlov's Theorem A).
+      - In progress (phase 2): de Branges' Theorem C (route through Theorem D; scaffold with
+        `sorry` in the separate Lake target FourierFramesScaffold).
       - Not formalized: Pavlov's theorem (assessed infeasible with current Mathlib), de Branges'
-        Theorems C and F (assessed; see blueprint/PHASE2.md), the Proposition of p. 798 and the
+        Theorem F (assessed, deferred; see blueprint/PHASE2.md), the Proposition of p. 798 and the
         remarks quoting [Se95].
   sorry_count: 0
   sorry_in_definitions: 0
@@ -263,6 +280,7 @@ status:
       file: "FourierFrames/Cited/JohnNirenberg.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
       literature_dependencies: []
     - declaration: "FF.dsPerturbation_of_paleyWiener"
       file: "FourierFrames/Cited/DSPerturbation.lean"
@@ -273,6 +291,103 @@ status:
       file: "FourierFrames/Cited/PaleyWiener.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theoremD_holds"
+      file: "FourierFrames/Cited/DeBrangesDE.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theoremE_holds"
+      file: "FourierFrames/Cited/DeBrangesDE.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.dsPerturbation_holds"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.isFourierFrame_iff_isSampling_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.heEqPW_of_comparable_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem1_sufficiency_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem1_necessity_of_theoremCF"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+    - declaration: "FF.theorem1_of_theoremCF"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+    - declaration: "FF.completeInterpolating_zero_set_of_theoremC"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.TheoremC"]
+    - declaration: "FF.corollary1_of_theoremCF"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.TheoremC", "FF.TheoremF"]
+    - declaration: "FF.landau_inequality_of_theoremCF_pavlov"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: ["FF.TheoremC", "FF.TheoremF", "FF.PavlovBMO"]
+    - declaration: "FF.logExample_isCompleteInterpolating_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.landau_sharp_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.corollary2_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem2_i_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
+      literature_dependencies: []
+    - declaration: "FF.theorem2_i_of_densityBound_unconditional"
+      file: "FourierFrames/Unconditional.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: "comparator/config.json"
       literature_dependencies: []
 
 automation:
@@ -297,7 +412,7 @@ automation:
         Reuse: the multiplier lemma of [OS99] and a Bernstein-space toolkit are vendored from the
         companion formalization MR1682065.
       cost:
-        wall_time: "about 11 hours (2026-11-06 21:50 – 2026-11-07 09:00 CET) for phase 1 and the start of phase 2"
+        wall_time: "about 13 hours (2026-11-06 21:50 – 2026-11-07 10:45 CET) for phase 1 and phase 2 up to de Branges' Theorems D and E"
         hardware: "API-only models; local workstation (16 cores, 31 GB RAM) for Lean builds"
       prompting_notes: >-
         The user asked for a blueprint with one detailed document per module, explicit
@@ -374,6 +489,7 @@ review:
     - "Independent Claude agent (R4: the example, the construction, Corollary 2)"
     - "Independent Claude agent (R5: Theorem 2, with numerical checks of the new proof of (ii))"
     - "Independent Claude agents (R6–R8, Opus: phase-2 blueprints; the blueprint as documentation of the final code; soundness audit)"
+    - "Independent Claude agent (R9: blueprint and scaffold of de Branges' Theorems D and E, with numerical checks; no false statement, 8 minor findings)"
   notes: >-
     Full referee reports are in reviews/. The phase-1 round found no false or vacuous statement
     and no broken proof; it confirmed the errata against the printed pages (and corrected three
@@ -391,7 +507,7 @@ alignment:
       lean: "FF.PaleyWienerThm, FF.TheoremC, FF.TheoremD, FF.TheoremE, FF.TheoremF, FF.PavlovBMO, FF.JohnNirenberg, FF.DSPerturbation"
       module: "FourierFrames/Defs.lean"
       status: "proved"
-      note: "Props used as hypotheses; PaleyWienerThm, JohnNirenberg and DSPerturbation (from PaleyWienerThm) are proved in FourierFrames/Cited/"
+      note: "Props used as hypotheses; PaleyWienerThm, JohnNirenberg, DSPerturbation, TheoremD and TheoremE are proved in FourierFrames/Cited/; TheoremC, TheoremF and PavlovBMO remain hypotheses"
     - source: "p. 790: Fourier frame ⟺ sampling"
       lean: "FF.isFourierFrame_iff_isSampling"
       module: "FourierFrames/Frames.lean"
@@ -441,23 +557,34 @@ alignment:
       module: "FourierFrames/Cited/JohnNirenberg.lean"
       status: "proved"
     - source: "[DS52] Lemma III"
-      lean: "FF.dsPerturbation_of_paleyWiener"
-      module: "FourierFrames/Cited/DSPerturbation.lean"
+      lean: "FF.dsPerturbation_of_paleyWiener, FF.dsPerturbation_holds"
+      module: "FourierFrames/Cited/DSPerturbation.lean, FourierFrames/Unconditional.lean"
       status: "proved"
     - source: "Paley–Wiener theorem (with Plancherel), cited on p. 790"
       lean: "FF.paleyWiener_holds"
       module: "FourierFrames/Cited/PaleyWiener.lean"
       status: "proved"
       note: "classical proof (blueprint/P1_PaleyWiener.md); not from the paper"
-    - source: "[dB68] Theorems 19, 22 (D, E)"
-      lean: "FF.theoremD_holds, FF.theoremE_holds"
-      module: "FourierFrames/Cited/DeBrangesDE.lean"
-      status: "in-progress"
+    - source: "[dB68] Theorem 19 (D)"
+      lean: "FF.theoremD_holds"
+      module: "FourierFrames/Cited/DeBrangesDE.lean, FourierFrames/Cited/DeBrangesDE/{Cauchy,Kernel}.lean"
+      status: "proved"
+      note: "half-plane Cauchy–Goursat theorem for H² functions continuous up to ℝ, no boundary-value theory (blueprint/P3_DeBrangesDE.md)"
+    - source: "[dB68] Theorem 22 (E)"
+      lean: "FF.theoremE_holds"
+      module: "FourierFrames/Cited/DeBrangesDE.lean, FourierFrames/Cited/DeBrangesDE/{Space,EntireHerglotz,Orthogonal,Complete}.lean"
+      status: "proved"
+      note: "elementary Mittag-Leffler and entire-Pick-function proof, not de Branges' route (blueprint/P3_DeBrangesDE.md)"
     - source: "[dB68] Theorems 23, 32 (C, F)"
       lean: "FF.theoremC_holds, FF.theoremF_holds"
       module: "FourierFrames/Cited/DeBrangesFC.lean"
       status: "stated"
-      note: "blueprint and feasibility assessment only (blueprint/P4_DeBrangesFC.md)"
+      note: "scaffold with sorry in the separate Lake target FourierFramesScaffold; C in progress along the route through Theorem D (referee R7), F deferred (blueprint/P4_DeBrangesFC.md)"
+    - source: "The main results with the proved cited results (Paley–Wiener, D, E, John–Nirenberg, Duffin–Schaeffer) discharged"
+      lean: "FF.isFourierFrame_iff_isSampling_unconditional, FF.heEqPW_of_comparable_unconditional, FF.theorem1_sufficiency_unconditional, FF.logExample_isCompleteInterpolating_unconditional, FF.landau_sharp_unconditional, FF.corollary2_unconditional, FF.theorem2_i_unconditional, FF.theorem2_i_of_densityBound_unconditional, FF.completeInterpolating_zero_set_of_theoremC, FF.theorem1_necessity_of_theoremCF, FF.theorem1_of_theoremCF, FF.corollary1_of_theoremCF, FF.landau_inequality_of_theoremCF_pavlov"
+      module: "FourierFrames/Unconditional.lean"
+      status: "proved"
+      note: "remaining hypotheses: none for the *_unconditional theorems; TheoremC, TheoremF and PavlovBMO as named in the others"
     - source: "Theorem A (Pavlov), BMO half"
       lean: "FF.PavlovBMO"
       module: "FourierFrames/Defs.lean"
