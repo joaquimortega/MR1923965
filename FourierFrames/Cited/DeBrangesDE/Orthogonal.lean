@@ -368,37 +368,80 @@ theorem phaseLevel_inter_Icc_finite (D : DBData E φ) (α a b : ℝ) :
 /-! ## 5.3 Partial sums, Bessel's inequality -/
 
 theorem memHE_partialSum (D : DBData E φ) (a : ℝ → ℂ) (F : Finset (phaseLevel φ α)) :
-    MemHE E (partialSum E φ α a F) := by
-  sorry
+    MemHE E (partialSum E φ α a F) :=
+  MemHE.finset_sum (f := fun γ z ↦ a γ * (wt E γ : ℂ) * deBrangesKernel E (γ : ℂ) z) F
+    fun γ _ ↦ (memHE_deBrangesKernel D.strict.1 D.noZero γ).const_mul (a γ * (wt E γ : ℂ))
 
-/-- Pythagoras: `‖s_F‖² = Σ_{γ ∈ F} wt(γ) |a_γ|²`. -/
-theorem heNormSq_partialSum (D : DBData E φ) (a : ℝ → ℂ) (F : Finset (phaseLevel φ α)) :
-    (heNormSq E (partialSum E φ α a F)).toReal = ∑ γ ∈ F, wt E γ * ‖a γ‖ ^ 2 := by
-  sorry
+/-- `s_F(γ) = a(γ)` for `γ ∈ F` (orthogonality and `K(γ,γ) wt(γ) = 1`). -/
+theorem partialSum_level (D : DBData E φ) (a : ℝ → ℂ) {F : Finset (phaseLevel φ α)}
+    {γ : phaseLevel φ α} (hγ : γ ∈ F) : partialSum E φ α a F γ = a γ := by
+  unfold partialSum
+  rw [Finset.sum_eq_single γ]
+  · rw [mul_assoc, mul_comm (wt E γ : ℂ), kernel_diag_mul_wt D γ, mul_one]
+  · intro γ' _ hne
+    rw [kernel_level_orth D γ'.2 γ.2 (fun h ↦ hne (Subtype.ext h)), mul_zero]
+  · intro h; exact absurd hγ h
 
 /-- `⟨f, s_F⟩ = Σ_{γ ∈ F} conj(a_γ) wt(γ) f(γ)`. -/
 theorem heInner_partialSum (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f) (a : ℝ → ℂ)
     (F : Finset (phaseLevel φ α)) :
     heInner E f (partialSum E φ α a F) = ∑ γ ∈ F, conj (a γ) * (wt E γ : ℂ) * f γ := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  have hK : ∀ γ ∈ F, MemHE E (fun z ↦ a γ * (wt E γ : ℂ) * deBrangesKernel E (γ : ℂ) z) :=
+    fun γ _ ↦ (memHE_deBrangesKernel hE h0 γ).const_mul _
+  rw [show partialSum E φ α a F = fun z ↦ ∑ γ ∈ F,
+      (fun γ z ↦ a γ * (wt E γ : ℂ) * deBrangesKernel E (γ : ℂ) z) γ z from rfl,
+    heInner_sum_right hE h0 F hf hK]
+  refine Finset.sum_congr rfl fun γ _ ↦ ?_
+  rw [heInner_smul_right, heInner_kernel hE h0 hf, map_mul, Complex.conj_ofReal]
 
-/-- `s_F(γ) = a(γ)` for `γ ∈ F` (orthogonality and `K(γ,γ) wt(γ) = 1`). -/
-theorem partialSum_level (D : DBData E φ) (a : ℝ → ℂ) {F : Finset (phaseLevel φ α)}
-    {γ : phaseLevel φ α} (hγ : γ ∈ F) : partialSum E φ α a F γ = a γ := by
-  sorry
+/-- `conj(a) wt a = wt |a|²`. -/
+theorem conj_mul_wt_mul (a : ℂ) (w : ℝ) :
+    conj a * (w : ℂ) * a = ((w * ‖a‖ ^ 2 : ℝ) : ℂ) := by
+  rw [show conj a * (w : ℂ) * a = (w : ℂ) * (a * conj a) by ring, Complex.mul_conj,
+    Complex.normSq_eq_norm_sq, Complex.ofReal_mul]
+
+/-- Pythagoras: `‖s_F‖² = Σ_{γ ∈ F} wt(γ) |a_γ|²`. -/
+theorem heNormSq_partialSum (D : DBData E φ) (a : ℝ → ℂ) (F : Finset (phaseLevel φ α)) :
+    (heNormSq E (partialSum E φ α a F)).toReal = ∑ γ ∈ F, wt E γ * ‖a γ‖ ^ 2 := by
+  have hs := memHE_partialSum D a F
+  have h1 := heInner_self D.strict.1 hs
+  rw [heInner_partialSum D hs a F] at h1
+  have h2 : ∑ γ ∈ F, conj (a γ) * (wt E γ : ℂ) * partialSum E φ α a F γ =
+      ((∑ γ ∈ F, wt E γ * ‖a γ‖ ^ 2 : ℝ) : ℂ) := by
+    rw [Complex.ofReal_sum]
+    refine Finset.sum_congr rfl fun γ hγ ↦ ?_
+    rw [partialSum_level D a hγ, conj_mul_wt_mul]
+  rw [h2] at h1
+  exact_mod_cast h1.symm
 
 /-- Finite Bessel inequality: `Σ_{γ ∈ F} wt(γ) |f(γ)|² ≤ ‖f‖²_E`
 (`0 ≤ ‖f - s_F‖²` with `a = f|_Γ`). -/
 theorem bessel_finite (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f)
     (F : Finset (phaseLevel φ α)) :
     ∑ γ ∈ F, wt E γ * ‖f γ‖ ^ 2 ≤ (heNormSq E f).toReal := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  have hs := memHE_partialSum D (fun t ↦ f t) F
+  have h1 := heNormSq_sub hE h0 hf hs
+  rw [heNormSq_partialSum D _ F, heInner_partialSum D hf _ F] at h1
+  have h2 : (∑ γ ∈ F, conj (f γ) * (wt E γ : ℂ) * f γ).re = ∑ γ ∈ F, wt E γ * ‖f γ‖ ^ 2 := by
+    rw [Complex.re_sum]
+    refine Finset.sum_congr rfl fun γ _ ↦ ?_
+    rw [conj_mul_wt_mul, Complex.ofReal_re]
+  rw [h2] at h1
+  have h3 : 0 ≤ (heNormSq E (fun z ↦ f z - partialSum E φ α (fun t ↦ f t) F z)).toReal :=
+    ENNReal.toReal_nonneg
+  linarith
 
 /-- Bessel's inequality: `Σ_γ wt(γ) |f(γ)|²` converges and is `≤ ‖f‖²_E`. -/
 theorem bessel (D : DBData E φ) {f : ℂ → ℂ} (hf : MemHE E f) :
     Summable (fun γ : phaseLevel φ α ↦ wt E γ * ‖f γ‖ ^ 2) ∧
       ∑' γ : phaseLevel φ α, wt E γ * ‖f γ‖ ^ 2 ≤ (heNormSq E f).toReal := by
-  sorry
+  have hnn : 0 ≤ fun γ : phaseLevel φ α ↦ wt E γ * ‖f γ‖ ^ 2 := fun γ ↦
+    mul_nonneg (wt_pos D γ).le (by positivity)
+  exact ⟨summable_of_sum_le hnn (bessel_finite D hf), Real.tsum_le_of_sum_le hnn (bessel_finite D hf)⟩
 
 /-- Bessel for `f = K_z`, rewritten with `wt_mul_norm_kernel_level_sq`:
 `Σ_γ c_γ |dslope S γ z|² ≤ K(z, z)` for every `z ∈ ℂ`. -/
@@ -406,53 +449,310 @@ theorem summable_cLev_dslope_sq (D : DBData E φ) (z : ℂ) :
     Summable (fun γ : phaseLevel φ α ↦ cLev E γ * ‖dslope (sFun E α) (γ : ℂ) z‖ ^ 2) ∧
       ∑' γ : phaseLevel φ α, cLev E γ * ‖dslope (sFun E α) (γ : ℂ) z‖ ^ 2 ≤
         (deBrangesKernel E z z).re := by
-  sorry
+  have hE := D.strict.1
+  have h0 := D.noZero
+  have hb := bessel (α := α) D (memHE_deBrangesKernel hE h0 z)
+  have heq : (fun γ : phaseLevel φ α ↦ wt E γ * ‖deBrangesKernel E z γ‖ ^ 2) =
+      fun γ : phaseLevel φ α ↦ cLev E γ * ‖dslope (sFun E α) (γ : ℂ) z‖ ^ 2 := by
+    funext γ
+    rw [← deBrangesKernel_conj_symm E (γ : ℂ) z, Complex.norm_conj,
+      wt_mul_norm_kernel_level_sq D γ.2]
+  rw [heq, heNormSq_kernel hE h0] at hb
+  exact hb
 
 /-- For nonreal `w`: `Σ_γ c_γ / |w - γ|² < ∞` (`dslope S γ w = S(w)/(w - γ)`, `S(w) ≠ 0`). -/
 theorem summable_cLev_div (D : DBData E φ) {w : ℂ} (hw : w.im ≠ 0) :
     Summable (fun γ : phaseLevel φ α ↦ cLev E γ / ‖w - (γ : ℂ)‖ ^ 2) := by
-  sorry
+  have hS := sFun_ne_zero (α := α) D hw
+  have hSn : ‖sFun E α w‖ ≠ 0 := norm_ne_zero_iff.mpr hS
+  refine ((summable_cLev_dslope_sq D w).1.mul_left ((‖sFun E α w‖ ^ 2)⁻¹)).congr fun γ ↦ ?_
+  have hne : w ≠ (γ : ℂ) := by intro h; apply hw; rw [h]; simp
+  have hne' : ‖w - (γ : ℂ)‖ ≠ 0 := norm_ne_zero_iff.mpr (sub_ne_zero.mpr hne)
+  rw [dslope_of_ne _ hne, slope_def_field, sFun_level D γ.2, sub_zero, norm_div]
+  field_simp
 
 /-- `Σ_γ c_γ / (1 + γ²) < ∞` (`w = i`). -/
 theorem summable_cLev_div_one_add_sq (D : DBData E φ) :
     Summable (fun γ : phaseLevel φ α ↦ cLev E γ / (1 + (γ : ℝ) ^ 2)) := by
-  sorry
+  refine (summable_cLev_div (α := α) D (w := I) (by simp)).congr fun γ ↦ ?_
+  congr 1
+  rw [Complex.sq_norm, Complex.normSq_apply]
+  simp
+  ring
 
 /-! ## 5.4 The entire function `D` and the quotient `h = D/S` -/
+
+/-- `{γ ∈ Γ : |γ| < r}` is finite. -/
+theorem finite_level_abs_lt (D : DBData E φ) (α r : ℝ) :
+    {γ : phaseLevel φ α | |(γ : ℝ)| < r}.Finite := by
+  refine ((phaseLevel_inter_Icc_finite D α (-r) r).preimage
+    Subtype.val_injective.injOn).subset ?_
+  intro γ hγ
+  have h : |(γ : ℝ)| < r := hγ
+  exact ⟨γ.2, (abs_lt.mp h).1.le, (abs_lt.mp h).2.le⟩
 
 /-- M-test bound: for `‖z‖ ≤ ρ` and `|γ| ≥ 2ρ + 1`,
 `‖rTerm γ z‖ ≤ 2 M (1 + ρ) c_γ / (1 + γ²)` where `‖S‖ ≤ M` on `‖z‖ ≤ ρ`. -/
 theorem norm_rTerm_le (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) {ρ M : ℝ}
     (hM : ∀ z : ℂ, ‖z‖ ≤ ρ → ‖sFun E α z‖ ≤ M) (hγρ : 2 * ρ + 1 ≤ |γ|) {z : ℂ} (hz : ‖z‖ ≤ ρ) :
     ‖rTerm E α γ z‖ ≤ 2 * M * (1 + ρ) * (cLev E γ / (1 + γ ^ 2)) := by
-  sorry
+  have hρ : 0 ≤ ρ := (norm_nonneg z).trans hz
+  have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM 0 (by simpa using hρ))
+  have hγ1 : 1 ≤ |γ| := by linarith
+  have hγpos : 0 < |γ| := by linarith
+  have hzγ : |γ| / 2 ≤ ‖z - γ‖ := by
+    have h1 : |γ| - ‖z‖ ≤ ‖z - γ‖ := by
+      have := norm_sub_norm_le (γ : ℂ) z
+      rwa [Complex.norm_real, Real.norm_eq_abs, norm_sub_rev] at this
+    linarith
+  have hzγpos : 0 < ‖z - γ‖ := by linarith
+  have hne : z ≠ γ := by
+    intro h; rw [h, sub_self, norm_zero] at hzγpos; exact lt_irrefl _ hzγpos
+  have hc := cLev_pos D γ
+  have h1 : ‖1 + (γ : ℂ) * z‖ ≤ 1 + |γ| * ρ := by
+    calc ‖1 + (γ : ℂ) * z‖ ≤ ‖(1 : ℂ)‖ + ‖(γ : ℂ) * z‖ := norm_add_le _ _
+      _ = 1 + |γ| * ‖z‖ := by rw [norm_one, norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      _ ≤ 1 + |γ| * ρ := by gcongr
+  have h2 : ‖1 + (γ : ℂ) ^ 2‖ = 1 + γ ^ 2 := by
+    rw [show (1 + (γ : ℂ) ^ 2) = ((1 + γ ^ 2 : ℝ) : ℂ) by push_cast; ring, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_pos (by positivity)]
+  have h3 : ‖sFun E α z‖ ≤ M := hM z hz
+  unfold rTerm
+  rw [dslope_of_ne _ hne, slope_def_field, sFun_level D hγ, sub_zero, norm_mul, norm_div,
+    norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos hc, h2]
+  calc cLev E γ * ‖1 + ↑γ * z‖ / (1 + γ ^ 2) * (‖sFun E α z‖ / ‖z - ↑γ‖)
+      ≤ cLev E γ * (1 + |γ| * ρ) / (1 + γ ^ 2) * (M / (|γ| / 2)) := by
+        gcongr
+    _ = 2 * M * (1 / |γ| + ρ) * (cLev E γ / (1 + γ ^ 2)) := by
+        field_simp
+    _ ≤ 2 * M * (1 + ρ) * (cLev E γ / (1 + γ ^ 2)) := by
+        gcongr
+        rw [div_le_one hγpos]
+        exact hγ1
 
 theorem summable_rTerm (D : DBData E φ) (α : ℝ) (z : ℂ) :
     Summable fun γ : phaseLevel φ α ↦ rTerm E α γ z := by
-  sorry
+  obtain ⟨M, hM⟩ := (isCompact_closedBall (0 : ℂ) ‖z‖).exists_bound_of_continuousOn
+    (differentiable_sFun D.strict.1.1 α).continuous.continuousOn
+  have hM' : ∀ w : ℂ, ‖w‖ ≤ ‖z‖ → ‖sFun E α w‖ ≤ M := fun w hw ↦ hM w (by simpa using hw)
+  refine Summable.of_norm_bounded_eventually
+    ((summable_cLev_div_one_add_sq (α := α) D).mul_left (2 * M * (1 + ‖z‖))) ?_
+  rw [Filter.eventually_cofinite]
+  refine (finite_level_abs_lt D α (2 * ‖z‖ + 1)).subset fun γ hγ ↦ ?_
+  by_contra hlt
+  exact hγ (norm_rTerm_le D γ.2 hM' (not_lt.mp hlt) le_rfl)
+
+theorem differentiable_dslope_sFun (hE : Differentiable ℂ E) (α : ℝ) (c : ℂ) :
+    Differentiable ℂ (dslope (sFun E α) c) :=
+  differentiableOn_univ.mp ((differentiableOn_dslope (Filter.univ_mem (f := 𝓝 c))).mpr
+    (differentiable_sFun hE α).differentiableOn)
+
+theorem differentiable_rTerm (hE : Differentiable ℂ E) (α γ : ℝ) :
+    Differentiable ℂ (rTerm E α γ) := by
+  have h := differentiable_dslope_sFun hE α (γ : ℂ)
+  show Differentiable ℂ (fun z ↦ ((cLev E γ : ℝ) : ℂ) * (1 + (γ : ℂ) * z) / (1 + (γ : ℂ) ^ 2) *
+    dslope (sFun E α) (γ : ℂ) z)
+  fun_prop
 
 /-- Each term of the series for `R` is entire and the series converges locally uniformly
 (`differentiableOn_tsum_of_summable_norm` on balls, with `norm_rTerm_le` and finitely many
 exceptional `γ`); hence `R` and `D` are entire. -/
 theorem differentiable_rFun (D : DBData E φ) (α : ℝ) : Differentiable ℂ (rFun E φ α) := by
-  sorry
+  have hE := D.strict.1.1
+  have hball : ∀ ρ : ℝ, 0 < ρ → DifferentiableOn ℂ (rFun E φ α) (Metric.ball 0 ρ) := by
+    intro ρ hρ
+    obtain ⟨M, hM⟩ := (isCompact_closedBall (0 : ℂ) ρ).exists_bound_of_continuousOn
+      (differentiable_sFun hE α).continuous.continuousOn
+    have hM' : ∀ w : ℂ, ‖w‖ ≤ ρ → ‖sFun E α w‖ ≤ M := fun w hw ↦ hM w (by simpa using hw)
+    have hM0 : 0 ≤ M := (norm_nonneg _).trans (hM' 0 (by simpa using hρ.le))
+    have hB : ∀ γ : phaseLevel φ α, ∃ B : ℝ, ∀ w ∈ Metric.closedBall (0 : ℂ) ρ,
+        ‖rTerm E α γ w‖ ≤ B := fun γ ↦
+      (isCompact_closedBall (0 : ℂ) ρ).exists_bound_of_continuousOn
+        (differentiable_rTerm hE α γ).continuous.continuousOn
+    choose B hB using hB
+    set g : phaseLevel φ α → ℝ := fun γ ↦ 2 * M * (1 + ρ) * (cLev E γ / (1 + (γ : ℝ) ^ 2))
+      with hg_def
+    have hg : Summable g := (summable_cLev_div_one_add_sq D).mul_left _
+    have hg0 : ∀ γ, 0 ≤ g γ := fun γ ↦ by
+      have := cLev_pos D γ
+      simp only [hg_def]
+      positivity
+    set u : phaseLevel φ α → ℝ := fun γ ↦ if |(γ : ℝ)| < 2 * ρ + 1 then B γ else g γ
+      with hu_def
+    have hu : Summable u := by
+      refine Summable.of_norm_bounded_eventually hg ?_
+      rw [Filter.eventually_cofinite]
+      refine (finite_level_abs_lt D α (2 * ρ + 1)).subset fun γ hγ ↦ ?_
+      by_contra hlt
+      have hlt' : ¬ |(γ : ℝ)| < 2 * ρ + 1 := hlt
+      apply hγ
+      show ‖(if |(γ : ℝ)| < 2 * ρ + 1 then B γ else g γ)‖ ≤ g γ
+      rw [ite_eq_right hlt', Real.norm_eq_abs, abs_of_nonneg (hg0 γ)]
+    have hbd : ∀ γ : phaseLevel φ α, ∀ w ∈ Metric.ball (0 : ℂ) ρ, ‖rTerm E α γ w‖ ≤ u γ := by
+      intro γ w hw
+      have hw' : ‖w‖ ≤ ρ := by simpa using (Metric.mem_ball.mp hw).le
+      show ‖rTerm E α γ w‖ ≤ (if |(γ : ℝ)| < 2 * ρ + 1 then B γ else g γ)
+      split_ifs with h
+      · exact hB γ w (Metric.ball_subset_closedBall hw)
+      · exact norm_rTerm_le D γ.2 hM' (not_lt.mp h) hw'
+    exact differentiableOn_tsum_of_summable_norm hu
+      (fun γ ↦ (differentiable_rTerm hE α γ).differentiableOn) Metric.isOpen_ball hbd
+  intro z
+  exact (hball (‖z‖ + 1) (by positivity)).differentiableAt
+    (Metric.isOpen_ball.mem_nhds (by simp))
 
 theorem differentiable_dFun (D : DBData E φ) (α : ℝ) : Differentiable ℂ (dFun E φ α) := by
-  sorry
+  unfold dFun
+  exact (differentiable_cFun D.strict.1.1 α).add ((differentiable_rFun D α).const_mul _)
 
-theorem fstar_dFun (D : DBData E φ) (α : ℝ) : fstar (dFun E φ α) = dFun E φ α := by
-  sorry
+/-- `S(z̄) = conj S(z)`. -/
+theorem sFun_conj (E : ℂ → ℂ) (α : ℝ) (w : ℂ) : sFun E α (conj w) = conj (sFun E α w) := by
+  have h := congrFun (fstar_sFun E α) w
+  simp only [fstar] at h
+  rw [← h, Complex.conj_conj]
+
+/-- `dslope S γ (z̄) = conj (dslope S γ z)` for real `γ`. -/
+theorem dslope_sFun_conj (α γ : ℝ) (z : ℂ) :
+    dslope (sFun E α) (γ : ℂ) (conj z) = conj (dslope (sFun E α) (γ : ℂ) z) := by
+  by_cases hz : z = γ
+  · subst hz
+    rw [Complex.conj_ofReal, dslope_same]
+    have h := deriv_fstar_ofReal (sFun E α) γ
+    rwa [fstar_sFun] at h
+  · have hz' : conj z ≠ γ := by
+      intro h; apply hz; rw [← Complex.conj_conj z, h, Complex.conj_ofReal]
+    have hγ : conj (sFun E α γ) = sFun E α γ := by rw [← sFun_conj, Complex.conj_ofReal]
+    rw [dslope_of_ne _ hz, dslope_of_ne _ hz', slope_def_field, slope_def_field, sFun_conj,
+      map_div₀, map_sub, map_sub, hγ, Complex.conj_ofReal]
+
+theorem conj_rTerm_conj (α γ : ℝ) (z : ℂ) :
+    conj (rTerm E α γ (conj z)) = rTerm E α γ z := by
+  unfold rTerm
+  simp only [map_mul, map_div₀, map_add, map_one, map_pow, Complex.conj_ofReal,
+    Complex.conj_conj, dslope_sFun_conj]
+
+theorem fstar_dFun (E : ℂ → ℂ) (φ : ℝ → ℝ) (α : ℝ) : fstar (dFun E φ α) = dFun E φ α := by
+  funext z
+  have hC := congrFun (fstar_cFun E α) z
+  simp only [fstar] at hC ⊢
+  unfold dFun rFun
+  rw [map_add, map_mul, Complex.conj_ofReal, hC, Complex.conj_tsum]
+  simp only [conj_rTerm_conj]
+
+theorem rTerm_level_ne (D : DBData E φ) {γ γ' : ℝ} (hγ : γ ∈ phaseLevel φ α)
+    (hγ' : γ' ∈ phaseLevel φ α) (hne : γ' ≠ γ) : rTerm E α γ' γ = 0 := by
+  unfold rTerm
+  rw [dslope_of_ne _ (by exact_mod_cast hne.symm : (γ : ℂ) ≠ γ'), slope_def_field,
+    sFun_level D hγ, sFun_level D hγ', sub_zero, zero_div, mul_zero]
+
+theorem rTerm_level_self (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) :
+    rTerm E α γ γ = -(cFun E α γ) / Real.pi := by
+  unfold rTerm
+  rw [dslope_same, deriv_sFun_level D hγ]
+  have h1 : (phaseDeriv E γ : ℂ) ≠ 0 := by
+    exact_mod_cast (D.strict.phaseDeriv_pos (D.noZero γ)).ne'
+  have h2 : (1 + (γ : ℂ) ^ 2) ≠ 0 := by norm_cast; positivity
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  unfold cLev
+  push_cast
+  field_simp
 
 /-- `D(γ) = C(γ) + π c_γ S'(γ) = 0` for `γ ∈ Γ`. -/
 theorem dFun_level (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) :
     dFun E φ α γ = 0 := by
-  sorry
+  unfold dFun rFun
+  rw [tsum_eq_single ⟨γ, hγ⟩ (fun γ' hne ↦ rTerm_level_ne D hγ γ'.2
+    (fun h ↦ hne (Subtype.ext h))), rTerm_level_self D hγ]
+  have hπ : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
+  field_simp
+  ring
+
+theorem cFun_level_ne_zero (D : DBData E φ) {γ : ℝ} (hγ : γ ∈ phaseLevel φ α) :
+    cFun E α γ ≠ 0 := by
+  intro hC
+  have h2 := (cFun_level D hγ).2
+  rw [hC, Complex.zero_re] at h2
+  have h3 : ‖E γ‖ ^ 2 = 0 := by rw [← h2]; ring
+  exact D.noZero γ (norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp h3))
 
 /-- **`h = D/S` is entire**, real on `ℝ` (removable singularities at the simple zeros of `S`). -/
 theorem exists_hFun (D : DBData E φ) (α : ℝ) :
     ∃ h : ℂ → ℂ, Differentiable ℂ h ∧ (∀ z, dFun E φ α z = h z * sFun E α z) ∧
       ∀ z, h (conj z) = conj (h z) := by
-  sorry
+  have hE := D.strict.1.1
+  have hSd : Differentiable ℂ (sFun E α) := differentiable_sFun hE α
+  have hDd : Differentiable ℂ (dFun E φ α) := differentiable_dFun D α
+  set h : ℂ → ℂ := fun z ↦ if sFun E α z = 0 then deriv (dFun E φ α) z / deriv (sFun E α) z
+    else dFun E φ α z / sFun E α z with hh
+  have hzero : ∀ z, sFun E α z = 0 → ∃ γ : ℝ, γ ∈ phaseLevel φ α ∧ z = γ := fun z hz ↦ by
+    obtain ⟨γ, hγ, rfl⟩ := (sFun_eq_zero_iff D z).mp hz
+    exact ⟨γ, hγ, rfl⟩
+  refine ⟨h, ?_, ?_, ?_⟩
+  · intro z
+    by_cases hz : sFun E α z = 0
+    · obtain ⟨γ, hγ, rfl⟩ := hzero z hz
+      have hdd : Differentiable ℂ (dslope (sFun E α) (γ : ℂ)) :=
+        differentiable_dslope_sFun hE α γ
+      have hδd : Differentiable ℂ (dslope (dFun E φ α) (γ : ℂ)) :=
+        differentiableOn_univ.mp ((differentiableOn_dslope (Filter.univ_mem (f := 𝓝 (γ : ℂ)))).mpr
+          hDd.differentiableOn)
+      have hdγ : dslope (sFun E α) (γ : ℂ) γ ≠ 0 := by
+        rw [dslope_same, deriv_sFun_level D hγ]
+        refine mul_ne_zero (neg_ne_zero.mpr (cFun_level_ne_zero D hγ)) ?_
+        exact_mod_cast (D.strict.phaseDeriv_pos (D.noZero γ)).ne'
+      have hev : ∀ᶠ w in 𝓝 (γ : ℂ), dslope (sFun E α) (γ : ℂ) w ≠ 0 :=
+        hdd.continuous.continuousAt.eventually_ne hdγ
+      have heq : h =ᶠ[𝓝 (γ : ℂ)] fun w ↦
+          dslope (dFun E φ α) (γ : ℂ) w / dslope (sFun E α) (γ : ℂ) w := by
+        filter_upwards [hev] with w hw
+        by_cases hwγ : w = γ
+        · subst hwγ
+          simp only [hh, ite_eq_left hz]
+          rw [dslope_same, dslope_same]
+        · have hSw : sFun E α w = (w - γ) * dslope (sFun E α) (γ : ℂ) w := by
+            have := sub_smul_dslope (sFun E α) (γ : ℂ) w
+            rw [smul_eq_mul, hz, sub_zero] at this
+            exact this.symm
+          have hDw : dFun E φ α w = (w - γ) * dslope (dFun E φ α) (γ : ℂ) w := by
+            have := sub_smul_dslope (dFun E φ α) (γ : ℂ) w
+            rw [smul_eq_mul, dFun_level D hγ, sub_zero] at this
+            exact this.symm
+          have hwγ' : w - γ ≠ 0 := sub_ne_zero.mpr hwγ
+          have hSw0 : sFun E α w ≠ 0 := by rw [hSw]; exact mul_ne_zero hwγ' hw
+          simp only [hh, ite_eq_right hSw0]
+          rw [hSw, hDw, mul_div_mul_left _ _ hwγ']
+      exact ((hδd γ).div (hdd γ) hdγ).congr_of_eventuallyEq heq
+    · have hev : ∀ᶠ w in 𝓝 z, sFun E α w ≠ 0 := hSd.continuous.continuousAt.eventually_ne hz
+      have heq : h =ᶠ[𝓝 z] fun w ↦ dFun E φ α w / sFun E α w := by
+        filter_upwards [hev] with w hw
+        simp only [hh, ite_eq_right hw]
+      exact ((hDd z).div (hSd z) hz).congr_of_eventuallyEq heq
+  · intro z
+    by_cases hz : sFun E α z = 0
+    · obtain ⟨γ, hγ, rfl⟩ := hzero z hz
+      rw [hz, mul_zero]
+      exact dFun_level D hγ
+    · simp only [hh, ite_eq_right hz]
+      rw [div_mul_cancel₀ _ hz]
+  · intro z
+    have hDc : dFun E φ α (conj z) = conj (dFun E φ α z) := by
+      have h1 := congrFun (fstar_dFun E φ α) z
+      simp only [fstar] at h1
+      rw [← h1, Complex.conj_conj]
+    have hdS : deriv (sFun E α) (conj z) = conj (deriv (sFun E α) z) := by
+      have h1 := deriv_fstar (sFun E α) (conj z)
+      rwa [Complex.conj_conj, fstar_sFun] at h1
+    have hdD : deriv (dFun E φ α) (conj z) = conj (deriv (dFun E φ α) z) := by
+      have h1 := deriv_fstar (dFun E φ α) (conj z)
+      rwa [Complex.conj_conj, fstar_dFun E φ α] at h1
+    by_cases hz : sFun E α z = 0
+    · have hz' : sFun E α (conj z) = 0 := by rw [sFun_conj, hz, map_zero]
+      simp only [hh, ite_eq_left hz, ite_eq_left hz']
+      rw [hdS, hdD, map_div₀]
+    · have hz' : sFun E α (conj z) ≠ 0 := by
+        rw [sFun_conj]; exact (map_ne_zero _).mpr hz
+      simp only [hh, ite_eq_right hz, ite_eq_right hz']
+      rw [sFun_conj, hDc, map_div₀]
 
 /-! ## 5.5 The defect kernel -/
 
