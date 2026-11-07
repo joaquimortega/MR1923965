@@ -306,7 +306,67 @@ theorem memLp_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) {η : ℝ} (hη : 0 <
 theorem tendsto_eLpNorm_mul_gauss {f : ℝ → ℂ} (hf : MemLp f 2) :
     Tendsto (fun n : ℕ ↦ eLpNorm (fun x : ℝ ↦ f x * ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ)
       - f x) 2 volume) atTop (𝓝 0) := by
-  sorry
+  set G : ℕ → ℝ → ℂ := fun n x ↦
+    f x * ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ) - f x with hG
+  have hmeas : ∀ n, AEStronglyMeasurable (G n) := fun n ↦
+    (hf.aestronglyMeasurable.mul (by fun_prop : Continuous (fun x : ℝ ↦
+      ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ))).aestronglyMeasurable).sub
+      hf.aestronglyMeasurable
+  have hbound : ∀ n x, ‖G n x‖ ≤ ‖f x‖ := by
+    intro n x
+    have h0 : 0 < Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) := Real.exp_pos _
+    have h1 : Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) ≤ 1 := gauss_le_one (by positivity) x
+    simp only [hG]
+    rw [← mul_sub_one, norm_mul, ← Complex.ofReal_one, ← Complex.ofReal_sub, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonpos (by linarith)]
+    exact mul_le_of_le_one_right (norm_nonneg _) (by linarith)
+  have hlim : ∀ x, Tendsto (fun n ↦ G n x) atTop (𝓝 0) := by
+    intro x
+    have h1 : Tendsto (fun n : ℕ ↦ 1 / ((n : ℝ) + 1)) atTop (𝓝 0) :=
+      tendsto_one_div_add_atTop_nhds_zero_nat
+    have h2 : Tendsto (fun n : ℕ ↦ ((Real.exp (-(1 / ((n : ℝ) + 1)) * x ^ 2) : ℝ) : ℂ)) atTop
+        (𝓝 ((Real.exp (-0 * x ^ 2) : ℝ) : ℂ)) :=
+      (Complex.continuous_ofReal.tendsto _).comp
+        ((Real.continuous_exp.tendsto _).comp ((h1.neg).mul_const _))
+    have h3 := (h2.const_mul (f x)).sub_const (f x)
+    have e : f x * ((Real.exp (-0 * x ^ 2) : ℝ) : ℂ) - f x = 0 := by simp
+    rw [e] at h3
+    exact h3
+  have hfin : ∫⁻ x, ‖f x‖ₑ ^ (2 : ℝ) ≠ ∞ := by
+    have := hf.eLpNorm_lt_top
+    rw [eLpNorm_eq_lintegral_rpow_enorm_toReal two_ne_zero ENNReal.ofNat_ne_top
+      hf.aestronglyMeasurable] at this
+    simp only [ENNReal.toReal_ofNat] at this
+    exact (ENNReal.rpow_lt_top_iff_of_pos (by norm_num)).1 this |>.ne
+  have hL : Tendsto (fun n ↦ ∫⁻ x, ‖G n x‖ₑ ^ (2 : ℝ)) atTop (𝓝 0) := by
+    have := tendsto_lintegral_of_dominated_convergence' (μ := volume)
+      (F := fun n x ↦ ‖G n x‖ₑ ^ (2 : ℝ)) (f := fun _ ↦ 0)
+      (fun x ↦ ‖f x‖ₑ ^ (2 : ℝ))
+      (fun n ↦ ((hmeas n).enorm.pow_const _))
+      (fun n ↦ Eventually.of_forall fun x ↦ ENNReal.rpow_le_rpow (enorm_le_iff_norm_le.2 (hbound n x))
+        (by norm_num))
+      hfin
+      (Eventually.of_forall fun x ↦ by
+        have := ((hlim x).enorm).ennrpow_const (2 : ℝ)
+        simpa using this)
+    simpa using this
+  have h := (ENNReal.continuous_rpow_const (y := 1 / 2)).tendsto 0 |>.comp hL
+  rw [ENNReal.zero_rpow_of_pos (by norm_num)] at h
+  refine h.congr fun n ↦ ?_
+  simp only [Function.comp]
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal two_ne_zero ENNReal.ofNat_ne_top (hmeas n)]
+  simp [ENNReal.toReal_ofNat]
+
+/-- The Fourier transform of `f e^{-η·²}` in the form of `norm_integral_gauss_mul_le`. -/
+theorem fourier_mul_gauss_eq (f : ℂ → ℂ) (η w : ℝ) :
+    𝓕 (fun x : ℝ ↦ f x * ((Real.exp (-η * x ^ 2) : ℝ) : ℂ)) w =
+      ∫ x : ℝ, f x * Complex.exp (-(η : ℂ) * (x : ℂ) ^ 2) *
+        Complex.exp (-I * ((2 * Real.pi * w : ℝ) : ℂ) * x) := by
+  rw [Real.fourier_real_eq_integral_exp_smul]
+  refine integral_congr_ae (Eventually.of_forall fun x ↦ ?_)
+  simp only [smul_eq_mul, Complex.ofReal_exp]
+  push_cast
+  ring_nf
 
 /-- **Spectrum lemma.** -/
 theorem spectrum_vanish {f : ℂ → ℂ} (hd : Differentiable ℂ f) (hL2 : MemLp (fun x : ℝ ↦ f x) 2)
@@ -314,6 +374,37 @@ theorem spectrum_vanish {f : ℂ → ℂ} (hd : Differentiable ℂ f) (hL2 : Mem
     (hC : ∀ z : ℂ, ‖f z‖ ≤ C * Real.exp (a * |z.re| + b * |z.im|)) :
     ∀ᵐ w : ℝ, a + b < 2 * Real.pi * |w| →
       (F2 (hL2.toLp (fun x : ℝ ↦ f x)) : ℝ → ℂ) w = 0 := by
-  sorry
+  set fr : ℝ → ℂ := fun x ↦ f x with hfr
+  set η : ℕ → ℝ := fun n ↦ 1 / ((n : ℝ) + 1) with hη
+  have hηpos : ∀ n, 0 < η n := fun n ↦ by simp only [hη]; positivity
+  set fn : ℕ → ℝ → ℂ := fun n x ↦ fr x * ((Real.exp (-(η n) * x ^ 2) : ℝ) : ℂ) with hfn
+  have hfn2 : ∀ n, MemLp (fn n) 2 := fun n ↦ (memLp_mul_gauss hL2 (hηpos n)).1
+  have hfn1 : ∀ n, Integrable (fn n) := fun n ↦ (memLp_mul_gauss hL2 (hηpos n)).2
+  have hconv : Tendsto (fun n ↦ (hfn2 n).toLp (fn n)) atTop (𝓝 (hL2.toLp fr)) :=
+    (Lp.tendsto_Lp_iff_tendsto_eLpNorm'' fn hfn2 fr hL2).2 (tendsto_eLpNorm_mul_gauss hL2)
+  have hconvF : Tendsto (fun n ↦ F2 ((hfn2 n).toLp (fn n))) atTop (𝓝 (F2 (hL2.toLp fr))) :=
+    (F2.continuous.tendsto _).comp hconv
+  obtain ⟨ns, hns, hae⟩ := (tendstoInMeasure_of_tendsto_Lp hconvF).exists_seq_tendsto_ae
+  have hae2 : ∀ᵐ w, ∀ n, (F2 ((hfn2 n).toLp (fn n)) : ℝ → ℂ) w = 𝓕 (fn n) w :=
+    ae_all_iff.2 fun n ↦ F2_toLp_ae_eq (hfn1 n) (hfn2 n)
+  filter_upwards [hae, hae2] with w hw1 hw2 hw
+  have hηt : Tendsto η atTop (𝓝[>] 0) :=
+    tendsto_nhdsWithin_iff.2 ⟨tendsto_one_div_add_atTop_nhds_zero_nat,
+      Eventually.of_forall hηpos⟩
+  have hξ : |2 * Real.pi * w| = 2 * Real.pi * |w| := by
+    rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 2 * Real.pi)]
+  have hzero : Tendsto (fun n ↦ 𝓕 (fn n) w) atTop (𝓝 0) := by
+    have hB := (tendsto_gauss_bound ha (by linarith : a < 2 * Real.pi * |w| - b) C).comp hηt
+    refine squeeze_zero_norm (fun n ↦ ?_) hB
+    have := norm_integral_gauss_mul_le hd hb hC (hηpos n) (ξ := 2 * Real.pi * w)
+      (by rw [hξ]; linarith)
+    rw [hξ] at this
+    simp only [Function.comp]
+    rw [hfn, fourier_mul_gauss_eq f (η n) w]
+    exact this
+  have h1 : Tendsto (fun i ↦ 𝓕 (fn (ns i)) w) atTop
+      (𝓝 ((F2 (hL2.toLp fr) : ℝ → ℂ) w)) := by
+    simpa only [hw2] using hw1
+  exact tendsto_nhds_unique h1 (hzero.comp hns.tendsto_atTop)
 
 end FF.PW1
