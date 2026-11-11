@@ -1,4 +1,4 @@
-# Formalization of Ortega-Cerdà–Seip, *Fourier frames* (Annals of Mathematics 2002)
+# Formalization of J. Ortega-Cerdà and K. Seip, *Fourier frames* 
 
 A Lean 4 / Mathlib formalization of
 
