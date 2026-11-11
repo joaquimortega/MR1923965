@@ -64,8 +64,7 @@ Same workflow as the companion projects (`../MR1949832`, `../MR1682065`, `../MR2
 3. Independent agent review of the blueprint and of every statement (`reviews/`).
 4. Implementation (git worktrees, `scripts/new_worktree.sh`).
 5. `comparator` check of the main results against the self-contained `FFChallenge.lean`.
-6. `formalization.yaml`, `NOTEBOOK.md`, and the corrected paper in `fixed/` (local only, not
-   committed).
+6. `formalization.yaml`, `NOTEBOOK.md`, and the corrected paper, uploaded to arXiv.
 
 **Phases.**
 - *Phase 1*: the paper's own arguments, with the cited results (Paley–Wiener, de Branges C/D/E/F,

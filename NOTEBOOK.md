@@ -700,7 +700,7 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
 - **Source corrections.** This is a new proof of a theorem cited by the paper,
   not a change to the paper's own statements. N-37 (strict Hermite–Biehler is
   necessary in Theorem F) remains valid. No additional paper erratum was found,
-  so the corrected and red-marked TeX versions under `fixed/` need no new change.
+  so the corrected paper (uploaded to arXiv) needs no new change.
 - **Validation.** `lake build FourierFrames FourierFramesScaffold` passes without warnings;
   both statement checkers pass. All five new theorems have only the three standard
   axioms. Comparator accepts all 44 declarations (2026-11-07,
@@ -774,8 +774,8 @@ what makes the translates `E_κ(z + s_k)` converge to `i c e^{-iπ(z - θ)}` (`i
   the code and the analytic dispersion route. There are no new axioms,
   implementation `sorry`s, or linter suppressions.
 - **Paper artifacts.** This completes another theorem quoted by the paper; it
-  introduces no new correction to the paper's own statements. The existing
-  corrected and red-marked TeX/PDF versions in `fixed/` remain applicable.
+  introduces no new correction to the paper's own statements. The corrected paper
+  (uploaded to arXiv) remains applicable.
 - **Validation.** The default and compatibility Lake targets build without
   warnings. The frozen-statement and main-statement checks pass; the
   self-contained challenge now contains 46 declarations. Comparator accepts

@@ -6,5 +6,5 @@
 *.pdf
 literature/
 
-# The corrected version of the paper is kept locally only (not committed).
+# Working files of the corrected paper (the paper itself is uploaded to arXiv); not committed.
 /fixed/
