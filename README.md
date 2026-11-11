@@ -129,7 +129,7 @@ printed hypothesis `ψ'(x) = 1/O(x)`, which the proof does not use. Theorem F as
 `NOTEBOOK.md` (45 entries: N-01–N-38 confirmed by independent referee agents against the printed
 pages, N-39–N-42 found during the implementation, N-43–N-45 found in the blueprint of de Branges'
 Theorems D and E and confirmed by referee R9). The
-corrected paper, with the changes marked in red, was produced locally (`fixed/`, not committed).
+corrected paper is uploaded to arxiv.
 
 ## Layout
 
