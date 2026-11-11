@@ -5,8 +5,7 @@ A Lean 4 / Mathlib formalization of
 > J. Ortega-Cerdà and K. Seip, *Fourier frames*, Ann. of Math. (2) **155** (2002), 789–806.
 > [doi:10.2307/3062132](https://doi.org/10.2307/3062132), MR1923965.
 
-Page references ("p. 795") are to the journal pagination. The journal PDF and the author's tex
-source, used during the work, are not included in the repository.
+Page references ("p. 795") are to the journal pagination. 
 
 ## What the paper proves
 
